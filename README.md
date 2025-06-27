@@ -4,6 +4,7 @@ Similarity-based Representation Factorization (SRF).
 
 ### Installation
 
+
 This project uses [Poetry](https://python-poetry.org/) for dependency management and includes the `ml-toolkit` as a git subtree in the `srf/ml-toolkit` directory.
 
 1.  **Clone the repository:**
@@ -15,11 +16,11 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
 2.  **[Optional] If ml-toolkit directory is missing or needs updating:**
     The ml-toolkit directory should be included when you clone the repository. However, if you need to add or update it manually:
     ```bash
-    # To add the ml-toolkit subtree if missing:
-    git subtree add --prefix=srf/ml-toolkit https://github.com/florianmahner/ml-toolkit.git main --squash
+    # To add the tools subtree if missing:
+    git subtree add --prefix=src/tools https://github.com/florianmahner/tools.git main --squash
 
-    # To update the ml-toolkit subtree later:
-    git subtree pull --prefix=srf/ml-toolkit https://github.com/florianmahner/ml-toolkit.git main --squash
+    # To update the tools subtree later:
+    git subtree pull --prefix=src/tools https://github.com/florianmahner/tools.git main --squash
     ```
 
 3.  **Install Poetry:**
@@ -28,6 +29,9 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
 4.  **Install dependencies:**
     This command installs the main project dependencies and the ml-toolkit package:
     ```bash
+    pyenv install 3.11.9
+    pyenv local 3.11.9
+    poetry env use $(pyenv which python)
     poetry install
     ```
 
