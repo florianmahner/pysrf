@@ -45,7 +45,7 @@ def fit_stable(
         If True, stack embeddings horizontally (n_samples, rank * n_runs).
         If False, return list of (n_samples, rank) arrays.
     **srf_kwargs : dict
-        Additional keyword arguments passed to SRF (e.g., rho, max_outer, tol, init, 
+        Additional keyword arguments passed to SRF (e.g., rho, max_outer, tol, init,
         missing_values, bounds, verbose)
 
     Returns
