@@ -1,9 +1,9 @@
 site_name: pysrf
 site_description: Symmetric Representation Factorization for matrix completion and rank estimation
 site_author: Florian Mahner
-site_url: https://fmahner.github.io/pysrf
-repo_url: https://github.com/fmahner/pysrf
-repo_name: fmahner/pysrf
+site_url: https://florianmahner.github.io/pysrf/
+repo_url: https://github.com/florianmahner/pysrf
+repo_name: florianmahner/pysrf
 
 theme:
   name: material
