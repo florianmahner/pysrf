@@ -22,7 +22,7 @@ def test_mask_missing_entries():
     s = generate_test_matrix(n=20)
     rng = np.random.RandomState(42)
 
-    mask = mask_missing_entries(s, observed_fraction=0.8, rng=rng)
+    mask = mask_missing_entries(s, sampling_fraction=0.8, rng=rng)
 
     assert mask.shape == s.shape
     assert mask.dtype == bool
@@ -36,7 +36,7 @@ def test_mask_missing_entries():
 def test_entry_mask_split():
     s = generate_test_matrix(n=20)
 
-    cv = EntryMaskSplit(n_repeats=3, observed_fraction=0.8, random_state=42)
+    cv = EntryMaskSplit(n_repeats=3, sampling_fraction=0.8, random_state=42)
 
     assert cv.get_n_splits() == 3
 
@@ -52,7 +52,7 @@ def test_admm_grid_search_cv():
     s = generate_test_matrix(n=20, rank=5)
 
     param_grid = {"rank": [3, 5, 7], "rho": [2.0, 3.0]}
-    cv = EntryMaskSplit(n_repeats=2, observed_fraction=0.8, random_state=42)
+    cv = EntryMaskSplit(n_repeats=2, sampling_fraction=0.8, random_state=42)
 
     grid = ADMMGridSearchCV(
         estimator=SRF(max_outer=5, random_state=42),
@@ -80,7 +80,7 @@ def test_cross_val_score():
         s,
         param_grid=param_grid,
         n_repeats=2,
-        observed_fraction=0.8,
+        sampling_fraction=0.8,
         random_state=42,
         verbose=0,
         n_jobs=1,
@@ -104,7 +104,7 @@ def test_cross_val_score_with_missing_data():
         s,
         param_grid=param_grid,
         n_repeats=2,
-        observed_fraction=0.8,
+        sampling_fraction=0.8,
         random_state=42,
         verbose=0,
         n_jobs=1,
@@ -122,7 +122,7 @@ def test_cross_val_score_fit_final():
         s,
         param_grid={"rank": [5]},
         n_repeats=2,
-        observed_fraction=0.8,
+        sampling_fraction=0.8,
         random_state=42,
         verbose=0,
         n_jobs=1,

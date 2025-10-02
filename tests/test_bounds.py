@@ -3,8 +3,8 @@ import pytest
 from pysrf.bounds import (
     pmin_bound,
     p_upper_only_k,
-    estimate_p_bound,
-    estimate_p_bound_fast,
+    estimate_sampling_bounds,
+    estimate_sampling_bounds_fast,
     lambda_bulk_dyson_raw,
 )
 from pysrf import SRF, cross_val_score
@@ -82,10 +82,10 @@ def test_p_upper_only_k_invalid_k():
         p_upper_only_k(s, k=100)
 
 
-def test_estimate_p_bound():
+def test_estimate_sampling_bounds():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, pmax, s_noise = estimate_p_bound(s, verbose=False, random_state=42)
+    pmin, pmax, s_noise = estimate_sampling_bounds(s, verbose=False, random_state=42)
 
     assert isinstance(pmin, (float, np.floating))
     assert isinstance(pmax, (float, np.floating))
@@ -93,10 +93,10 @@ def test_estimate_p_bound():
     assert s_noise.shape == s.shape
 
 
-def test_estimate_p_bound_fast():
+def test_estimate_sampling_bounds_fast():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, pmax, s_noise = estimate_p_bound_fast(
+    pmin, pmax, s_noise = estimate_sampling_bounds_fast(
         s, verbose=False, random_state=42, n_jobs=1
     )
 
@@ -106,10 +106,10 @@ def test_estimate_p_bound_fast():
     assert s_noise.shape == s.shape
 
 
-def test_estimate_p_bound_parameters():
+def test_estimate_sampling_bounds_parameters():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, pmax, s_noise = estimate_p_bound(
+    pmin, pmax, s_noise = estimate_sampling_bounds(
         s,
         gamma=1.1,
         eta=0.1,
@@ -125,18 +125,20 @@ def test_estimate_p_bound_parameters():
 
 
 def test_rank_recovery_with_cv():
-    """Test that CV with p-bound estimates produces reasonable rank selection."""
+    """Test that CV with sampling bound estimates produces reasonable rank selection."""
     true_rank = 8
     n_samples = 100
     seed = 42
 
     s = generate_test_matrix(n=n_samples, rank=true_rank, random_state=seed)
 
-    pmin, pmax, _ = estimate_p_bound_fast(s, random_state=seed, verbose=False, n_jobs=1)
+    pmin, pmax, _ = estimate_sampling_bounds_fast(
+        s, random_state=seed, verbose=False, n_jobs=1
+    )
 
-    assert 0 < pmin < pmax <= 1, "p-bounds should be valid probabilities"
+    assert 0 < pmin < pmax <= 1, "sampling bounds should be valid probabilities"
 
-    observed_fraction = 0.5 * (pmin + pmax)
+    sampling_fraction = 0.5 * (pmin + pmax)
 
     rank_range = list(range(max(1, true_rank - 5), true_rank + 5))
 
@@ -144,7 +146,7 @@ def test_rank_recovery_with_cv():
         s,
         param_grid={"rank": rank_range},
         n_repeats=3,
-        observed_fraction=observed_fraction,
+        sampling_fraction=sampling_fraction,
         n_jobs=1,
         random_state=seed,
         verbose=0,
@@ -158,18 +160,18 @@ def test_rank_recovery_with_cv():
     assert grid.best_score_ < 1.0, "Best CV score should indicate good fit"
 
 
-def test_p_bounds_scale_with_rank():
-    """Test that p-bounds change appropriately with matrix rank."""
+def test_sampling_bounds_scale_with_rank():
+    """Test that sampling bounds change appropriately with matrix rank."""
     n = 80
     seed = 42
 
     s_low_rank = generate_test_matrix(n=n, rank=5, random_state=seed)
     s_high_rank = generate_test_matrix(n=n, rank=20, random_state=seed)
 
-    pmin_low, pmax_low, _ = estimate_p_bound_fast(
+    pmin_low, pmax_low, _ = estimate_sampling_bounds_fast(
         s_low_rank, random_state=seed, verbose=False, n_jobs=1
     )
-    pmin_high, pmax_high, _ = estimate_p_bound_fast(
+    pmin_high, pmax_high, _ = estimate_sampling_bounds_fast(
         s_high_rank, random_state=seed, verbose=False, n_jobs=1
     )
 
@@ -182,19 +184,21 @@ def test_p_bounds_scale_with_rank():
 
 
 def test_reconstruction_quality_at_estimated_bounds():
-    """Test that reconstruction at p-bound sampling rate recovers structure."""
+    """Test that reconstruction at estimated sampling rate recovers structure."""
     true_rank = 6
     n = 60
     seed = 42
 
     s = generate_test_matrix(n=n, rank=true_rank, random_state=seed)
 
-    pmin, pmax, _ = estimate_p_bound_fast(s, random_state=seed, verbose=False, n_jobs=1)
+    pmin, pmax, _ = estimate_sampling_bounds_fast(
+        s, random_state=seed, verbose=False, n_jobs=1
+    )
 
-    observed_fraction = 0.5 * (pmin + pmax)
+    sampling_fraction = 0.5 * (pmin + pmax)
 
     rng = np.random.RandomState(seed)
-    missing_mask = mask_missing_entries(s, observed_fraction, rng, np.nan)
+    missing_mask = mask_missing_entries(s, sampling_fraction, rng, np.nan)
 
     s_masked = s.copy()
     s_masked[missing_mask] = np.nan
@@ -206,4 +210,6 @@ def test_reconstruction_quality_at_estimated_bounds():
     observed_mask = ~missing_mask
     mse_observed = np.mean((s[observed_mask] - s_reconstructed[observed_mask]) ** 2)
 
-    assert mse_observed < 0.1, "Reconstruction should be accurate at p-bound sampling"
+    assert (
+        mse_observed < 0.1
+    ), "Reconstruction should be accurate at estimated sampling rate"

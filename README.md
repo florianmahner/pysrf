@@ -69,17 +69,17 @@ w = model.fit_transform(s)
 ### Cross-Validation & Rank Selection
 
 ```python
-from pysrf import cross_val_score, estimate_p_bound_fast
+from pysrf import cross_val_score, estimate_sampling_bounds_fast
 
 # Estimate optimal sampling rate
-pmin, pmax, _ = estimate_p_bound_fast(s, n_jobs=-1)
+pmin, pmax, _ = estimate_sampling_bounds_fast(s, n_jobs=-1)
 sampling_rate = 0.5 * (pmin + pmax)
 
 # Find best rank
 grid = cross_val_score(
     s,
     param_grid={'rank': [5, 10, 15, 20]},
-    observed_fraction=sampling_rate,
+    sampling_fraction=sampling_rate,
     n_repeats=5,
     n_jobs=-1
 )
@@ -91,7 +91,7 @@ print(f"Best rank: {grid.best_params_['rank']}")
 - **ADMM optimization** with missing data support
 - **Cython-optimized** inner loop (10-50x faster than pure Python)
 - **Cross-validation** for hyperparameter tuning
-- **Rank estimation** via Random Matrix Theory (p-bounds)
+- **Rank estimation** via Random Matrix Theory (sampling bounds)
 - **Scikit-learn compatible** API
 - Full type hints (Python 3.10+)
 

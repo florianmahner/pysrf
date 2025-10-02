@@ -19,7 +19,7 @@ from .model import SRF
 
 def mask_missing_entries(
     x: np.ndarray,
-    observed_fraction: float,
+    sampling_fraction: float,
     rng: np.random.RandomState,
     missing_values: float | None = np.nan,
 ) -> np.ndarray:
@@ -34,7 +34,7 @@ def mask_missing_entries(
     ----------
     x : ndarray
         Input symmetric matrix
-    observed_fraction : float
+    sampling_fraction : float
         Fraction of entries to keep as observed (0.0 to 1.0)
     rng : RandomState
         Random number generator
@@ -52,7 +52,7 @@ def mask_missing_entries(
     triu_observed = observed_mask[triu_i, triu_j]
     valid_positions = np.where(triu_observed)[0]
 
-    n_to_keep = int(observed_fraction * len(valid_positions))
+    n_to_keep = int(sampling_fraction * len(valid_positions))
     if n_to_keep == 0:
         return np.ones_like(x, dtype=bool)
 
@@ -143,7 +143,7 @@ class EntryMaskSplit(BaseCrossValidator):
     ----------
     n_repeats : int, default=5
         Number of random splits to generate
-    observed_fraction : float, default=0.8
+    sampling_fraction : float, default=0.8
         Fraction of entries to use for training
     random_state : int or None, default=None
         Random seed for reproducibility
@@ -154,12 +154,12 @@ class EntryMaskSplit(BaseCrossValidator):
     def __init__(
         self,
         n_repeats: int = 5,
-        observed_fraction: float = 0.8,
+        sampling_fraction: float = 0.8,
         random_state: int | None = None,
         missing_values: float | None = np.nan,
     ):
         self.n_repeats = n_repeats
-        self.observed_fraction = observed_fraction
+        self.sampling_fraction = sampling_fraction
         self.random_state = random_state
         self.missing_values = missing_values
 
@@ -174,7 +174,7 @@ class EntryMaskSplit(BaseCrossValidator):
         rng = check_random_state(self.random_state)
         for _ in range(self.n_repeats):
             yield mask_missing_entries(
-                x, self.observed_fraction, rng, self.missing_values
+                x, self.sampling_fraction, rng, self.missing_values
             )
 
 
@@ -282,7 +282,8 @@ def cross_val_score(
     similarity_matrix: np.ndarray,
     param_grid: dict[str, list] | None = None,
     n_repeats: int = 5,
-    observed_fraction: float = 0.8,
+    sampling_fraction: float = 0.8,
+    estimate_sampling_fraction: bool | dict = False,
     random_state: int = 0,
     verbose: int = 1,
     n_jobs: int = -1,
@@ -293,7 +294,7 @@ def cross_val_score(
     Cross-validate SRF parameters for matrix completion.
 
     Convenience function that sets up grid search cross-validation for
-    symmetric matrix factorization.
+    symmetric matrix factorization with optional automatic sampling fraction estimation.
 
     Parameters
     ----------
@@ -304,8 +305,13 @@ def cross_val_score(
         as values. If None, uses default {'rank': [5, 10, 15, 20]}
     n_repeats : int, default=5
         Number of times to repeat the cross-validation
-    observed_fraction : float, default=0.8
-        Fraction of the observed entries to use for training in each split
+    sampling_fraction : float, default=0.8
+        Fraction of observed entries to use for training in each split (0.0 to 1.0).
+        Ignored if estimate_sampling_fraction is True or dict
+    estimate_sampling_fraction : bool or dict, default=False
+        If True, automatically estimate optimal sampling fraction using sampling
+        bound estimation from Random Matrix Theory. If dict, passed as kwargs to
+        estimate_sampling_bounds_fast(). When enabled, overrides sampling_fraction
     random_state : int, default=0
         Random seed for reproducibility
     verbose : int, default=1
@@ -329,13 +335,42 @@ def cross_val_score(
     >>> result = cross_val_score(similarity_matrix, param_grid=param_grid)
     >>> print(f"Best params: {result.best_params_}")
     >>> print(f"Best score: {result.best_score_}")
+
+    >>> # Automatic sampling fraction estimation
+    >>> result = cross_val_score(
+    ...     similarity_matrix,
+    ...     param_grid={'rank': [5, 10, 15]},
+    ...     estimate_sampling_fraction=True
+    ... )
     """
     if param_grid is None:
         param_grid = {"rank": [5, 10, 15, 20]}
 
+    if estimate_sampling_fraction:
+        from .bounds import estimate_sampling_bounds_fast
+
+        kwargs = (
+            estimate_sampling_fraction
+            if isinstance(estimate_sampling_fraction, dict)
+            else {}
+        )
+        if "random_state" not in kwargs:
+            kwargs["random_state"] = random_state
+        if "n_jobs" not in kwargs:
+            kwargs["n_jobs"] = n_jobs
+        if "verbose" not in kwargs:
+            kwargs["verbose"] = bool(verbose)
+
+        pmin, pmax, _ = estimate_sampling_bounds_fast(similarity_matrix, **kwargs)
+        sampling_fraction = 0.5 * (pmin + pmax)
+
+        if verbose:
+            print(f"Estimated sampling bounds: pmin={pmin:.4f}, pmax={pmax:.4f}")
+            print(f"Using sampling_fraction={sampling_fraction:.4f}")
+
     cv = EntryMaskSplit(
         n_repeats=n_repeats,
-        observed_fraction=observed_fraction,
+        sampling_fraction=sampling_fraction,
         random_state=random_state,
         missing_values=missing_values,
     )

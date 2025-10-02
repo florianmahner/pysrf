@@ -10,8 +10,8 @@ from .cross_validation import (
     mask_missing_entries,
 )
 from .bounds import (
-    estimate_p_bound,
-    estimate_p_bound_fast,
+    estimate_sampling_bounds,
+    estimate_sampling_bounds_fast,
     pmin_bound,
     p_upper_only_k,
 )
@@ -29,8 +29,8 @@ __all__: list[str] = [
     "ADMMGridSearchCV",
     "EntryMaskSplit",
     "mask_missing_entries",
-    "estimate_p_bound",
-    "estimate_p_bound_fast",
+    "estimate_sampling_bounds",
+    "estimate_sampling_bounds_fast",
     "pmin_bound",
     "p_upper_only_k",
 ]
