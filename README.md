@@ -66,52 +66,37 @@ model = SRF(rank=10, missing_values=np.nan)
 w = model.fit_transform(s)
 ```
 
-### Cross-Validation & Rank Selection
+### Cross-Validation, Ensemble, and Consensus
 
 ```python
-from pysrf import cross_val_score, estimate_sampling_bounds_fast
+from pysrf import cross_val_score
 
-# Estimate optimal sampling rate
-pmin, pmax, _ = estimate_sampling_bounds_fast(s, n_jobs=-1)
-sampling_rate = 0.5 * (pmin + pmax)
-
-# Find best rank
-grid = cross_val_score(
+# 1) Rank selection (auto-estimate sampling fraction)
+cv = cross_val_score(
     s,
-    param_grid={'rank': [5, 10, 15, 20]},
-    sampling_fraction=sampling_rate,
+    estimate_sampling_fraction=True,
+    param_grid={"rank": [5, 10, 15, 20]},
     n_repeats=5,
-    n_jobs=-1
+    n_jobs=-1,
 )
-print(f"Best rank: {grid.best_params_['rank']}")
+best_rank = cv.best_params_["rank"]
+
+# 2) Stable ensemble + consensus clustering
+from sklearn import pipeline
+from pysrf.consensus import EnsembleEmbedding, ClusterEmbedding
+from pysrf import SRF
+
+pipe = pipeline.Pipeline(
+    [
+        ("ensemble", EnsembleEmbedding(SRF(rank=best_rank), n_runs=50)),
+        ("cluster", ClusterEmbedding(min_clusters=2, max_clusters=6, step=1)),
+    ]
+)
+
+_ = pipe.fit(s)
+emb = pipe.transform(s)  # consensus embedding
 ```
 
-## Features
-
-- **ADMM optimization** with missing data support
-- **Cython-optimized** inner loop (10-50x faster than pure Python)
-- **Cross-validation** for hyperparameter tuning
-- **Rank estimation** via Random Matrix Theory (sampling bounds)
-- **Scikit-learn compatible** API
-- Full type hints (Python 3.10+)
-
-## Algorithm
-
-Solves symmetric NMF via ADMM:
-```
-min_{W≥0, V} ||M ⊙ (S - V)||²_F + ρ/2 ||V - WW^T||²_F
-```
-
-Based on: Shi et al. (2016) "Inexact Block Coordinate Descent Methods For Symmetric Nonnegative Matrix Factorization"
-
-## Development
-
-```bash
-make dev           # Setup environment
-make test          # Run tests (32 tests)
-make compile       # Compile Cython
-make format        # Format code
-```
 
 ### Publishing to PyPI
 
