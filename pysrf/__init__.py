@@ -15,6 +15,10 @@ from .bounds import (
     pmin_bound,
     p_upper_only_k,
 )
+from .consensus import (
+    EnsembleEmbedding,
+    ClusterEmbedding,
+)
 from .stability import (
     fit_stable,
     cluster_stable,
@@ -37,6 +41,8 @@ __all__: list[str] = [
     "estimate_sampling_bounds_fast",
     "pmin_bound",
     "p_upper_only_k",
+    "EnsembleEmbedding",
+    "ClusterEmbedding",
     "fit_stable",
     "cluster_stable",
 ]
