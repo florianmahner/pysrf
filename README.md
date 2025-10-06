@@ -1,49 +1,130 @@
-# srf
+# pysrf
 
-Similarity-based Representation Factorization (SRF).
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Installation
+Symmetric non-negative matrix factorization using ADMM optimization. Handles missing data, supports bounded constraints, and includes rank estimation via Random Matrix Theory.
 
+## Installation
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management and includes the `ml-toolkit` as a git subtree in the `srf/ml-toolkit` directory.
+### From Source
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/florianmahner/srf.git
-    cd srf
-    ```
+```bash
+git clone https://github.com/fmahner/pysrf.git
+cd pysrf
+poetry install
+make compile  # Strongly recommended for performance (10-50x speedup)
+```
 
-2.  **[Optional] If ml-toolkit directory is missing or needs updating:**
-    The ml-toolkit directory should be included when you clone the repository. However, if you need to add or update it manually:
-    ```bash
-    # To add the tools subtree if missing:
-    git subtree add --prefix=src/tools https://github.com/florianmahner/tools.git main --squash
+### As Git Subtree (for development integration)
 
-    # To update the tools subtree later:
-    git subtree pull --prefix=src/tools https://github.com/florianmahner/tools.git main --squash
-    ```
+```bash
+# Add as subtree in your project
+git subtree add --prefix=pysrf https://github.com/florianmahner/pysrf.git master --squash
 
-3.  **Install Poetry:**
-    Follow the instructions on the [official Poetry website](https://python-poetry.org/docs/#installation) if you don't have it installed.
+# Update subtree
+git subtree pull --prefix=pysrf https://github.com/florianmahner/pysrf.git master --squash
 
-4.  **Install dependencies:**
-    This command installs the main project dependencies and the ml-toolkit package:
-    ```bash
-    pyenv install 3.12.4
-    pyenv local 3.12.4
-    poetry env use $(pyenv which python)
-    poetry install
-    ```
+# Install from subtree
+cd pysrf && poetry install && make compile
+```
 
-### Project Structure
+### From PyPI (when released)
 
-- `srf/`: Main project code
-- `srf/ml-toolkit/`: Machine Learning toolkit (included as a git subtree) providing utilities for data handling, feature extraction, and analysis
+```bash
+# Stable release
+pip install pysrf
 
-### TODOs and Open Questions
+# Development version
+pip install --pre pysrf
+```
 
-This is kind of a project page where we can keep track of pending tasks and future development ideas.
+> **⚠️ Performance Note:** Cython compilation is **critical for speed**. Without it, a pure Python fallback is used but will be 10-50x slower. Requires `g++` compiler.
 
-- [ ] Scaling ambiguity in $S = W A H^T$. Normalizing columns?
-- [ ] Currently the project uses tri factor optimization based on block coordinate descent. ADMM might be more stable, not yet implemented
-- [ ] Rank selection not working yet.
+## Quick Start
+
+```python
+import numpy as np
+from pysrf import SRF
+
+# Generate data
+n, rank = 100, 10
+w_true = np.random.rand(n, rank)
+s = w_true @ w_true.T
+
+# Fit model
+model = SRF(rank=10, random_state=42)
+w = model.fit_transform(s)
+s_hat = model.reconstruct()
+```
+
+### With Missing Data
+
+```python
+s[mask] = np.nan  # Mark missing entries
+model = SRF(rank=10, missing_values=np.nan)
+w = model.fit_transform(s)
+```
+
+### Cross-Validation & Rank Selection
+
+```python
+from pysrf import cross_val_score, estimate_sampling_bounds_fast
+
+# Estimate optimal sampling rate
+pmin, pmax, _ = estimate_sampling_bounds_fast(s, n_jobs=-1)
+sampling_rate = 0.5 * (pmin + pmax)
+
+# Find best rank
+grid = cross_val_score(
+    s,
+    param_grid={'rank': [5, 10, 15, 20]},
+    sampling_fraction=sampling_rate,
+    n_repeats=5,
+    n_jobs=-1
+)
+print(f"Best rank: {grid.best_params_['rank']}")
+```
+
+## Features
+
+- **ADMM optimization** with missing data support
+- **Cython-optimized** inner loop (10-50x faster than pure Python)
+- **Cross-validation** for hyperparameter tuning
+- **Rank estimation** via Random Matrix Theory (sampling bounds)
+- **Scikit-learn compatible** API
+- Full type hints (Python 3.10+)
+
+## Algorithm
+
+Solves symmetric NMF via ADMM:
+```
+min_{W≥0, V} ||M ⊙ (S - V)||²_F + ρ/2 ||V - WW^T||²_F
+```
+
+Based on: Shi et al. (2016) "Inexact Block Coordinate Descent Methods For Symmetric Nonnegative Matrix Factorization"
+
+## Development
+
+```bash
+make dev           # Setup environment
+make test          # Run tests (32 tests)
+make compile       # Compile Cython
+make format        # Format code
+```
+
+### Publishing to PyPI
+
+```bash
+# Update version in pyproject.toml, then:
+poetry build                    # Build package
+poetry publish                  # Release stable version
+
+# For development releases (e.g., 0.1.0a1, 0.1.0b2)
+# Set version in pyproject.toml to "0.1.0a1" then:
+poetry build && poetry publish  # Users install with: pip install --pre pysrf
+```
+
+## License
+
+MIT
