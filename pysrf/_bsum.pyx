@@ -39,19 +39,19 @@ cdef inline double _dot_product(double[:] a, double[:] b) nogil:
 
 
 cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
-                                                double[:, ::1] x0,
+                                                double[:, ::1] w0,
                                                 int max_iter=100,
                                                 double tol=1e-6,
                                                 bint verbose=False):
-    cdef int n = x0.shape[0]
-    cdef int r = x0.shape[1]
-    cdef np.ndarray[DTYPE_t, ndim=2] x = np.array(x0, copy=True)
-    cdef np.ndarray[DTYPE_t, ndim=2] xtx = np.dot(x.T, x)
-    cdef np.ndarray[DTYPE_t, ndim=1] diag = np.einsum("ij,ij->i", x, x)
+    cdef int n = w0.shape[0]
+    cdef int r = w0.shape[1]
+    cdef np.ndarray[DTYPE_t, ndim=2] w = np.array(w0, copy=True)
+    cdef np.ndarray[DTYPE_t, ndim=2] wtw = np.dot(w.T, w)
+    cdef np.ndarray[DTYPE_t, ndim=1] diag = np.einsum("ij,ij->i", w, w)
     
-    cdef double[:, :] x_view = x
+    cdef double[:, :] w_view = w
     cdef double[:, :] m_view = m
-    cdef double[:, :] xtx_view = xtx
+    cdef double[:, :] wtw_view = wtw
     cdef double[:] diag_view = diag
     
     cdef double a = 4.0
@@ -62,11 +62,11 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
         max_delta = 0.0
         for i in range(n):
             for j in range(r):
-                old = x_view[i, j]
+                old = w_view[i, j]
                 b = 12.0 * old
-                c = 4.0 * ((diag_view[i] - m_view[i, i]) + xtx_view[j, j] + old * old)
+                c = 4.0 * ((diag_view[i] - m_view[i, i]) + wtw_view[j, j] + old * old)
                 
-                d = 4.0 * _dot_product(x_view[i, :], xtx_view[:, j]) - 4.0 * _dot_product(m_view[i, :], x_view[:, j])
+                d = 4.0 * _dot_product(w_view[i, :], wtw_view[:, j]) - 4.0 * _dot_product(m_view[i, :], w_view[:, j])
                 new = _quartic_root(a, b, c, d)
                 delta = new - old
                 
@@ -76,16 +76,16 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
                 diag_view[i] += new * new - old * old
 
                 for k in range(r):
-                    update_val = delta * x_view[i, k]
-                    xtx_view[j, k] += update_val
-                    xtx_view[k, j] += update_val
+                    update_val = delta * w_view[i, k]
+                    wtw_view[j, k] += update_val
+                    wtw_view[k, j] += update_val
                 
-                xtx_view[j, j] += delta * delta
+                wtw_view[j, j] += delta * delta
                 
-                x_view[i, j] = new
+                w_view[i, j] = new
         
         if max_delta < tol and tol > 0.0:
             break
     
-    return x
+    return w
 

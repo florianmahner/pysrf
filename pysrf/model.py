@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Callable
+from functools import lru_cache
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -62,7 +63,7 @@ def _dot(a: ndarray, b: ndarray) -> float:
 
 def update_w_python(
     m: ndarray,
-    x0: ndarray,
+    w0: ndarray,
     max_iter: int = 100,
     tol: float = 1e-6,
 ) -> ndarray:
@@ -80,20 +81,20 @@ def update_w_python(
     Returns:
         Optimized factor matrix
     """
-    x = x0.copy()
-    n, r = x.shape
-    xtx = x.T @ x
-    diag = np.einsum("ij,ij->i", x, x)
+    w = w0.copy()
+    n, r = w.shape
+    xtx = w.T @ w
+    diag = np.einsum("ij,ij->i", w, w)
     a = 4.0
 
     for it in range(max_iter):
         max_delta = 0.0
         for i in range(n):
             for j in range(r):
-                old = x[i, j]
+                old = w[i, j]
                 b = 12.0 * old
                 c = 4.0 * ((diag[i] - m[i, i]) + xtx[j, j] + old * old)
-                d = 4.0 * _dot(x[i], xtx[:, j]) - 4.0 * _dot(m[i], x[:, j])
+                d = 4.0 * _dot(w[i], xtx[:, j]) - 4.0 * _dot(m[i], w[:, j])
                 new = _quartic_root(a, b, c, d)
 
                 delta = new - old
@@ -102,31 +103,27 @@ def update_w_python(
 
                 # steps 7 - 13 in TABLE 1
                 diag[i] += new * new - old * old
-                update_row = delta * x[i]
+                update_row = delta * w[i]
                 xtx[j, :] += update_row
                 xtx[:, j] += update_row
                 xtx[j, j] += delta * delta
-                x[i, j] = new
+                w[i, j] = new
 
         if max_delta < tol and tol > 0.0:
             break
 
-    return x
+    return w
 
 
-_cached_update_w_function: Callable | None = None
-
-
+@lru_cache(maxsize=1)
 def _get_update_w_function() -> Callable:
     """Return the appropriate update_w function (Cython or Python fallback)."""
     try:
-        # Try to import pre-compiled Cython module first
         from ._bsum import update_w
 
         return update_w
     except ImportError:
         try:
-            # Fall back to pyximport (not multiprocessing-safe)
             import pyximport
             import os
 
@@ -145,7 +142,6 @@ def _get_update_w_function() -> Callable:
 
             return update_w
         except (ImportError, SystemExit, Exception):
-            # Fall back to Python implementation for multiprocessing compatibility
             import warnings
 
             warnings.warn(
@@ -189,7 +185,8 @@ def update_v_(
     # since this optimization problem is linear we can do a projection step here to respect the bounds
     if bound_min is not None or bound_max is not None:
         np.clip(v, bound_min, bound_max, out=v)
-    v[:] = 0.5 * (v + v.T)
+    v += v.T
+    v *= 0.5
 
 
 def update_lambda_(lam: ndarray, v: ndarray, x_hat: ndarray, rho: float) -> None:
@@ -371,10 +368,10 @@ class SRF(TransformerMixin, BaseEstimator):
         w = init_factor(x, self.rank, self.init, self.random_state)
         history = defaultdict(list)
 
-        update_w_func = _get_update_w_function()
+        update_w_ = _get_update_w_function()
 
         for i in range(1, self.max_outer + 1):
-            w = update_w_func(x, w, max_iter=self.max_inner, tol=self.tol)
+            w = update_w_(x, w, max_iter=self.max_inner, tol=self.tol)
 
             rec_error = np.linalg.norm(x - w @ w.T, "fro")
             evar = 1 - rec_error / np.linalg.norm(x, "fro")
@@ -406,31 +403,19 @@ class SRF(TransformerMixin, BaseEstimator):
         w = init_factor(x, self.rank, self.init, self.random_state)
         lam = np.zeros_like(x)
 
-        update_w_func = _get_update_w_function()
+        update_w_ = _get_update_w_function()
 
         v = x.copy()
         x_hat = w @ w.T
-        t = np.empty_like(x)
 
         for i in range(1, self.max_outer + 1):
-            t[:] = v + lam / self.rho
-
-            w = update_w_func(t, w, max_iter=self.max_inner, tol=self.tol)
+            w = update_w_(v + lam / self.rho, w, max_iter=self.max_inner, tol=self.tol)
             x_hat[:] = w @ w.T
 
             update_v_(
                 self._observation_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
             )
             update_lambda_(lam, v, x_hat, self.rho)
-
-            self.params["W"].append(w.min())
-            self.params["W_max"].append(w.max())
-            self.params["W_sum"].append(w.sum())
-            self.params["V"].append(v.min())
-            self.params["V_sum"].append(v.sum())
-
-            self.params["lam"].append(lam.min())
-            self.params["lam_sum"].append(lam.sum())
 
             metrics = self._compute_metrics(x, v, x_hat, lam)
             for key, value in metrics.items():
@@ -571,8 +556,16 @@ class SRF(TransformerMixin, BaseEstimator):
             Mean squared error of the reconstruction on observed entries.
         """
         check_is_fitted(self)
-        reconstruction = self.reconstruct()
-        mse = np.mean(
-            (x[self._observation_mask] - reconstruction[self._observation_mask]) ** 2
+
+        x = validate_data(
+            self,
+            x,
+            reset=False,
+            ensure_2d=True,
+            dtype=np.float64,
+            ensure_all_finite="allow-nan" if self.missing_values is np.nan else True,
         )
+        observation_mask = ~get_missing_mask(x, self.missing_values)
+        reconstruction = self.reconstruct()
+        mse = np.mean((x[observation_mask] - reconstruction[observation_mask]) ** 2)
         return mse
