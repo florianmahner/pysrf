@@ -39,6 +39,15 @@ pip install pysrf
 pip install --pre pysrf
 ```
 
+## Development
+
+```bash
+make dev           # Setup environment
+make test          # Run tests (32 tests)
+make compile       # Compile Cython
+make format        # Format code
+```
+
 > **⚠️ Performance Note:** Cython compilation is **critical for speed**. Without it, a pure Python fallback is used but will be 10-50x slower. Requires `g++` compiler.
 
 ## Quick Start
@@ -70,6 +79,10 @@ w = model.fit_transform(s)
 
 ```python
 from pysrf import cross_val_score
+# 2) Stable ensemble + consensus clustering
+from sklearn import pipeline
+from pysrf.consensus import EnsembleEmbedding, ClusterEmbedding
+from pysrf import SRF
 
 # 1) Rank selection (auto-estimate sampling fraction)
 cv = cross_val_score(
@@ -79,22 +92,15 @@ cv = cross_val_score(
     n_repeats=5,
     n_jobs=-1,
 )
-best_rank = cv.best_params_["rank"]
-
-# 2) Stable ensemble + consensus clustering
-from sklearn import pipeline
-from pysrf.consensus import EnsembleEmbedding, ClusterEmbedding
-from pysrf import SRF
 
 pipe = pipeline.Pipeline(
     [
-        ("ensemble", EnsembleEmbedding(SRF(rank=best_rank), n_runs=50)),
+        ("ensemble", EnsembleEmbedding(SRF(cv.best_params_), n_runs=50)),
         ("cluster", ClusterEmbedding(min_clusters=2, max_clusters=6, step=1)),
     ]
 )
 
-_ = pipe.fit(s)
-emb = pipe.transform(s)  # consensus embedding
+consensus_embedding = pipe.fit_ransform(s)  # consensus embedding
 ```
 
 
