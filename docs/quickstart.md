@@ -42,7 +42,7 @@ w = model.fit_transform(s)
 s_completed = model.reconstruct()
 ```
 
-## Cross-Validation
+## Cross-Validation to estimate the rank
 
 ### Manual Sampling Fraction
 
@@ -71,7 +71,7 @@ print(f"Best score: {result.best_score_:.4f}")
 
 ### Automatic Sampling Fraction Estimation
 
-The optimal sampling fraction can be automatically estimated using Random Matrix Theory:
+The optimal sampling fraction can be automatically estimated:
 
 ```python
 from pysrf import cross_val_score
