@@ -44,6 +44,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Examples: examples.md
   - Quick Start: quickstart.md
   - API Reference:
     - Model (SRF): api/model.md
