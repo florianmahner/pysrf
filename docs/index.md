@@ -4,7 +4,7 @@
 
 ## Overview
 
-`pysrf` implements symmetric non-negative matrix factorization using the Alternating Direction Method of Multipliers (ADMM). 
+`pysrf` implements symmetric non-negative matrix factorization using the Alternating Direction Method of Multipliers (SRF). 
 
 ## Installation
 
