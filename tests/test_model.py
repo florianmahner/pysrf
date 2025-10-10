@@ -145,3 +145,16 @@ def test_srf_different_init_methods():
         model.fit(s)
         assert hasattr(model, "w_")
         assert model.w_.shape == (n, rank)
+
+
+def test_monotonicity():
+    np.random.seed(42)
+    n, rank = 20, 5
+    s, _ = generate_symmetric_matrix(n, rank, noise_level=0.01, random_state=42)
+
+    model = SRF(rank=rank, max_outer=10, random_state=42)
+    model.fit(s)
+    assert np.all(model.w_ >= 0)
+
+    loss = model.history_["rec_error"]
+    assert np.all(np.diff(loss) <= 0)
