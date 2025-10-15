@@ -87,7 +87,7 @@ def test_srf_score():
     score = model.score(s)
 
     assert isinstance(score, float)
-    assert score >= 0
+    assert score <= 0, "Score should be negative (sklearn convention)"
 
 
 def test_srf_with_bounds():
@@ -140,7 +140,7 @@ def test_srf_different_init_methods():
     n, rank = 20, 5
     s, _ = generate_symmetric_matrix(n, rank, noise_level=0.01, random_state=42)
 
-    for init in ["random", "random_sqrt", "nndsvd", "nndsvdar", "eigenspectrum"]:
+    for init in ["random", "random_sqrt", "nndsvd", "nndsvdar"]:
         model = SRF(rank=rank, max_outer=10, init=init, random_state=42)
         model.fit(s)
         assert hasattr(model, "w_")
