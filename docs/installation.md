@@ -1,15 +1,9 @@
-# pysrf
+# Installation
 
+!!! warning "Cython Compilation"
+    For optimal performance (10-50x speedup), ensure Cython extensions are compiled during installation. You may need development tools installed.
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-<img src="assets/logo.png" alt="pysrf logo" width="200" align="right">
-
-Symmetric non-negative matrix factorization using SRF optimization. Handles missing data, supports bounded constraints, and includes rank estimation via cross-validation.
-
-## Installation
-
-### Automated Setup (Recommended)
+## Automated Setup (Recommended)
 
 The easiest way to set up the complete development environment:
 
@@ -30,11 +24,11 @@ This script will:
 
 Activate the environment with `poetry shell`.
 
-### Manual Installation
+## Manual Installation
 
 If you prefer manual setup or need more control:
 
-#### Step 1: Install Prerequisites
+### Step 1: Install Prerequisites
 
 ```bash
 # Install pyenv (if not already installed)
@@ -44,7 +38,7 @@ curl https://pyenv.run | bash
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-#### Step 2: Set Up Python Environment
+### Step 2: Set Up Python Environment
 
 ```bash
 # Install Python 3.12.4 (or your preferred version >=3.10)
@@ -52,14 +46,14 @@ pyenv install 3.12.4
 pyenv local 3.12.4
 ```
 
-#### Step 3: Install Dependencies
+### Step 3: Install Dependencies
 
 ```bash
 # Install dependencies with poetry
 poetry install
 ```
 
-#### Step 4: Compile Cython Extensions
+### Step 4: Compile Cython Extensions
 
 Cython compilation is critical for performance (10-50x speedup). Without it, a pure Python fallback is used.
 
@@ -80,9 +74,9 @@ The Makefile also provides other useful commands:
 
 Run `make help` for all available commands.
 
-### Alternative Installation Methods
+## Alternative Installation Methods
 
-#### From PyPI (Future)
+### From PyPI (Future)
 
 Once published to PyPI:
 
@@ -94,7 +88,7 @@ pip install pysrf
 pip install --pre pysrf
 ```
 
-#### As Git Subtree (For Development Integration)
+### As Git Subtree (For Development Integration)
 
 ```bash
 # Add as subtree in your project
@@ -107,24 +101,14 @@ git subtree pull --prefix=pysrf https://github.com/fmahner/pysrf.git master --sq
 cd pysrf && poetry install && make compile
 ```
 
-## Publishing to PyPI
+## Verify Installation
 
-Update version in `pyproject.toml`, then:
+```python
+import pysrf
+print(pysrf.__version__)
 
-```bash
-# Build and publish stable version
-poetry build
-poetry publish
-
-# For development releases (e.g., 0.1.0a1, 0.1.0b2)
-# Set version in pyproject.toml to "0.1.0a1" then:
-poetry build && poetry publish  # Users install with: pip install --pre pysrf
+# Check Cython compilation
+from pysrf.model import _get_update_w_function
+update_w = _get_update_w_function()
+print(f"Using: {update_w.__module__}")  # Should show _bsum if compiled
 ```
-
-## Documentation
-
-For examples, API reference, and guides, see the [documentation](https://fmahner.github.io/pysrf/).
-
-## License
-
-MIT
