@@ -19,7 +19,7 @@ from sklearn.utils.validation import (
     validate_data,
 )
 from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
-
+from scipy.optimize import brentq
 
 try:
     from ._bsum import update_w as _update_w_impl
@@ -75,7 +75,8 @@ def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float
 
 
 def _dot(a: np.ndarray, b: np.ndarray) -> float:
-    """Compute dot product of two arrays."""
+    """Compute dot product of two arrays. We use the naive dot-product to ensure
+    numerical equivalence to the Cython implementation."""
     return sum(x * y for x, y in zip(a, b))
 
 
@@ -99,16 +100,17 @@ def _initialize_w(
     method: str = "random_sqrt",
     random_state: int | np.random.RandomState | None = None,
     eps: float = 1e-6,
+    observed_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Initialize factor matrix W for symmetric NMF.
     
     Parameters
     ----------
-    X : ndarray of shape (n_samples, n_samples)
+    x : ndarray of shape (n_samples, n_samples)
         Symmetric input matrix (used for scaling in some methods)
-    n_components : int
-        Number of components (columns in W)
+    rank : int
+        Number of components (columns in w)
     method : {'random', 'random_sqrt', 'nndsvd', 'nndsvda', 'nndsvdar'}, \
              default='random_sqrt'
         Initialization strategy:
@@ -122,16 +124,14 @@ def _initialize_w(
         Controls random number generation
     eps : float, default=1e-6
         Small constant added to avoid exact zeros
+    observed_mask : ndarray of shape (n_samples, n_samples) or None, default=None
+        Binary mask indicating observed entries in the similarity matrix.
+        If None, all entries are considered observed.
     
     Returns
     -------
-    W : ndarray of shape (n_samples, n_components)
+    w : ndarray of shape (n_samples, n_components)
         Initialized non-negative factor matrix
-    
-    References
-    ----------
-    .. [1] Boutsidis & Gallopoulos (2008). "SVD based initialization:
-           A head start for nonnegative matrix factorization."
     """
     rng = np.random.RandomState(random_state)
     n_samples = x.shape[0]
@@ -139,7 +139,11 @@ def _initialize_w(
     if method == "random":
         w = 0.1 * rng.rand(n_samples, rank)
     elif method == "random_sqrt":
-        avg = np.sqrt(x.mean() / rank)
+        # Use nanmean to handle missing data
+        observed_mean = (
+            np.nanmean(x[observed_mask]) if observed_mask is not None else np.nanmean(x)
+        )
+        avg = 2.0 * np.sqrt(observed_mean / rank)
         w = rng.rand(n_samples, rank) * avg
 
     elif method in ("nndsvd", "nndsvda", "nndsvdar"):
@@ -229,7 +233,7 @@ def update_w(
     return w
 
 
-def update_v_(
+def update_v_frobenius_(
     observed_mask: np.ndarray,
     x: np.ndarray,
     x_hat: np.ndarray,
@@ -252,17 +256,126 @@ def update_v_(
         bound_max: Upper bound constraint
         v: Auxiliary variable to be updated in place
     """
-    v[:] = lam
-    v /= -rho
-    v += x_hat
+    v[:] = x_hat - (lam / rho)
+    idx = observed_mask
+    if idx.any():
+        v[idx] = (x[idx] + rho * x_hat[idx] - lam[idx]) / (1.0 + rho)
 
-    v[observed_mask] = (
-        x[observed_mask] + rho * x_hat[observed_mask] - lam[observed_mask]
-    ) / (1.0 + rho)
-
-    # since this optimization problem is linear we can do a projection step here to respect the bounds
-    if bound_min is not None or bound_max is not None:
+    if bound_min > -np.inf or bound_max < np.inf:
         np.clip(v, bound_min, bound_max, out=v)
+
+    v += v.T
+    v *= 0.5
+
+
+def update_v_kullback_leibler_(
+    observed_mask: np.ndarray,
+    x: np.ndarray,
+    x_hat: np.ndarray,
+    lam: np.ndarray,
+    rho: float,
+    bound_min: float,
+    bound_max: float,
+    v: np.ndarray,
+) -> None:
+    """
+    Update V for Generalized Kullback-Leibler Divergence.
+    Solves: min D_KL(X || V) + rho/2 ||V - Beta||^2
+    Result is a quadratic equation: rho*v^2 + (1 - rho*Beta)*v - x = 0
+    """
+    # --- 1. Unobserved Entries (Standard ADMM projection) ---
+    # v = beta = x_hat - lam/rho
+    v[:] = x_hat - (lam / rho)
+
+    # --- 2. Observed Entries (Quadratic Solution) ---
+    idx = observed_mask
+    if idx.any():
+        x_obs = x[idx]
+        lam_obs = lam[idx]
+        x_hat_obs = x_hat[idx]
+
+        # beta = x_hat - lam/rho
+        beta = x_hat_obs - (lam_obs / rho)
+
+        # Quadratic coeffs for: rho*v^2 + (1 - rho*beta)*v - x = 0
+        # a = rho (always positive)
+        b = 1.0 - rho * beta
+        c = -x_obs
+
+        # Determinant: sqrt(b^2 - 4ac)
+        # Since a>0 and c<=0 (because x>=0), 4ac <= 0, so delta >= b^2 >= 0.
+        # Roots are real. We need the positive root.
+        delta = np.sqrt(b * b - 4.0 * rho * c)
+
+        # Root = (-b + delta) / 2a
+        v[idx] = (-b + delta) / (2.0 * rho)
+
+    # --- 3. Symmetrize (KL is usually unbounded or >0) ---
+    # KL requires v > 0. The quadratic solution naturally provides v >= 0 if x >= 0.
+    # We clamp to epsilon to be safe against log(0) later.
+    np.clip(v, max(bound_min, 1e-12), bound_max, out=v)
+    v += v.T
+    v *= 0.5
+
+
+def update_v_bce_(
+    observed_mask: np.ndarray,
+    x: np.ndarray,
+    x_hat: np.ndarray,
+    lam: np.ndarray,
+    rho: float,
+    bound_min: float,
+    bound_max: float,
+    v: np.ndarray,
+) -> None:
+    """
+    Robust Vectorized Newton-Raphson for BCE.
+    Solves f'(v) = -x/v + (1-x)/(1-v) + rho*(v - beta) = 0
+    """
+    # 1. Unobserved entries: Standard ADMM projection (Frobenius penalty only)
+    v[:] = x_hat - (lam / rho)
+
+    # 2. Observed entries: Newton solver
+    idx = observed_mask
+    if idx.any():
+        x_obs = x[idx]
+        beta = x_hat[idx] - (lam[idx] / rho)
+
+        # Initial Guess: 0.5 is safe for BCE (avoid boundaries)
+        # Or projected beta clamped to (eps, 1-eps)
+        v_k = np.clip(beta, 0.01, 0.99)
+
+        # 5 iterations of Newton-Raphson is usually sufficient for machine precision
+        # f(v) = rho(v - beta) - x/v + (1-x)/(1-v) (derivative of Lagrangian)
+        # f'(v) = rho + x/v^2 + (1-x)/(1-v)^2      (Hessian of Lagrangian)
+
+        for _ in range(5):
+            # Safe calculation to prevent zero division
+            v_k_inv = 1.0 / v_k
+            v_k_inv_sq = v_k_inv * v_k_inv
+
+            v_comp = 1.0 - v_k
+            v_comp_inv = 1.0 / v_comp
+            v_comp_inv_sq = v_comp_inv * v_comp_inv
+
+            # Gradient value (f)
+            grad = rho * (v_k - beta) - (x_obs * v_k_inv) + ((1.0 - x_obs) * v_comp_inv)
+
+            # Hessian value (f_prime)
+            hess = rho + (x_obs * v_k_inv_sq) + ((1.0 - x_obs) * v_comp_inv_sq)
+
+            # Newton step
+            diff = grad / hess
+            v_k -= diff
+
+            # Safety clamp between steps to ensure v remains in (0, 1)
+            # This is crucial for BCE validity
+            np.clip(v_k, 1e-9, 1.0 - 1e-9, out=v_k)
+
+        v[idx] = v_k
+
+    # 3. Global Bounds and Symmetry
+    np.clip(v, bound_min, bound_max, out=v)
     v += v.T
     v *= 0.5
 
@@ -343,11 +456,6 @@ class SRF(TransformerMixin, BaseEstimator):
     >>> similarity_matrix[mask] = np.nan
     >>> model = SRF(rank=10, missing_values=np.nan)
     >>> w = model.fit_transform(similarity_matrix)
-
-    References
-    ----------
-    .. [1] Shi et al. (2016). "Inexact Block Coordinate Descent Methods For
-           Symmetric Nonnegative Matrix Factorization"
     """
 
     _parameter_constraints = {
@@ -363,6 +471,7 @@ class SRF(TransformerMixin, BaseEstimator):
         "random_state": ["random_state"],  # sklearn's special validator
         "missing_values": [None, Real, np.nan],
         "bounds": [None, tuple],
+        "loss": [StrOptions({"frobenius", "kullback-leibler", "bce"})],
     }
 
     def __init__(
@@ -377,6 +486,7 @@ class SRF(TransformerMixin, BaseEstimator):
         random_state: int | None = None,
         missing_values: float | None = np.nan,
         bounds: tuple[float, float] | None = (None, None),
+        loss: str = "frobenius",
     ) -> None:
         self.rank = rank
         self.rho = rho
@@ -388,70 +498,118 @@ class SRF(TransformerMixin, BaseEstimator):
         self.random_state = random_state
         self.missing_values = missing_values
         self.bounds = bounds
+        self.loss = loss
+
+    def _print_metrics(self, iteration: int, metrics: dict):
+        """Print metrics in a formatted way."""
+        if self.verbose > 0:
+            print(
+                f"Iter {iteration:4d}/{self.max_outer}: "
+                f"Obj={metrics['data_fit']:.2f} "
+                f"Primal={metrics['primal_residual']:.2f} "
+                f"Dual={metrics['dual_residual']:.2f} "
+                f"MSE={metrics['mse']:.4f} "
+                f"R\u00b2={metrics['quality']:.3f}",  # FIXME check if disabling or not
+                end="\r",
+            )
 
     def _compute_metrics(
-        self, x: np.ndarray, v: np.ndarray, x_hat: np.ndarray, lam: np.ndarray
+        self,
+        x: np.ndarray,
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray,
+        v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
-        """Compute comprehensive optimization metrics for monitoring."""
-        data_residual = x - v
+        """Compute optimization metrics for monitoring and convergence."""
+        mask = self._observation_mask
         primal_residual = v - x_hat
-        rec_residual = x - x_hat
 
-        observed_mask = self._observation_mask
-        data_fit = np.sum(data_residual[observed_mask] ** 2)
+        x_obs = x[mask]
+        x_hat_obs = x_hat[mask]
 
-        penalty_term = np.sum(primal_residual**2)
-        penalty = (self.rho / 2.0) * penalty_term
+        # Loss-specific data fit term (use x_hat for objective, v for ADMM constraint)
+        if self.loss == "frobenius":
+            data_fit = np.sum((x_obs - x_hat_obs) ** 2)
+        elif self.loss == "kullback-leibler":
+            v_obs = np.clip(v[mask], 1e-10, np.inf)
+            data_fit = np.sum(x_obs * np.log(x_obs / v_obs) - x_obs + v_obs)
+        elif self.loss == "bce":
+            # Standard BCE loss: -[s*log(v) + (1-s)*log(1-v)]
+            # v is a probability in (0, 1)
 
-        lagrangian = np.sum(lam * primal_residual)
-        total_obj = data_fit + penalty + lagrangian
+            # Clip v_obs to a safe range for logging
+            eps = 1e-10
+            v_obs = np.clip(v[mask], eps, 1.0 - eps)
 
-        rec_error = np.sqrt(np.sum(rec_residual[observed_mask] ** 2))
+            data_fit = -np.sum(
+                x_obs * np.log(v_obs) + (1.0 - x_obs) * np.log(1.0 - v_obs)
+            )
+        # Universal metrics (same for both losses)
+        mse = np.mean((x_obs - x_hat_obs) ** 2)
+        total_var = np.var(x_obs)
+        quality = 1.0 - mse / total_var if total_var > 0 else 0.0
 
-        if observed_mask.any():
-            observed_count = np.sum(observed_mask)
-            observed_mean = np.sum(x[observed_mask]) / observed_count
-            total_var = np.sum((x[observed_mask] - observed_mean) ** 2)
-            if total_var > 0:
-                residual_var = np.sum(rec_residual[observed_mask] ** 2)
-                evar = 1.0 - residual_var / total_var
-            else:
-                evar = 0.0
-        else:
-            evar = 0.0
+        primal_res = np.linalg.norm(primal_residual)
+        dual_res = self.rho * np.linalg.norm(v - v_old) if v_old is not None else np.inf
 
         return {
-            "total_objective": total_obj,
             "data_fit": data_fit,
-            "penalty": penalty,
-            "lagrangian": lagrangian,
-            "rec_error": rec_error,
-            "evar": evar,
+            "mse": mse,
+            "quality": quality,
+            "primal_residual": primal_res,
+            "dual_residual": dual_res,
         }
+
+    def _check_convergence(
+        self,
+        metrics: dict[str, float],
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray | None,
+    ) -> bool:
+        """Check ADMM convergence using primal and dual residuals."""
+        eps_abs = self.tol
+        eps_rel = 1e-4
+        n = v.size
+
+        eps_pri = np.sqrt(n) * eps_abs + eps_rel * max(
+            np.linalg.norm(v), np.linalg.norm(x_hat)
+        )
+
+        if lam is not None:
+            eps_dual = np.sqrt(n) * eps_abs + eps_rel * np.linalg.norm(lam)
+            return (
+                metrics["primal_residual"] <= eps_pri
+                and metrics["dual_residual"] <= eps_dual
+            )
+        else:
+            return metrics["primal_residual"] <= eps_pri
 
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
         """Fit model with complete data (no missing values)."""
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
+        w = _initialize_w(
+            x, self.rank, self.init, self.random_state, observed_mask=self._observation_mask
+        )
         history = defaultdict(list)
 
-        # TODO Compute metrics here too.
-
         for i in range(1, self.max_outer + 1):
+            # Update w and compute x_hat
             w = _update_w_impl(x, w, max_iter=self.max_inner, tol=self.tol)
+            x_hat = w @ w.T
 
-            rec_error = np.linalg.norm(x - w @ w.T, "fro")
-            evar = 1 - rec_error / np.linalg.norm(x, "fro")
+            # For complete data: v=x (original), so primal_residual = x - x_hat
+            metrics = self._compute_metrics(x, x, x_hat, lam=None)
 
-            history["rec_error"].append(rec_error)
-            history["evar"].append(evar)
+            for key, value in metrics.items():
+                history[key].append(value)
 
-            if self.verbose > 0:
-                print(
-                    f"Iteration {i}/{self.max_outer}, "
-                    f"Rec Error: {rec_error:.3f}, "
-                    f"Evar: {evar:.3f}",
-                    end="\r",
-                )
+            self._print_metrics(i, metrics)
+
+            if self._check_convergence(metrics, x, x_hat, lam=None):
+                if self.verbose > 0:
+                    print(f"\nConverged at iteration {i}")
+                break
 
         self.w_ = w
         self.components_ = w
@@ -461,39 +619,89 @@ class SRF(TransformerMixin, BaseEstimator):
         return self
 
     def _fit_missing_data(self, x: np.ndarray) -> SRF:
-        """Fit model with missing data using SRF."""
-        bound_min, bound_max = self.bounds
+        """Fit model with missing data using ADMM."""
+        # Set bounds for KL loss or default to data bounds
+        # Bounds setup
+        if self.loss == "kullback-leibler":
+            default_min, default_max = 1e-10, np.inf
+        else:
+            default_min = np.nanmin(x) if self._missing_mask.any() else x.min()
+            default_max = np.nanmax(x) if self._missing_mask.any() else x.max()
+
+        if self.bounds is None:
+            bound_min, bound_max = default_min, default_max
+        else:
+            bound_min = self.bounds[0] or default_min
+            bound_max = self.bounds[1] or default_max
+
+        if self.loss == "bce":
+            # For BCE, V is a probability and must be in (eps, 1-eps)
+            # Use a small epsilon for numerical stability in the solver.
+            eps = 1e-8
+            bound_min = eps
+            bound_max = 1.0 - eps
+
+            # Check if user-provided bounds are valid
+            if self.bounds is not None:
+                if self.bounds[0] is not None:
+                    bound_min = max(bound_min, self.bounds[0])
+                if self.bounds[1] is not None:
+                    bound_max = min(bound_max, self.bounds[1])
+
         history = defaultdict(list)
 
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
+        w = _initialize_w(
+            x, self.rank, self.init, self.random_state, observed_mask=self._observation_mask
+        )
         lam = np.zeros_like(x)
-
-        v = x.copy()
         x_hat = w @ w.T
 
+        v = x_hat.copy()
+        v = 0.5 * (v + v.T)
+        v[self._observation_mask] = x[self._observation_mask]
+
+        update_v_impl = {
+            "frobenius": update_v_frobenius_,
+            "kullback-leibler": update_v_kullback_leibler_,
+            "bce": update_v_bce_,
+        }[self.loss]
+
         for i in range(1, self.max_outer + 1):
+            v_old = v.copy()
+
+            # Update w and x_hat
             w = _update_w_impl(
                 v + lam / self.rho, w, max_iter=self.max_inner, tol=self.tol
             )
-            x_hat[:] = w @ w.T
+            np.matmul(w, w.T, out=x_hat)
 
-            update_v_(
-                self._observation_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
+            update_v_impl(
+                self._observation_mask,
+                x,
+                x_hat,
+                lam,
+                self.rho,
+                bound_min,
+                bound_max,
+                v,
             )
             update_lambda_(lam, v, x_hat, self.rho)
 
-            metrics = self._compute_metrics(x, v, x_hat, lam)
+            # Compute metrics using _compute_metrics
+            metrics = self._compute_metrics(x, v, x_hat, lam, v_old)
+
+            # Store metrics in history
             for key, value in metrics.items():
                 history[key].append(value)
 
-            if self.verbose > 0:
-                print(
-                    f"Iteration {i}/{self.max_outer}, "
-                    f"Objective: {metrics['total_objective']:.3f}, "
-                    f"Rec Error: {metrics['rec_error']:.3f}, "
-                    f"Evar: {metrics['evar']:.3f}, ",
-                    end="\r",
-                )
+            # Print verbose output
+            self._print_metrics(i, metrics)
+
+            # Convergence check
+            if i > 1 and self._check_convergence(metrics, v, x_hat, lam):
+                if self.verbose > 0:
+                    print(f"\nConverged at iteration {i}")
+                break
 
         self.w_ = w
         self.components_ = w
