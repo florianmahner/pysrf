@@ -15,6 +15,12 @@ from .bounds import (
     pmin_bound,
     p_upper_only_k,
 )
+
+try:
+    from ._vbsum import update_w_vbsum
+except ImportError:
+    from ._vbsum_reference import update_w_vbsum_python as update_w_vbsum
+
 from .consensus import (
     EnsembleEmbedding,
     ClusterEmbedding,
@@ -39,4 +45,5 @@ __all__: list[str] = [
     "p_upper_only_k",
     "EnsembleEmbedding",
     "ClusterEmbedding",
+    "update_w_vbsum",
 ]
