@@ -390,9 +390,14 @@ class SRF(TransformerMixin, BaseEstimator):
         self.bounds = bounds
 
     def _compute_metrics(
-        self, x: np.ndarray, v: np.ndarray, x_hat: np.ndarray, lam: np.ndarray
+        self,
+        x: np.ndarray,
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray,
+        v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
-        """Compute comprehensive optimization metrics for monitoring."""
+        """Compute comprehensive optimization metrics for monitoring and convergence."""
         data_residual = x - v
         primal_residual = v - x_hat
         rec_residual = x - x_hat
@@ -420,6 +425,9 @@ class SRF(TransformerMixin, BaseEstimator):
         else:
             evar = 0.0
 
+        primal_res = np.linalg.norm(primal_residual)
+        dual_res = self.rho * np.linalg.norm(v - v_old) if v_old is not None else np.inf
+
         return {
             "total_objective": total_obj,
             "data_fit": data_fit,
@@ -427,31 +435,63 @@ class SRF(TransformerMixin, BaseEstimator):
             "lagrangian": lagrangian,
             "rec_error": rec_error,
             "evar": evar,
+            "primal_residual": primal_res,
+            "dual_residual": dual_res,
         }
+
+    def _check_convergence(
+        self,
+        metrics: dict[str, float],
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray | None,
+    ) -> bool:
+        """Check ADMM convergence using primal and dual residuals."""
+        eps_abs = self.tol
+        eps_rel = 1e-4
+        n = v.size
+
+        eps_pri = np.sqrt(n) * eps_abs + eps_rel * max(
+            np.linalg.norm(v), np.linalg.norm(x_hat)
+        )
+
+        if lam is not None:
+            eps_dual = np.sqrt(n) * eps_abs + eps_rel * np.linalg.norm(lam)
+            return (
+                metrics["primal_residual"] <= eps_pri
+                and metrics["dual_residual"] <= eps_dual
+            )
+        else:
+            return metrics["primal_residual"] <= eps_pri
 
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
         """Fit model with complete data (no missing values)."""
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         history = defaultdict(list)
-
-        # TODO Compute metrics here too.
+        lam = np.zeros_like(x)
 
         for i in range(1, self.max_outer + 1):
             w = _update_w_impl(x, w, max_iter=self.max_inner, tol=self.tol)
+            x_hat = w @ w.T
 
-            rec_error = np.linalg.norm(x - w @ w.T, "fro")
-            evar = 1 - rec_error / np.linalg.norm(x, "fro")
+            # For complete data: v=x, so primal_residual = x - x_hat
+            metrics = self._compute_metrics(x, x, x_hat, lam)
 
-            history["rec_error"].append(rec_error)
-            history["evar"].append(evar)
+            for key, value in metrics.items():
+                history[key].append(value)
 
             if self.verbose > 0:
                 print(
                     f"Iteration {i}/{self.max_outer}, "
-                    f"Rec Error: {rec_error:.3f}, "
-                    f"Evar: {evar:.3f}",
+                    f"Rec Error: {metrics['rec_error']:.3f}, "
+                    f"Evar: {metrics['evar']:.3f}",
                     end="\r",
                 )
+
+            if self._check_convergence(metrics, x, x_hat, lam=None):
+                if self.verbose > 0:
+                    print(f"\nConverged at iteration {i}")
+                break
 
         self.w_ = w
         self.components_ = w
@@ -461,7 +501,7 @@ class SRF(TransformerMixin, BaseEstimator):
         return self
 
     def _fit_missing_data(self, x: np.ndarray) -> SRF:
-        """Fit model with missing data using SRF."""
+        """Fit model with missing data using ADMM."""
         bound_min, bound_max = self.bounds
         history = defaultdict(list)
 
@@ -472,6 +512,8 @@ class SRF(TransformerMixin, BaseEstimator):
         x_hat = w @ w.T
 
         for i in range(1, self.max_outer + 1):
+            v_old = v.copy()
+
             w = _update_w_impl(
                 v + lam / self.rho, w, max_iter=self.max_inner, tol=self.tol
             )
@@ -482,7 +524,7 @@ class SRF(TransformerMixin, BaseEstimator):
             )
             update_lambda_(lam, v, x_hat, self.rho)
 
-            metrics = self._compute_metrics(x, v, x_hat, lam)
+            metrics = self._compute_metrics(x, v, x_hat, lam, v_old)
             for key, value in metrics.items():
                 history[key].append(value)
 
@@ -491,9 +533,14 @@ class SRF(TransformerMixin, BaseEstimator):
                     f"Iteration {i}/{self.max_outer}, "
                     f"Objective: {metrics['total_objective']:.3f}, "
                     f"Rec Error: {metrics['rec_error']:.3f}, "
-                    f"Evar: {metrics['evar']:.3f}, ",
+                    f"Evar: {metrics['evar']:.3f}",
                     end="\r",
                 )
+
+            if i > 1 and self._check_convergence(metrics, v, x_hat, lam):
+                if self.verbose > 0:
+                    print(f"\nConverged at iteration {i}")
+                break
 
         self.w_ = w
         self.components_ = w
