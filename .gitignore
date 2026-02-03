@@ -48,8 +48,4 @@ site/
 Thumbs.db
 
 # Dev scripts (not for version control)
-test.py
-test_*.py
-!tests/test_*.py
-benchmark_*.py
 CLAUDE.md
