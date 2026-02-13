@@ -992,9 +992,7 @@ estimate_sampling_bounds_fast(). When enabled, overrides sampling_fraction.</p>
 
           <details class="quote">
             <summary>Source code in <code>pysrf/cross_validation.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-386">386</a></span>
-<span class="normal"><a href="#__codelineno-0-387">387</a></span>
-<span class="normal"><a href="#__codelineno-0-388">388</a></span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-388">388</a></span>
 <span class="normal"><a href="#__codelineno-0-389">389</a></span>
 <span class="normal"><a href="#__codelineno-0-390">390</a></span>
 <span class="normal"><a href="#__codelineno-0-391">391</a></span>
@@ -1109,124 +1107,126 @@ estimate_sampling_bounds_fast(). When enabled, overrides sampling_fraction.</p>
 <span class="normal"><a href="#__codelineno-0-500">500</a></span>
 <span class="normal"><a href="#__codelineno-0-501">501</a></span>
 <span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="k">def</span><span class="w"> </span><span class="nf">cross_val_score</span><span class="p">(</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="n">estimator</span><span class="p">:</span> <span class="n">BaseEstimator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="n">param_grid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="n">n_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="n">estimate_sampling_fraction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a>    <span class="n">sampling_selection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>    <span class="n">fit_final_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSearchCV</span><span class="p">:</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    Cross-validate any estimator for matrix completion.</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">    Generic cross-validation function that works with SRF or any sklearn-compatible</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">    estimator with a .reconstruct() method.</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">    similarity_matrix : ndarray</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">        Symmetric similarity matrix to cross-validate</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">    estimator : BaseEstimator or None, default=None</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        Estimator to cross-validate. If None, uses SRF(random_state=random_state).</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        Can be a single estimator or a Pipeline. Must have a .reconstruct() method.</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">    param_grid : dict or None, default=None</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        Dictionary with parameter names (str) as keys and lists of values to try</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        as values. If None, uses default {&#39;rank&#39;: [5, 10, 15, 20]} for SRF.</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">    n_repeats : int, default=5</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">        Number of times to repeat the cross-validation</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">    sampling_fraction : float, default=0.8</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        Fraction of eligible entries to use for training in each split; must be in (0, 1).</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        The remaining (1 - sampling_fraction) becomes validation.</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        Note: Constant diagonal entries are excluded from both train and validation.</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        Ignored when estimate_sampling_fraction is True or a dict; if both are provided,</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        estimate_sampling_fraction takes precedence.</span>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">    estimate_sampling_fraction : bool or dict, default=False</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">        If True, automatically estimate optimal sampling fraction using sampling</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">        bound estimation from Random Matrix Theory. If dict, passed as kwargs to</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        estimate_sampling_bounds_fast(). When enabled, overrides sampling_fraction.</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">    sampling_selection : str, default=&quot;mean&quot;</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        Selection method for the estimated sampling fraction; one of {&quot;mean&quot;, &quot;min&quot;, &quot;max&quot;}.</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    random_state : int, default=0</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        Random seed for reproducibility</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">    verbose : int, default=1</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        Verbosity level</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">    n_jobs : int, default=-1</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        Number of jobs to run in parallel (-1 uses all processors)</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    missing_values : float or None, default=np.nan</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        Value to consider as missing in original data</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">    fit_final_estimator : bool, default=False</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        Whether to fit the final estimator on the best parameters</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">    grid : GridSearchCV</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">        Fitted GridSearchCV object with best parameters and scores</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">    &gt;&gt;&gt; from pysrf.cross_validation import cross_val_score</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">    &gt;&gt;&gt; result = cross_val_score(similarity_matrix, param_grid={&#39;rank&#39;: [5, 10, 15]})</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>    <span class="k">if</span> <span class="n">estimator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="n">estimator</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="k">if</span> <span class="n">param_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>        <span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]}</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="n">valid_selections</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">}</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="k">if</span> <span class="n">sampling_selection</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_selections</span><span class="p">:</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="sa">f</span><span class="s2">&quot;sampling_selection must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">valid_selections</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="p">)</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="k">if</span> <span class="n">estimate_sampling_fraction</span><span class="p">:</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.bounds</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_sampling_bounds_fast</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="n">estimate_sampling_fraction</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimate_sampling_fraction</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>            <span class="k">else</span> <span class="p">{}</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="p">)</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="k">if</span> <span class="s2">&quot;n_jobs&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_jobs</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">pmin</span><span class="p">,</span> <span class="n">pmax</span><span class="p">,</span> <span class="n">s_noise</span> <span class="o">=</span> <span class="n">estimate_sampling_bounds_fast</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="n">sampling_fraction</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>            <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">pmin</span><span class="p">,</span> <span class="n">pmax</span><span class="p">]),</span>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="n">pmin</span><span class="p">,</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="n">pmax</span><span class="p">,</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="p">}[</span><span class="n">sampling_selection</span><span class="p">]</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="n">_validate_sampling_fraction</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">)</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="n">cv</span> <span class="o">=</span> <span class="n">EntryMaskSplit</span><span class="p">(</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="n">n_repeats</span><span class="o">=</span><span class="n">n_repeats</span><span class="p">,</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="n">sampling_fraction</span><span class="p">,</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="n">missing_values</span><span class="o">=</span><span class="n">missing_values</span><span class="p">,</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="p">)</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">grid</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="n">fit_final_estimator</span><span class="o">=</span><span class="n">fit_final_estimator</span><span class="p">,</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="p">)</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">grid</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">)</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">return</span> <span class="n">grid</span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="k">def</span><span class="w"> </span><span class="nf">cross_val_score</span><span class="p">(</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="n">estimator</span><span class="p">:</span> <span class="n">BaseEstimator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>    <span class="n">param_grid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="n">n_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="n">estimate_sampling_fraction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>    <span class="n">sampling_selection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a>    <span class="n">fit_final_estimator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSearchCV</span><span class="p">:</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">    Cross-validate any estimator for matrix completion.</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">    Generic cross-validation function that works with SRF or any sklearn-compatible</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">    estimator with a .reconstruct() method.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">    similarity_matrix : ndarray</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        Symmetric similarity matrix to cross-validate</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">    estimator : BaseEstimator or None, default=None</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        Estimator to cross-validate. If None, uses SRF(random_state=random_state).</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        Can be a single estimator or a Pipeline. Must have a .reconstruct() method.</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">    param_grid : dict or None, default=None</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        Dictionary with parameter names (str) as keys and lists of values to try</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">        as values. If None, uses default {&#39;rank&#39;: [5, 10, 15, 20]} for SRF.</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">    n_repeats : int, default=5</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        Number of times to repeat the cross-validation</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">    sampling_fraction : float, default=0.8</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        Fraction of eligible entries to use for training in each split; must be in (0, 1).</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        The remaining (1 - sampling_fraction) becomes validation.</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        Note: Constant diagonal entries are excluded from both train and validation.</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">        Ignored when estimate_sampling_fraction is True or a dict; if both are provided,</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">        estimate_sampling_fraction takes precedence.</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">    estimate_sampling_fraction : bool or dict, default=False</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        If True, automatically estimate optimal sampling fraction using sampling</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        bound estimation from Random Matrix Theory. If dict, passed as kwargs to</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        estimate_sampling_bounds_fast(). When enabled, overrides sampling_fraction.</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    sampling_selection : str, default=&quot;mean&quot;</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        Selection method for the estimated sampling fraction; one of {&quot;mean&quot;, &quot;min&quot;, &quot;max&quot;}.</span>
+<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">    random_state : int, default=0</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        Random seed for reproducibility</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">    verbose : int, default=1</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        Verbosity level</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">    n_jobs : int, default=-1</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        Number of jobs to run in parallel (-1 uses all processors)</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">    missing_values : float or None, default=np.nan</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        Value to consider as missing in original data</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">    fit_final_estimator : bool, default=False</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        Whether to fit the final estimator on the best parameters</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">    grid : GridSearchCV</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">        Fitted GridSearchCV object with best parameters and scores</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">    &gt;&gt;&gt; from pysrf.cross_validation import cross_val_score</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">    &gt;&gt;&gt; result = cross_val_score(similarity_matrix, param_grid={&#39;rank&#39;: [5, 10, 15]})</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="k">if</span> <span class="n">estimator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="n">estimator</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="k">if</span> <span class="n">param_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]}</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">valid_selections</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="k">if</span> <span class="n">sampling_selection</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid_selections</span><span class="p">:</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="sa">f</span><span class="s2">&quot;sampling_selection must be one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">valid_selections</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="p">)</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">if</span> <span class="n">estimate_sampling_fraction</span><span class="p">:</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.bounds</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_sampling_bounds_fast</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>            <span class="n">estimate_sampling_fraction</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimate_sampling_fraction</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>            <span class="k">else</span> <span class="p">{}</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="p">)</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="k">if</span> <span class="s2">&quot;n_jobs&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_jobs</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="n">pmin</span><span class="p">,</span> <span class="n">pmax</span><span class="p">,</span> <span class="n">s_noise</span> <span class="o">=</span> <span class="n">estimate_sampling_bounds_fast</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="n">sampling_fraction</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>            <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">pmin</span><span class="p">,</span> <span class="n">pmax</span><span class="p">]),</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="n">pmin</span><span class="p">,</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="n">pmax</span><span class="p">,</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>        <span class="p">}[</span><span class="n">sampling_selection</span><span class="p">]</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="n">_validate_sampling_fraction</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">)</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="n">cv</span> <span class="o">=</span> <span class="n">EntryMaskSplit</span><span class="p">(</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="n">n_repeats</span><span class="o">=</span><span class="n">n_repeats</span><span class="p">,</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="n">sampling_fraction</span><span class="p">,</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="n">missing_values</span><span class="o">=</span><span class="n">missing_values</span><span class="p">,</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="p">)</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">grid</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="n">fit_final_estimator</span><span class="o">=</span><span class="n">fit_final_estimator</span><span class="p">,</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="p">)</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">grid</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">)</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>    <span class="k">return</span> <span class="n">grid</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
