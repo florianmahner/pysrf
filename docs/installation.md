@@ -1,11 +1,13 @@
 # Installation
 
-!!! warning "Cython Compilation"
-    For optimal performance (10-50x speedup), ensure Cython extensions are compiled during installation. You may need development tools installed.
+!!! warning "Cython compilation"
+    Compiling the Cython extension gives a 10-50x speedup. Without it, pysrf
+    falls back to a pure Python implementation. Make sure you have a C compiler
+    installed before proceeding.
 
-## Automated Setup (Recommended)
+## Automated setup (recommended)
 
-The easiest way to set up the complete development environment:
+Clone the repository and run the setup script:
 
 ```bash
 git clone https://github.com/fmahner/pysrf.git
@@ -13,100 +15,106 @@ cd pysrf
 ./setup.sh
 ```
 
-This script will:
-1. Check for and install `pyenv` (if missing)
-2. Install `poetry` (if missing)
-3. Install Python 3.12.4 via `pyenv`
-4. Set the local Python version
-5. Install all dependencies via `poetry`
-6. Compile Cython extensions for 10-50x speedup
-7. Run the test suite
+The script performs the following steps:
 
-Activate the environment with `poetry shell`.
+1. Installs `pyenv` if it is not already present.
+2. Installs `poetry` if it is not already present.
+3. Installs Python 3.12.4 through `pyenv`.
+4. Sets the local Python version.
+5. Installs all dependencies through `poetry`.
+6. Compiles the Cython extension.
+7. Runs the test suite.
 
-## Manual Installation
-
-If you prefer manual setup or need more control:
-
-### Step 1: Install Prerequisites
+After the script finishes, activate the environment:
 
 ```bash
-# Install pyenv (if not already installed)
-curl https://pyenv.run | bash
+poetry shell
+```
 
-# Install poetry (if not already installed)
+## Manual installation
+
+### Install prerequisites
+
+Install pyenv and poetry if you do not have them:
+
+```bash
+curl https://pyenv.run | bash
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-### Step 2: Set Up Python Environment
+### Set up python
+
+Install Python 3.12.4 (or any version >=3.10) and pin it for this project:
 
 ```bash
-# Install Python 3.12.4 (or your preferred version >=3.10)
 pyenv install 3.12.4
 pyenv local 3.12.4
 ```
 
-### Step 3: Install Dependencies
+### Install dependencies
 
 ```bash
-# Install dependencies with poetry
 poetry install
 ```
 
-### Step 4: Compile Cython Extensions
+### Compile the Cython extension
 
-Cython compilation is critical for performance (10-50x speedup). Without it, a pure Python fallback is used.
+Use the Makefile target or run the build command directly:
 
 ```bash
-# Using the Makefile
 make compile
 
-# Or directly
+# or
 poetry run python setup.py build_ext --inplace
 ```
 
-The Makefile also provides other useful commands:
-- `make dev` - Install with dev dependencies and compile
-- `make test` - Run test suite
-- `make format` - Format code
-- `make clean` - Remove build artifacts
-- `make docs` - Build documentation
+The Makefile provides additional targets:
 
-## Alternative Installation Methods
+- `make dev`: install dev dependencies and compile Cython.
+- `make test`: run the test suite.
+- `make format`: format code with ruff.
+- `make clean`: remove build artifacts.
+- `make docs`: build documentation.
 
-### From PyPI (Future)
+## Alternative methods
 
-Once published to PyPI:
+### From PyPI (planned)
 
 ```bash
-# Stable release
 pip install pysrf
 
-# Development version
+# development version
 pip install --pre pysrf
 ```
 
-### As Git Subtree (For Development Integration)
+### As a git subtree
+
+Add pysrf as a subtree inside another project:
 
 ```bash
-# Add as subtree in your project
 git subtree add --prefix=pysrf https://github.com/fmahner/pysrf.git master --squash
+```
 
-# Update subtree
+Update the subtree:
+
+```bash
 git subtree pull --prefix=pysrf https://github.com/fmahner/pysrf.git master --squash
+```
 
-# Install from subtree
+Then install and compile:
+
+```bash
 cd pysrf && poetry install && make compile
 ```
 
-## Verify Installation
+## Verify the installation
 
 ```python
 import pysrf
 print(pysrf.__version__)
 
-# Check Cython compilation
+# Check whether the Cython extension is active
 from pysrf.model import _get_update_w_function
 update_w = _get_update_w_function()
-print(f"Using: {update_w.__module__}")  # Should show _bsum if compiled
+print(f"Using: {update_w.__module__}")  # _bsum if compiled
 ```

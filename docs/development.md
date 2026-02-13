@@ -1,87 +1,79 @@
-# Development Guide
+# Development
 
-## Setup Development Environment
+## Set up the development environment
 
-### Using the Setup Script
+### Automated setup
 
-The easiest way to set up the development environment:
+Run the setup script to install all tools and dependencies:
 
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-This script will:
-1. Install `pyenv` (if not present)
-2. Install Python 3.12.4
-3. Install Poetry
-4. Install all dependencies
-5. Compile Cython extensions
-6. Run tests
+The script installs pyenv, Python 3.12.4, Poetry, all dependencies, compiles
+the Cython extension, and runs the test suite.
 
-### Manual Setup
+### Manual setup
 
 ```bash
-# Install poetry
 curl -sSL https://install.python-poetry.org | python3 -
-
-# Install dependencies
 poetry install
-
-# Compile Cython extensions
 make compile
-
-# Run tests
 poetry run pytest
 ```
 
-## Makefile Commands
+## Makefile targets
 
-The project includes a Makefile for common development tasks:
+The Makefile provides shortcuts for common tasks:
 
 ```bash
-make dev           # Install with dev dependencies + compile Cython
-make compile       # Compile Cython extensions
-make test          # Run test suite
-make test-cov      # Run tests with coverage report
-make lint          # Run linter (ruff)
-make format        # Format code with ruff
-make clean         # Remove build artifacts
-make docs          # Build documentation
-make docs-serve    # Serve documentation locally
+make dev           # install dev dependencies and compile Cython
+make compile       # compile Cython extension
+make test          # run test suite
+make test-cov      # run tests with coverage report
+make lint          # run ruff linter
+make format        # format code with ruff
+make clean         # remove build artifacts
+make docs          # build documentation
+make docs-serve    # serve documentation locally
 ```
 
-## Running Tests
+## Run tests
+
+Run the full suite:
 
 ```bash
-# Run all tests
 make test
+```
 
-# Run with coverage
+Run tests with coverage:
+
+```bash
 make test-cov
+```
 
-# Run specific test file
+Run a specific test file or test function:
+
+```bash
 poetry run pytest tests/test_model.py -v
-
-# Run specific test
 poetry run pytest tests/test_model.py::test_srf_fit_complete_data -v
 ```
 
-## Code Quality
+## Code quality
 
-### Linting
+### Lint and format
+
+Check code quality and auto-format:
 
 ```bash
-# Check code quality
 make lint
-
-# Auto-format code
 make format
 ```
 
-### Type Checking
+### Type hints
 
-The codebase uses Python 3.10+ type hints:
+Use Python 3.10+ style type hints in all public functions:
 
 ```python
 from __future__ import annotations
@@ -90,42 +82,38 @@ def my_function(x: np.ndarray, rank: int = 10) -> tuple[np.ndarray, float]:
     ...
 ```
 
-## Cython Extensions
+## Cython extension
 
-The performance-critical inner loop is implemented in Cython (`_bsum.pyx`):
+The performance-critical inner loop lives in `_bsum.pyx`. Compile it with:
 
 ```bash
-# Compile Cython extensions
 make compile
 
-# Or directly
+# or
 poetry run python setup.py build_ext --inplace
 ```
 
-### Testing Cython vs Python
+Verify which implementation is active:
 
 ```python
 from pysrf.model import _get_update_w_function
 
 update_w = _get_update_w_function()
 print(f"Using: {update_w.__module__}")
-# Cython: _bsum
-# Python fallback: pysrf.model
+# _bsum    → Cython (fast)
+# pysrf.model → pure Python fallback
 ```
 
 ## Documentation
 
-### Building Docs
+### Build and preview
 
 ```bash
-# Build documentation
-make docs
-
-# Serve locally at http://127.0.0.1:8000
-make docs-serve
+make docs          # build docs
+make docs-serve    # serve locally at http://127.0.0.1:8000
 ```
 
-### Writing Docstrings
+### Docstring format
 
 Use NumPy-style docstrings:
 
@@ -139,14 +127,14 @@ def my_function(x: np.ndarray, param: int = 10) -> float:
     Parameters
     ----------
     x : ndarray
-        Description of x
+        Description of x.
     param : int, default=10
-        Description of param
+        Description of param.
 
     Returns
     -------
     result : float
-        Description of return value
+        Description of return value.
 
     Examples
     --------
@@ -159,66 +147,55 @@ def my_function(x: np.ndarray, param: int = 10) -> float:
 
 ## Contributing
 
-### Workflow
-
-1. Fork the repository
+1. Fork the repository.
 2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
+3. Make your changes.
 4. Run tests: `make test`
 5. Format code: `make format`
 6. Commit: `git commit -m "Add feature"`
 7. Push: `git push origin feature-name`
-8. Open a Pull Request
+8. Open a pull request.
 
 ### Guidelines
 
-- Write tests for new features
-- Maintain type hints
-- Update documentation
-- Keep changes focused
-- Follow existing code style
+- Write tests for new features.
+- Maintain type hints.
+- Update documentation.
+- Keep changes focused.
+- Follow existing code style.
 
-## Publishing
+## Publish to PyPI
 
-### PyPI Release
+Update the version in `pyproject.toml`, then build and publish:
 
 ```bash
-# Update version in pyproject.toml
 poetry version patch  # or minor, major
-
-# Build package
 make build
-
-# Publish to PyPI
 poetry publish
 ```
 
-### Development Release
+For a pre-release version:
 
 ```bash
-# Build with dev version
 poetry version prerelease
-
-# Publish to TestPyPI
 poetry publish -r testpypi
 ```
 
-## Project Structure
+## Project structure
 
 ```
 pysrf/
-├── pysrf/              # Main package
-│   ├── __init__.py    # Public API
-│   ├── model.py       # SRF class
+├── pysrf/              # main package
+│   ├── __init__.py     # public API
+│   ├── model.py        # SRF class
 │   ├── cross_validation.py
-│   ├── bounds.py      # Sampling bound estimation
-│   ├── utils.py       # Helper functions
-│   └── _bsum.pyx      # Cython extension
-├── tests/             # Test suite
-├── docs/              # Documentation
-├── setup.py           # Cython build (setuptools)
-├── Makefile           # Development commands
-├── pyproject.toml     # Poetry config
-└── README.md          # Project overview
+│   ├── bounds.py       # sampling-bound estimation
+│   ├── utils.py        # helper functions
+│   └── _bsum.pyx       # Cython extension
+├── tests/              # test suite
+├── docs/               # documentation
+├── setup.py            # Cython build (setuptools)
+├── Makefile            # development targets
+├── pyproject.toml      # project config
+└── README.md           # project overview
 ```
-
