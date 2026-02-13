@@ -22,7 +22,7 @@ def generate_test_matrix(n=30, rank=5, random_state=42):
 def test_pmin_bound():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, _, _, _, _ = pmin_bound(s, random_state=42, verbose=False)
+    pmin, _, _, _, _ = pmin_bound(s, random_state=42)
 
     assert isinstance(pmin, (float, np.floating))
     assert 0 <= pmin <= 1
@@ -32,7 +32,7 @@ def test_pmin_bound_verbose():
     s = generate_test_matrix(n=30, rank=5)
 
     pmin, pmin_bern, pmin_lower, pmin_alt, mc_norms = pmin_bound(
-        s, random_state=42, verbose=False
+        s, random_state=42,
     )
 
     assert isinstance(pmin, (float, np.floating))
@@ -66,7 +66,7 @@ def test_p_upper_only_k():
     s = generate_test_matrix(n=30, rank=5)
 
     k = 5
-    pmax = p_upper_only_k(s, k=k, method="dyson", verbose=False, seed=42)
+    pmax = p_upper_only_k(s, k=k, method="dyson", seed=42)
 
     assert isinstance(pmax, (float, np.floating))
     assert 0 <= pmax <= 1
@@ -85,7 +85,7 @@ def test_p_upper_only_k_invalid_k():
 def test_estimate_sampling_bounds():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, pmax, s_noise = estimate_sampling_bounds(s, verbose=False, random_state=42)
+    pmin, pmax, s_noise = estimate_sampling_bounds(s, random_state=42)
 
     assert isinstance(pmin, (float, np.floating))
     assert isinstance(pmax, (float, np.floating))
@@ -97,7 +97,7 @@ def test_estimate_sampling_bounds_fast():
     s = generate_test_matrix(n=30, rank=5)
 
     pmin, pmax, s_noise = estimate_sampling_bounds_fast(
-        s, verbose=False, random_state=42, n_jobs=1
+        s, random_state=42, n_jobs=1
     )
 
     assert isinstance(pmin, (float, np.floating))
@@ -116,7 +116,6 @@ def test_estimate_sampling_bounds_parameters():
         rho=0.9,
         method="dyson",
         omega=0.85,
-        verbose=False,
         random_state=42,
     )
 
@@ -133,10 +132,10 @@ def test_sampling_bounds_scale_with_rank():
     s_high_rank = generate_test_matrix(n=n, rank=20, random_state=seed)
 
     pmin_low, pmax_low, _ = estimate_sampling_bounds_fast(
-        s_low_rank, random_state=seed, verbose=False, n_jobs=1
+        s_low_rank, random_state=seed, n_jobs=1
     )
     pmin_high, pmax_high, _ = estimate_sampling_bounds_fast(
-        s_high_rank, random_state=seed, verbose=False, n_jobs=1
+        s_high_rank, random_state=seed, n_jobs=1
     )
 
     assert pmin_low < 1.0 and pmax_low < 1.0
@@ -156,7 +155,7 @@ def test_reconstruction_quality_at_estimated_bounds():
     s = generate_test_matrix(n=n, rank=true_rank, random_state=seed)
 
     pmin, pmax, _ = estimate_sampling_bounds_fast(
-        s, random_state=seed, verbose=False, n_jobs=1
+        s, random_state=seed, n_jobs=1
     )
 
     sampling_fraction = 0.5 * (pmin + pmax)
