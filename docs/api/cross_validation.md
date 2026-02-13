@@ -23,13 +23,7 @@
       heading_level: 3
 
 
-## Masking and Scoring
-
-::: pysrf.cross_validation.mask_missing_entries
-    options:
-      show_root_heading: true
-      show_source: true
-      heading_level: 3
+## Scoring
 
 ::: pysrf.cross_validation.fit_and_score
     options:

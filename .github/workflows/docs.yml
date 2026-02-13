@@ -30,9 +30,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Install dependencies
-        run: |
-          poetry install --only main --no-root
-          poetry install --only dev
+        run: poetry install -E dev --no-root
 
       - name: Build documentation
         run: poetry run mkdocs gh-deploy --force
