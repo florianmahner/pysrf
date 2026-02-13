@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from pysrf import (
     SRF,
     cross_val_score,

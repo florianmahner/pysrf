@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 
 from pysrf.model import update_w as update_w_python

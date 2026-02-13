@@ -7,7 +7,7 @@ from pysrf.bounds import (
     estimate_sampling_bounds_fast,
     lambda_bulk_dyson_raw,
 )
-from pysrf import SRF, cross_val_score
+from pysrf import SRF
 from pysrf import create_train_val_split
 
 
@@ -32,7 +32,8 @@ def test_pmin_bound_verbose():
     s = generate_test_matrix(n=30, rank=5)
 
     pmin, pmin_bern, pmin_lower, pmin_alt, mc_norms = pmin_bound(
-        s, random_state=42,
+        s,
+        random_state=42,
     )
 
     assert isinstance(pmin, (float, np.floating))
@@ -96,9 +97,7 @@ def test_estimate_sampling_bounds():
 def test_estimate_sampling_bounds_fast():
     s = generate_test_matrix(n=30, rank=5)
 
-    pmin, pmax, s_noise = estimate_sampling_bounds_fast(
-        s, random_state=42, n_jobs=1
-    )
+    pmin, pmax, s_noise = estimate_sampling_bounds_fast(s, random_state=42, n_jobs=1)
 
     assert isinstance(pmin, (float, np.floating))
     assert isinstance(pmax, (float, np.floating))
@@ -141,9 +140,9 @@ def test_sampling_bounds_scale_with_rank():
     assert pmin_low < 1.0 and pmax_low < 1.0
     assert pmin_high < 1.0 and pmax_high < 1.0
 
-    assert (
-        pmax_high > pmax_low
-    ), "Higher rank matrices should need higher sampling rates"
+    assert pmax_high > pmax_low, (
+        "Higher rank matrices should need higher sampling rates"
+    )
 
 
 def test_reconstruction_quality_at_estimated_bounds():
@@ -154,9 +153,7 @@ def test_reconstruction_quality_at_estimated_bounds():
 
     s = generate_test_matrix(n=n, rank=true_rank, random_state=seed)
 
-    pmin, pmax, _ = estimate_sampling_bounds_fast(
-        s, random_state=seed, n_jobs=1
-    )
+    pmin, pmax, _ = estimate_sampling_bounds_fast(s, random_state=seed, n_jobs=1)
 
     sampling_fraction = 0.5 * (pmin + pmax)
 
@@ -175,6 +172,6 @@ def test_reconstruction_quality_at_estimated_bounds():
     train_mask = ~validation_mask
     mse_train = np.mean((s[train_mask] - s_reconstructed[train_mask]) ** 2)
 
-    assert (
-        mse_train < 0.1
-    ), "Reconstruction should be accurate at estimated sampling rate"
+    assert mse_train < 0.1, (
+        "Reconstruction should be accurate at estimated sampling rate"
+    )

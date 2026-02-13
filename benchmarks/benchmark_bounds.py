@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import time
-from pathlib import Path
 
 from pysrf import bounds
 from pysrf import bounds_optimized

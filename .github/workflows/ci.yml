@@ -49,10 +49,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Install dependencies
-        run: poetry install -E dev --no-root
-
-      - name: Compile Cython extension
-        run: poetry run python setup.py build_ext --inplace
+        run: poetry install -E dev
 
       - name: Run tests
         run: poetry run pytest tests/ -v
