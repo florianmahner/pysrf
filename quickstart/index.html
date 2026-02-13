@@ -328,16 +328,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Basic Usage
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Basic Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#factorize-a-symmetric-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       Factorize a symmetric matrix
@@ -345,42 +335,22 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
-  <a href="#handling-missing-data" class="md-nav__link">
+  <a href="#handle-missing-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Handling Missing Data
+      Handle missing data
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#cross-validation-to-estimate-the-rank" class="md-nav__link">
+  <a href="#select-the-rank-with-cross-validation" class="md-nav__link">
     <span class="md-ellipsis">
-      Cross-Validation to estimate the rank
+      Select the rank with cross-validation
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Cross-Validation to estimate the rank">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#manual-sampling-fraction" class="md-nav__link">
-    <span class="md-ellipsis">
-      Manual Sampling Fraction
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -577,16 +547,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Basic Usage
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Basic Usage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#factorize-a-symmetric-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       Factorize a symmetric matrix
@@ -594,42 +554,22 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
-  <a href="#handling-missing-data" class="md-nav__link">
+  <a href="#handle-missing-data" class="md-nav__link">
     <span class="md-ellipsis">
-      Handling Missing Data
+      Handle missing data
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#cross-validation-to-estimate-the-rank" class="md-nav__link">
+  <a href="#select-the-rank-with-cross-validation" class="md-nav__link">
     <span class="md-ellipsis">
-      Cross-Validation to estimate the rank
+      Select the rank with cross-validation
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Cross-Validation to estimate the rank">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#manual-sampling-fraction" class="md-nav__link">
-    <span class="md-ellipsis">
-      Manual Sampling Fraction
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -652,9 +592,14 @@
   
 
 
-<h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
-<h3 id="factorize-a-symmetric-matrix">Factorize a symmetric matrix<a class="headerlink" href="#factorize-a-symmetric-matrix" title="Permanent link">&para;</a></h3>
+<h1 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
+<p>This guide walks you through the core pysrf workflows: factorizing a
+similarity matrix, handling missing data, and selecting the factorization rank
+with cross-validation.</p>
+<h2 id="factorize-a-symmetric-matrix">Factorize a symmetric matrix<a class="headerlink" href="#factorize-a-symmetric-matrix" title="Permanent link">&para;</a></h2>
+<p>Create an <code>SRF</code> model, choose a rank, and call <code>fit_transform</code> to obtain the
+non-negative embedding <strong>W</strong>. The reconstruction <strong>WW</strong>ᵀ approximates the
+original matrix.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -674,33 +619,43 @@
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">score</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reconstruction error: </span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="handling-missing-data">Handling Missing Data<a class="headerlink" href="#handling-missing-data" title="Permanent link">&para;</a></h2>
+<p>The <code>score</code> method returns the Frobenius-norm reconstruction error, which you
+can use to compare models at different ranks.</p>
+<h2 id="handle-missing-data">Handle missing data<a class="headerlink" href="#handle-missing-data" title="Permanent link">&para;</a></h2>
+<p>Pass a matrix that contains <code>NaN</code> entries. Set <code>missing_values=np.nan</code> so the
+model ignores those positions during fitting and fills them in during
+reconstruction.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Matrix with missing values (NaN)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Matrix with 30% missing values</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">s</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>  <span class="c1"># 30% missing</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">s</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Model handles missing data automatically</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Fit — missing entries are excluded automatically</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">missing_values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">s_completed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
 </code></pre></div>
-<h2 id="cross-validation-to-estimate-the-rank">Cross-Validation to estimate the rank<a class="headerlink" href="#cross-validation-to-estimate-the-rank" title="Permanent link">&para;</a></h2>
-<h3 id="manual-sampling-fraction">Manual Sampling Fraction<a class="headerlink" href="#manual-sampling-fraction" title="Permanent link">&para;</a></h3>
+<p>The completed matrix <code>s_completed</code> contains predicted values in place of the
+original <code>NaN</code> entries.</p>
+<h2 id="select-the-rank-with-cross-validation">Select the rank with cross-validation<a class="headerlink" href="#select-the-rank-with-cross-validation" title="Permanent link">&para;</a></h2>
+<p>Use <code>cross_val_score</code> to evaluate a grid of candidate ranks. The function
+holds out a fraction of observed entries, fits the model on the rest, and
+scores reconstruction quality on the held-out set.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Define parameter grid</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rank&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]})</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best parameters: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">best_params_</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best score: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">]})</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best parameters: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">best_params_</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best score: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
+<p>For a deeper dive into cross-validation options, sampling-bound estimation,
+and ensemble clustering, see the <a href="../examples/">Examples</a> page.</p>
 
 
 

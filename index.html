@@ -282,18 +282,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#key-features" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
+      Key features
     </span>
   </a>
   
@@ -302,7 +293,7 @@
         <li class="md-nav__item">
   <a href="#quick-example" class="md-nav__link">
     <span class="md-ellipsis">
-      Quick Example
+      Quick example
     </span>
   </a>
   
@@ -311,7 +302,7 @@
         <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next Steps
+      Next steps
     </span>
   </a>
   
@@ -554,18 +545,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#key-features" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
+      Key features
     </span>
   </a>
   
@@ -574,7 +556,7 @@
         <li class="md-nav__item">
   <a href="#quick-example" class="md-nav__link">
     <span class="md-ellipsis">
-      Quick Example
+      Quick example
     </span>
   </a>
   
@@ -583,7 +565,7 @@
         <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next Steps
+      Next steps
     </span>
   </a>
   
@@ -609,12 +591,25 @@
 
 
 <h1 id="pysrf">pysrf<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
-<p><strong>Similarity-Based Representation Factorization (SRF)</strong> </p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>pysrf</code> implements symmetric non-negative matrix factorization using the Alternating Direction Method of Multipliers (SRF). </p>
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>See the <a href="installation/">Installation Guide</a> for detailed instructions.</p>
-<h2 id="quick-example">Quick Example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
+<p><strong>Symmetric non-negative matrix factorization with ADMM optimization.</strong></p>
+<p>pysrf decomposes a symmetric similarity matrix <strong>S</strong> into a low-rank
+non-negative embedding <strong>W</strong> such that <strong>S</strong> ≈ <strong>WW</strong>ᵀ. It handles missing
+data, supports bounded constraints on reconstructed values, and estimates the
+factorization rank through cross-validation.</p>
+<h2 id="key-features">Key features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Missing data</strong>: factorize matrices with missing entries (NaN) and recover
+  a completed matrix.</li>
+<li><strong>Bounded reconstruction</strong>: constrain reconstructed values to a range such
+  as [0, 1].</li>
+<li><strong>Rank estimation</strong>: select the factorization rank with built-in
+  cross-validation and sampling-bound estimation.</li>
+<li><strong>Ensemble clustering</strong>: build stable consensus embeddings from multiple
+  factorization runs.</li>
+<li><strong>Fast ADMM solver</strong>: Cython-accelerated inner loop provides 10-50x speedup
+  over pure Python.</li>
+</ul>
+<h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -622,20 +617,20 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>  <span class="c1"># make symmetric</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Fit model</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Fit the model</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_outer</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">embedding</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Reconstruct</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">s_reconstructed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
 </code></pre></div>
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="installation/">Installation Guide</a> - Setup instructions</li>
-<li><a href="examples/">Examples</a> - Usage examples and workflows</li>
-<li><a href="quickstart/">Quick Start Guide</a> - Detailed tutorials</li>
-<li><a href="api/model/">API Reference</a> - Complete API documentation</li>
-<li><a href="development/">Development Guide</a> - Contributing guidelines</li>
+<li><a href="installation/">Installation</a>: set up pysrf and compile Cython extensions.</li>
+<li><a href="quickstart/">Quick start</a>: walk through core workflows step by step.</li>
+<li><a href="examples/">Examples</a>: explore advanced features and full pipelines.</li>
+<li><a href="api/model/">API reference</a>: browse the complete API.</li>
+<li><a href="development/">Development</a>: contribute to pysrf.</li>
 </ul>
 
 
