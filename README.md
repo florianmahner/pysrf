@@ -1,50 +1,39 @@
-# pysrf
+<p align="center">
+  <img src="assets/logo.png" alt="pysrf" width="200">
+</p>
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-<img src="assets/logo.png" alt="pysrf logo" width="200" align="right">
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://florianmahner.github.io/pysrf/"><img src="https://img.shields.io/badge/docs-online-green.svg" alt="Documentation"></a>
+</p>
 
-Discover interpretable dimensions from representational similarities.
-pysrf decomposes a symmetric similarity matrix $S$ into sparse,
-non-negative dimensions $W$ such that $S \approx WW^\top$. It handles
-incomplete data, estimates the number of dimensions through
-cross-validation, and produces stable consensus embeddings.
+---
 
-## Installation
+Sparse non-negative factorization of similarity matrices: $S \approx WW^\top$.
+Handles missing data, estimates dimensionality via cross-validation, and
+produces stable consensus embeddings.
+
+## Install
 
 ```bash
-git clone https://github.com/fmahner/pysrf.git
-cd pysrf
-./setup.sh
+git clone https://github.com/florianmahner/pysrf.git && cd pysrf && ./setup.sh
 ```
 
-See the [installation guide](https://fmahner.github.io/pysrf/installation/)
-for manual setup, alternative methods, and troubleshooting.
-
-## Quick example
+## Usage
 
 ```python
-import numpy as np
 from pysrf import SRF
 
-s = np.random.rand(100, 100)
-s = (s + s.T) / 2
-
-model = SRF(rank=10, max_outer=20, random_state=42)
+model = SRF(rank=10, random_state=42)
 w = model.fit_transform(s)
-s_reconstructed = model.reconstruct()
 ```
 
-## Documentation
+## Docs
 
-For the full guide, including examples, API reference, cross-validation, and
-ensemble clustering, see the [documentation](https://fmahner.github.io/pysrf/).
+Full guide at **[florianmahner.github.io/pysrf](https://florianmahner.github.io/pysrf/)**.
 
 ## Reference
 
 Mahner, F. P.\*, Lam, K. C.\*, & Hebart, M. N. (2025). Interpretable
 dimensions from sparse representational similarities. *In preparation*.
-
-## License
-
-MIT
