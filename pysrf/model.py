@@ -513,7 +513,9 @@ class SRF(TransformerMixin, BaseEstimator):
         v = x.copy()
         x_hat = w @ w.T
 
-        pbar = trange(1, self.max_outer + 1, disable=not self.verbose, desc="SRF (ADMM)")
+        pbar = trange(
+            1, self.max_outer + 1, disable=not self.verbose, desc="SRF (ADMM)"
+        )
         for i in pbar:
             v_old = v.copy()
 

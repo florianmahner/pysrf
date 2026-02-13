@@ -1,8 +1,8 @@
 """Setup script for pysrf with Cython extension compilation."""
+
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import numpy as np
-import sys
 
 
 class BuildExtWithFallback(build_ext):

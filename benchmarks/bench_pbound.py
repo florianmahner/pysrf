@@ -66,7 +66,7 @@ def main():
         try:
             best_time, mean_time = benchmark_pbound(n, args.number, args.repeat)
             results.append((n, best_time, mean_time))
-            print(f"Best: {best_time*1e3:.3f}ms, Mean: {mean_time*1e3:.3f}ms")
+            print(f"Best: {best_time * 1e3:.3f}ms, Mean: {mean_time * 1e3:.3f}ms")
         except Exception as e:
             print(f"Failed: {e}")
 
@@ -75,7 +75,7 @@ def main():
         print("N\tBest(ms)\tMean(ms)")
         print("-" * 30)
         for n, best_time, mean_time in results:
-            print(f"{n}\t{best_time*1e3:.3f}\t\t{mean_time*1e3:.3f}")
+            print(f"{n}\t{best_time * 1e3:.3f}\t\t{mean_time * 1e3:.3f}")
 
 
 if __name__ == "__main__":

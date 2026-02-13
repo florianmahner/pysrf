@@ -330,7 +330,9 @@ class GridSearchCV:
 
         logger.info(
             "Running %d jobs (%d params x %d CV splits)",
-            len(all_jobs), len(param_grid), len(cv_splits),
+            len(all_jobs),
+            len(param_grid),
+            len(cv_splits),
         )
 
         all_results = Parallel(n_jobs=self.n_jobs, verbose=self.verbose)(
