@@ -32,6 +32,7 @@ theme:
     - content.code.annotate
     - content.tooltips
     - navigation.tabs
+    - navigation.sections
     - navigation.path
     - navigation.top
     - navigation.footer
@@ -80,11 +81,12 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Quick Start: quickstart.md
-  - Examples: examples.md
-  - API Reference:
+  - Get started:
+    - Installation: installation.md
+    - Quick start: quickstart.md
+    - Examples: examples.md
+  - API reference:
     - Model (SRF): api/model.md
-    - Cross-Validation: api/cross_validation.md
-    - Sampling Bounds: api/bounds.md
+    - Cross-validation: api/cross_validation.md
+    - Sampling bounds: api/bounds.md
   - Development: development.md
