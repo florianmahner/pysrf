@@ -3,9 +3,12 @@
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-A31F34?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://florianmahner.github.io/pysrf/"><img src="https://img.shields.io/badge/docs-online-2ea44f?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Documentation"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License: MIT"></a>
+  <a href="https://florianmahner.github.io/pysrf/"><img src="https://img.shields.io/badge/docs-online-43B02A?style=flat-square&logo=readthedocs&logoColor=white" alt="Documentation"></a>
+  <a href="https://github.com/florianmahner/pysrf/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/florianmahner/pysrf/ci.yml?style=flat-square&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-261230?style=flat-square&logo=ruff&logoColor=D7FF64" alt="ruff"></a>
+  <a href="https://github.com/pre-commit/pre-commit"><img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?style=flat-square&logo=pre-commit&logoColor=white" alt="pre-commit"></a>
 </p>
 
 ---
