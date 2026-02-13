@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # pysrf
 
 **Discover interpretable dimensions from representational similarities.**
