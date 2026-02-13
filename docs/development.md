@@ -35,8 +35,8 @@ make test-cov      # run tests with coverage report
 make lint          # run ruff linter
 make format        # format code with ruff
 make clean         # remove build artifacts
-make docs          # build documentation
-make docs-serve    # serve documentation locally
+make docs          # build documentation with zensical
+make docs-serve    # serve documentation locally with zensical
 ```
 
 ## Run tests
@@ -107,6 +107,9 @@ print(f"Using: {update_w.__module__}")
 ## Documentation
 
 ### Build and preview
+
+pysrf uses [zensical](https://zensical.org) for documentation. Build and
+preview locally:
 
 ```bash
 make docs          # build docs

@@ -4,10 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <img src="assets/logo.png" alt="pysrf logo" width="200" align="right">
 
-Symmetric non-negative matrix factorization using ADMM optimization. Decomposes a
-similarity matrix **S** into a low-rank non-negative embedding **W** such that
-**S** ≈ **WW**ᵀ. Handles missing data, supports bounded constraints, and
-includes rank estimation through cross-validation.
+Discover interpretable dimensions from representational similarities.
+pysrf decomposes a symmetric similarity matrix $S$ into sparse,
+non-negative dimensions $W$ such that $S \approx WW^\top$. It handles
+incomplete data, estimates the number of dimensions through
+cross-validation, and produces stable consensus embeddings.
 
 ## Installation
 
@@ -38,6 +39,11 @@ s_reconstructed = model.reconstruct()
 
 For the full guide, including examples, API reference, cross-validation, and
 ensemble clustering, see the [documentation](https://fmahner.github.io/pysrf/).
+
+## Reference
+
+Mahner, F. P.\*, Lam, K. C.\*, & Hebart, M. N. (2025). Interpretable
+dimensions from sparse representational similarities. *In preparation*.
 
 ## License
 

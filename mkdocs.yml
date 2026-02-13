@@ -1,5 +1,5 @@
 site_name: pysrf
-site_description: Symmetric Representation Factorization for matrix completion and rank estimation
+site_description: Discover interpretable dimensions from representational similarities
 site_author: Florian Mahner
 site_url: https://florianmahner.github.io/pysrf/
 repo_url: https://github.com/florianmahner/pysrf
@@ -37,9 +37,14 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
   - tables
   - toc:
       permalink: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
@@ -51,4 +56,3 @@ nav:
     - Cross-Validation: api/cross_validation.md
     - Sampling Bounds: api/bounds.md
   - Development: development.md
-

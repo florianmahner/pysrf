@@ -33,6 +33,7 @@ jobs:
         run: poetry run ruff format --check pysrf/ tests/
 
   test:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,4 +81,4 @@ jobs:
           vale docs/ README.md
 
       - name: Build documentation
-        run: poetry run mkdocs build
+        run: poetry run zensical build
