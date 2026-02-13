@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import logging
+
+logging.getLogger("pysrf").addHandler(logging.NullHandler())
+
 from .model import SRF
 from .cross_validation import (
     cross_val_score,

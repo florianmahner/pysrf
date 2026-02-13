@@ -28,7 +28,7 @@ echo "📚 Installing dependencies with Poetry..."
 poetry install
 
 echo "⚙️  Compiling Cython extensions..."
-poetry run pysrf-compile || echo "⚠️  Cython compilation failed, will use Python fallback"
+make compile || echo "⚠️  Cython compilation failed, will use Python fallback"
 
 echo "🧪 Running tests..."
 poetry run pytest tests/ -v

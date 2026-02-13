@@ -7,7 +7,11 @@ matrix factorization, including entry-wise masking strategies and grid search.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 import pandas as pd
 from sklearn.base import BaseEstimator, clone
 from sklearn.model_selection import BaseCrossValidator, ParameterGrid
@@ -324,10 +328,10 @@ class GridSearchCV:
             for params in param_grid
         ]
 
-        if self.verbose:
-            print(
-                f"Running {len(all_jobs)} jobs ({len(param_grid)} params x {len(cv_splits)} CV splits)"
-            )
+        logger.info(
+            "Running %d jobs (%d params x %d CV splits)",
+            len(all_jobs), len(param_grid), len(cv_splits),
+        )
 
         all_results = Parallel(n_jobs=self.n_jobs, verbose=self.verbose)(
             delayed(fit_and_score)(
@@ -468,8 +472,7 @@ def cross_val_score(
             kwargs["random_state"] = random_state
         if "n_jobs" not in kwargs:
             kwargs["n_jobs"] = n_jobs
-        if "verbose" not in kwargs:
-            kwargs["verbose"] = bool(verbose)
+        kwargs.pop("verbose", None)
 
         pmin, pmax, s_noise = estimate_sampling_bounds_fast(similarity_matrix, **kwargs)
         sampling_fraction = {
