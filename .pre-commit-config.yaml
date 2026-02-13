@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: vale
+        name: vale
+        entry: vale docs/ README.md
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mkdocs-build
+        name: mkdocs build
+        entry: poetry run mkdocs build --strict
+        language: system
+        pass_filenames: false
+        always_run: true

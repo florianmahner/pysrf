@@ -4,9 +4,9 @@ import numpy as np
 import os
 
 # Set up pyximport for Cython compilation
-os.environ[
-    "CPPFLAGS"
-] = f"-I{np.get_include()} -DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION"
+os.environ["CPPFLAGS"] = (
+    f"-I{np.get_include()} -DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION"
+)
 import pyximport
 
 pyximport.install(
@@ -102,7 +102,7 @@ def main():
         print("-" * 50)
         for n, r, cython_time, python_time, speedup in results:
             print(
-                f"{n}\t{r}\t{cython_time*1e3:.3f}\t\t{python_time*1e3:.3f}\t\t{speedup:.1f}x"
+                f"{n}\t{r}\t{cython_time * 1e3:.3f}\t\t{python_time * 1e3:.3f}\t\t{speedup:.1f}x"
             )
 
 
