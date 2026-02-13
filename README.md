@@ -17,6 +17,10 @@ Sparse non-negative factorization of similarity matrices: $S \approx WW^\top$.
 Handles missing data, estimates dimensionality via cross-validation, and
 produces stable consensus embeddings.
 
+<p align="center">
+  <img src="assets/factorization.svg" alt="S ≈ W × Wᵀ factorization diagram" width="800">
+</p>
+
 ## Install
 
 ```bash
