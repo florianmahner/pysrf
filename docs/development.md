@@ -29,7 +29,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry install
 
 # Compile Cython extensions
-poetry run pysrf-compile
+make compile
 
 # Run tests
 poetry run pytest
@@ -40,15 +40,13 @@ poetry run pytest
 The project includes a Makefile for common development tasks:
 
 ```bash
-make help          # Show all available commands
 make dev           # Install with dev dependencies + compile Cython
 make compile       # Compile Cython extensions
 make test          # Run test suite
 make test-cov      # Run tests with coverage report
-make lint          # Run linters (ruff + black)
-make format        # Format code with black
+make lint          # Run linter (ruff)
+make format        # Format code with ruff
 make clean         # Remove build artifacts
-make build         # Build distribution package
 make docs          # Build documentation
 make docs-serve    # Serve documentation locally
 ```
@@ -101,7 +99,7 @@ The performance-critical inner loop is implemented in Cython (`_bsum.pyx`):
 make compile
 
 # Or directly
-poetry run pysrf-compile
+poetry run python setup.py build_ext --inplace
 ```
 
 ### Testing Cython vs Python
@@ -218,7 +216,7 @@ pysrf/
 │   └── _bsum.pyx      # Cython extension
 ├── tests/             # Test suite
 ├── docs/              # Documentation
-├── build.py           # Cython build script
+├── setup.py           # Cython build (setuptools)
 ├── Makefile           # Development commands
 ├── pyproject.toml     # Poetry config
 └── README.md          # Project overview

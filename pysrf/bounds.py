@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
+
+logger = logging.getLogger(__name__)
 from numpy.linalg import eigvalsh
 from joblib import Parallel, delayed
 
@@ -14,7 +18,6 @@ def pmin_bound(
     rho: float = 0.95,
     n_realizations: int = 500,
     random_state: int | None = None,
-    verbose: bool = False,
     monte_carlo: bool = False,
 ) -> tuple[float, float, float, float, np.ndarray]:
     np.random.seed(random_state)
@@ -32,8 +35,7 @@ def pmin_bound(
     empirical_L_infty = 2 * np.quantile(np.abs(S), rho)
 
     effective_dimension = (np.linalg.norm(S, "fro") / S_norm) ** 2
-    if verbose:
-        print("effective dimension : ", effective_dimension)
+    logger.info("effective dimension: %s", effective_dimension)
 
     MC_expected_MS_norms = np.zeros(n_realizations)
     if monte_carlo:
@@ -58,22 +60,22 @@ def pmin_bound(
         2 * n / eta
     )
 
-    if verbose:
-        print(N_bernstein, D_bernstein)
-        print(N_empirical, D_empirical)
-        print(N_empirical_alternative, D_empirical)
-        print(N_theory_upperbound, D_theory_lowerbound)
+    logger.info(
+        "N_bernstein=%.4f, D_bernstein=%.4f, N_empirical=%.4f, D_empirical=%.4f, "
+        "N_empirical_alt=%.4f, N_theory_ub=%.4f, D_theory_lb=%.4f",
+        N_bernstein, D_bernstein, N_empirical, D_empirical,
+        N_empirical_alternative, N_theory_upperbound, D_theory_lowerbound,
+    )
 
     p_min = N_bernstein / D_bernstein
     p_min_empirical = N_empirical / D_empirical
     p_min_empirical_alternative = N_empirical_alternative / D_empirical
     p_min_lowerbound = N_theory_upperbound / D_theory_lowerbound
 
-    if verbose:
-        print("p_min", p_min)
-        print("empirical_p_min", p_min_empirical)
-        print("empirical_p_min_alternative", p_min_empirical_alternative)
-        print("theory_p_min", p_min_lowerbound)
+    logger.info(
+        "p_min=%.4f, empirical_p_min=%.4f, empirical_p_min_alt=%.4f, theory_p_min=%.4f",
+        p_min, p_min_empirical, p_min_empirical_alternative, p_min_lowerbound,
+    )
 
     return (
         p_min_empirical,
@@ -170,7 +172,6 @@ def p_upper_only_k(
     mc_trials: int = 600,
     mc_quantile: float = 0.9,
     tol: float = 1e-4,
-    verbose: bool = False,
     seed: int | None = None,
     omega: float = 0.8,
     eta: float = 1e-3,
@@ -184,14 +185,10 @@ def p_upper_only_k(
     lam_k1 = lam[k] if k < n else None
 
     if lam_k <= 0:
-        if verbose:
-            print("lambda_k <= 0 -> no positive spike to separate.")
+        logger.info("lambda_k <= 0 -> no positive spike to separate.")
         return 0.0
     if (lam_k1 is None) or (lam_k1 <= 0):
-        if verbose:
-            print(
-                "lambda_{k+1} <= 0 -> only first k can be out for all large p; return 1.0."
-            )
+        logger.info("lambda_{k+1} <= 0 -> only first k can be out for all large p; return 1.0.")
         return 1.0
 
     edge = (
@@ -213,14 +210,13 @@ def p_upper_only_k(
         return int(np.sum(p * lam > e)), e
 
     c_hi, e_hi = count_out(0.99)
-    if verbose:
-        print(
-            f"[sanity] p=0.99: bulk={e_hi:.4g}, count_out={c_hi}, lambda1={lam[0]:.4g}, lambda2={lam[1] if n>1 else np.nan:.4g}"
-        )
+    logger.info(
+        "[sanity] p=0.99: bulk=%.4g, count_out=%d, lambda1=%.4g, lambda2=%.4g",
+        e_hi, c_hi, lam[0], lam[1] if n > 1 else np.nan,
+    )
 
     if c_hi < k:
-        if verbose:
-            print(f"Even at p~1, only {c_hi} spikes out (< k). Returning 1.0.")
+        logger.info("Even at p~1, only %d spikes out (< k). Returning 1.0.", c_hi)
         return 1.0
 
     grid = np.linspace(0.02, 0.99, 80)
@@ -234,15 +230,11 @@ def p_upper_only_k(
         ga, gb = g(a), g(b)
 
         if ga >= 0 and gb >= 0:
-            if verbose:
-                print(
-                    "(k+1) spike is out for all p; returning smallest p where count==k (none found) -> 0."
-                )
+            logger.info("(k+1) spike is out for all p; returning smallest p where count==k (none found) -> 0.")
             return 0.0
 
         if ga < 0 and gb <= 0:
-            if verbose:
-                print("(k+1) never emerges up to 0.99; returning 1.0.")
+            logger.info("(k+1) never emerges up to 0.99; returning 1.0.")
             return 1.0
 
         lo, hi = a, b
@@ -279,9 +271,8 @@ def p_upper_only_k(
         if (hi - lo) < tol:
             break
     p_star = max(0.0, min(1.0, lo))
-    if verbose:
-        c_star, e_star = count_out(p_star)
-        print(f"p*={p_star:.4f}, bulk={e_star:.6g}, count_out(p*)={c_star}")
+    c_star, e_star = count_out(p_star)
+    logger.info("p*=%.4f, bulk=%.6g, count_out(p*)=%d", p_star, e_star, c_star)
     return p_star
 
 
@@ -296,11 +287,10 @@ def estimate_sampling_bounds(
     jump_frac: float = 0.1,
     tol: float = 1e-4,
     gap: float = 0.05,
-    verbose: bool = False,
     random_state: int = 31213,
 ) -> tuple[float, float, np.ndarray]:
     pmin, _, _, _, _ = pmin_bound(
-        S, gamma=gamma, eta=eta, rho=rho, random_state=random_state, verbose=verbose
+        S, gamma=gamma, eta=eta, rho=rho, random_state=random_state,
     )
 
     eff_dim = np.ceil((np.linalg.norm(S, "fro") / np.linalg.norm(S, 2)) ** 2).astype(
@@ -315,16 +305,13 @@ def estimate_sampling_bounds(
         omega=omega,
         eta=eta_pmax,
         jump_frac=jump_frac,
-        verbose=verbose,
         seed=random_state,
     )
 
     S_noise = S
 
     if pmin > pmax - gap:
-        if verbose:
-            print("Noise regime triggered")
-            print(f"pmin = {pmin}, pmax = {pmax}")
+        logger.info("Noise regime triggered, pmin=%.4f, pmax=%.4f", pmin, pmax)
 
         epsilon = np.linalg.norm(S, 2) / np.sqrt(S.shape[0])
 
@@ -349,7 +336,6 @@ def estimate_sampling_bounds(
                 eta=eta,
                 rho=rho,
                 random_state=random_state,
-                verbose=verbose,
             )
 
             eff_dim = np.ceil(
@@ -363,11 +349,9 @@ def estimate_sampling_bounds(
                 omega=omega,
                 eta=eta_pmax,
                 jump_frac=jump_frac,
-                verbose=verbose,
                 seed=random_state,
             )
-            if verbose:
-                print(t, pmin, eff_dim, pmax)
+            logger.info("t=%.4f, pmin=%.4f, eff_dim=%d, pmax=%.4f", t, pmin, eff_dim, pmax)
 
             eff_dim_list.append(eff_dim)
             pmin_list.append(pmin)
@@ -398,12 +382,11 @@ def estimate_sampling_bounds_fast(
     jump_frac: float = 0.1,
     tol: float = 1e-4,
     gap: float = 0.05,
-    verbose: bool = False,
     random_state: int = 31213,
     n_jobs: int = -1,
 ) -> tuple[float, float, np.ndarray]:
     pmin, _, _, _, _ = pmin_bound(
-        S, gamma=gamma, eta=eta, rho=rho, random_state=random_state, verbose=verbose
+        S, gamma=gamma, eta=eta, rho=rho, random_state=random_state,
     )
 
     eff_dim = np.ceil((np.linalg.norm(S, "fro") / np.linalg.norm(S, 2)) ** 2).astype(
@@ -418,7 +401,6 @@ def estimate_sampling_bounds_fast(
         omega=omega,
         eta=eta_pmax,
         jump_frac=jump_frac,
-        verbose=verbose,
         seed=random_state,
     )
 
@@ -439,7 +421,6 @@ def estimate_sampling_bounds_fast(
                 eta=eta,
                 rho=rho,
                 random_state=random_state,
-                verbose=verbose,
             )
             eff_dim_t = np.ceil(
                 (np.linalg.norm(S_t, "fro") / np.linalg.norm(S_t, 2)) ** 2
@@ -452,7 +433,6 @@ def estimate_sampling_bounds_fast(
                 omega=omega,
                 eta=eta_pmax,
                 jump_frac=jump_frac,
-                verbose=verbose,
                 seed=random_state,
             )
             return float(pmin_t), float(pmax_t)
