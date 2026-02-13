@@ -27,7 +27,7 @@ clean:
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 
 docs:
-	poetry run mkdocs build
+	poetry run zensical build
 
 docs-serve:
-	poetry run mkdocs serve
+	poetry run zensical serve

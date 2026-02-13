@@ -1,33 +1,38 @@
 # Examples
 
-These examples demonstrate the full range of pysrf features, from basic
-factorization to a complete analysis pipeline.
+These examples show how to use pysrf for increasingly complex analyses,
+from basic factorization to the full pipeline with rank selection,
+ensemble embeddings, and evaluation.
 
 ## Basic factorization
 
-Generate a low-rank similarity matrix and recover its embedding:
+Generate a similarity matrix from a known low-rank embedding and recover
+the latent dimensions:
 
 ```python
 import numpy as np
 from pysrf import SRF
 
-# Ground-truth low-rank matrix
+# Ground-truth low-rank structure
 n, rank = 100, 10
 w_true = np.random.rand(n, rank)
 s = w_true @ w_true.T
 
-# Fit the model
+# Recover the dimensions
 model = SRF(rank=10, random_state=42)
 w = model.fit_transform(s)
 s_hat = model.reconstruct()
 ```
 
-Because the input is exactly rank-10, the reconstruction error is near zero.
+Because the input has exact rank 10, the reconstruction error is near
+zero. In practice, real similarity matrices contain noise and the optimal
+rank must be estimated (see below).
 
 ## Missing data
 
-Mark entries as `NaN` to simulate incomplete observations. The model fits on
-the observed entries and fills in the gaps:
+Behavioral similarity experiments typically sample only a fraction of all
+possible item pairs. pysrf treats unobserved entries as missing rather
+than imputing them:
 
 ```python
 import numpy as np
@@ -37,7 +42,7 @@ n, rank = 100, 10
 w_true = np.random.rand(n, rank)
 s = w_true @ w_true.T
 
-# Remove 30% of entries
+# Remove 30% of entries to simulate sparse sampling
 mask = np.random.rand(n, n) < 0.3
 s[mask] = np.nan
 
@@ -46,11 +51,15 @@ w = model.fit_transform(s)
 s_completed = model.reconstruct()
 ```
 
+The model learns from the observed entries and predicts the held-out ones
+in the reconstruction.
+
 ## Cross-validation for rank selection
 
-Sweep over candidate ranks and let `cross_val_score` pick the best one. Set
-`estimate_sampling_fraction=True` to derive the hold-out fraction from the
-data:
+The number of dimensions is a free parameter. Cross-validation selects
+the rank that best generalizes to unseen similarities. Set
+`estimate_sampling_fraction=True` to automatically derive the hold-out
+fraction from the data:
 
 ```python
 from pysrf import cross_val_score, SRF
@@ -68,10 +77,15 @@ print(f"Best rank: {cv.best_params_['rank']}")
 print(f"Best score: {cv.best_score_:.4f}")
 ```
 
-## Ensemble and consensus clustering
+## Consensus embeddings
 
-Combine multiple factorization runs into a stable consensus embedding, then
-cluster the result. The pipeline uses scikit-learn's `Pipeline` interface:
+Symmetric NMF is non-convex. Different random initializations can
+converge to different solutions. To obtain a stable embedding, fit
+multiple runs and align them. `EnsembleEmbedding` does this
+automatically: it runs the factorization `n_runs` times, aligns the
+columns using the Hungarian algorithm, and selects the most central
+solution. `ClusterEmbedding` then applies consensus clustering to find
+stable groups of items.
 
 ```python
 from sklearn import pipeline
@@ -98,14 +112,11 @@ pipe = pipeline.Pipeline(
 consensus_embedding = pipe.fit_transform(s)
 ```
 
-`EnsembleEmbedding` runs the factorization `n_runs` times and averages the
-aligned embeddings. `ClusterEmbedding` applies consensus clustering to find
-stable groups.
-
 ## Value bounds
 
-Constrain reconstructed values to a fixed range. This is useful when the
-similarity measure has a known domain, such as [0, 1] for cosine similarity:
+When the similarity measure has a known range, constrain the
+reconstruction accordingly. For example, similarities derived from cosine
+distance lie in [0, 1]:
 
 ```python
 from pysrf import SRF
@@ -120,8 +131,10 @@ assert s_reconstructed.max() <= 1
 
 ## Sampling-bound estimation
 
-Estimate the range of hold-out fractions that produce reliable
-cross-validation scores:
+Before running cross-validation, you can estimate the range of hold-out
+fractions that produce reliable scores. This is useful for very sparse
+matrices where holding out too many entries leaves insufficient data for
+fitting:
 
 ```python
 from pysrf import estimate_sampling_bounds_fast
@@ -141,15 +154,14 @@ sampling_rate = 0.5 * (pmin + pmax)
 
 ## Complete workflow
 
-This example ties together every step: data generation, noise injection,
-missing data, sampling-bound estimation, cross-validation, model fitting, and
-evaluation.
+A full analysis combines rank selection, ensemble fitting, and
+evaluation:
 
 ```python
 import numpy as np
 from pysrf import SRF, cross_val_score, estimate_sampling_bounds_fast
 
-# 1. Generate a low-rank matrix with noise and missing entries
+# 1. Generate a noisy, incomplete similarity matrix
 np.random.seed(42)
 n, true_rank = 100, 8
 w_true = np.random.rand(n, true_rank)
