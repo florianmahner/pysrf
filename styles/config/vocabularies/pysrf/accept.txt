@@ -1,0 +1,13 @@
+pysrf
+Cython
+pyenv
+[Mm]akefile
+subtree
+docstring
+docstrings
+[Dd]ocstring
+mkdocs
+mkdocstrings
+ruff
+[Pp]y[Pp][Ii]
+dev

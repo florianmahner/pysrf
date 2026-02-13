@@ -42,6 +42,8 @@ coverage.xml
 
 # Documentation
 site/
+styles/Google/
+styles/Vale/
 
 # OS
 .DS_Store

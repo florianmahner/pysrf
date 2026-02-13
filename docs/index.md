@@ -1,16 +1,26 @@
 # pysrf
 
-**Similarity-Based Representation Factorization (SRF)** 
+**Symmetric non-negative matrix factorization with ADMM optimization.**
 
-## Overview
+pysrf decomposes a symmetric similarity matrix **S** into a low-rank
+non-negative embedding **W** such that **S** ≈ **WW**ᵀ. It handles missing
+data, supports bounded constraints on reconstructed values, and estimates the
+factorization rank through cross-validation.
 
-`pysrf` implements symmetric non-negative matrix factorization using the Alternating Direction Method of Multipliers (SRF). 
+## Key features
 
-## Installation
+- **Missing data**: factorize matrices with missing entries (NaN) and recover
+  a completed matrix.
+- **Bounded reconstruction**: constrain reconstructed values to a range such
+  as [0, 1].
+- **Rank estimation**: select the factorization rank with built-in
+  cross-validation and sampling-bound estimation.
+- **Ensemble clustering**: build stable consensus embeddings from multiple
+  factorization runs.
+- **Fast ADMM solver**: Cython-accelerated inner loop provides 10-50x speedup
+  over pure Python.
 
-See the [Installation Guide](installation.md) for detailed instructions.
-
-## Quick Example
+## Quick example
 
 ```python
 import numpy as np
@@ -20,7 +30,7 @@ from pysrf import SRF
 s = np.random.rand(100, 100)
 s = (s + s.T) / 2  # make symmetric
 
-# Fit model
+# Fit the model
 model = SRF(rank=10, max_outer=20, random_state=42)
 embedding = model.fit_transform(s)
 
@@ -28,10 +38,10 @@ embedding = model.fit_transform(s)
 s_reconstructed = model.reconstruct()
 ```
 
-## Next Steps
+## Next steps
 
-- [Installation Guide](installation.md) - Setup instructions
-- [Examples](examples.md) - Usage examples and workflows
-- [Quick Start Guide](quickstart.md) - Detailed tutorials
-- [API Reference](api/model.md) - Complete API documentation
-- [Development Guide](development.md) - Contributing guidelines
+- [Installation](installation.md): set up pysrf and compile Cython extensions.
+- [Quick start](quickstart.md): walk through core workflows step by step.
+- [Examples](examples.md): explore advanced features and full pipelines.
+- [API reference](api/model.md): browse the complete API.
+- [Development](development.md): contribute to pysrf.
