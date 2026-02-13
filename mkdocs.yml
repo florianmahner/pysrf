@@ -1,5 +1,5 @@
 site_name: pysrf
-site_description: Discover interpretable dimensions from representational similarities
+site_description: Sparse non-negative factorization of similarity matrices
 site_author: Florian Mahner
 site_url: https://florianmahner.github.io/pysrf/
 repo_url: https://github.com/florianmahner/pysrf
@@ -7,10 +7,40 @@ repo_name: florianmahner/pysrf
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
-    scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
   features:
     - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - navigation.tabs
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
 
 plugins:
   - search
@@ -42,6 +72,8 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+  - attr_list
+  - md_in_html
 
 extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
