@@ -58,11 +58,11 @@ poetry install
 Cython compilation is critical for performance (10-50x speedup). Without it, a pure Python fallback is used.
 
 ```bash
-# Compile via poetry script
-poetry run pysrf-compile
-
-# Or use Makefile (includes additional options)
+# Using the Makefile
 make compile
+
+# Or directly
+poetry run python setup.py build_ext --inplace
 ```
 
 The Makefile also provides other useful commands:
@@ -71,8 +71,6 @@ The Makefile also provides other useful commands:
 - `make format` - Format code
 - `make clean` - Remove build artifacts
 - `make docs` - Build documentation
-
-Run `make help` for all available commands.
 
 ## Alternative Installation Methods
 

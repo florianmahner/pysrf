@@ -11,14 +11,19 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
+import logging
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
+from tqdm import trange
 from sklearn.utils.validation import (
     check_is_fitted,
     check_symmetric,
     validate_data,
 )
 from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
+
+logger = logging.getLogger(__name__)
 
 
 try:
@@ -470,7 +475,8 @@ class SRF(TransformerMixin, BaseEstimator):
         history = defaultdict(list)
         lam = np.zeros_like(x)
 
-        for i in range(1, self.max_outer + 1):
+        pbar = trange(1, self.max_outer + 1, disable=not self.verbose, desc="SRF")
+        for i in pbar:
             w = _update_w_impl(x, w, max_iter=self.max_inner, tol=self.tol)
             x_hat = w @ w.T
 
@@ -480,17 +486,13 @@ class SRF(TransformerMixin, BaseEstimator):
             for key, value in metrics.items():
                 history[key].append(value)
 
-            if self.verbose > 0:
-                print(
-                    f"Iteration {i}/{self.max_outer}, "
-                    f"Rec Error: {metrics['rec_error']:.3f}, "
-                    f"Evar: {metrics['evar']:.3f}",
-                    end="\r",
-                )
+            pbar.set_postfix(
+                rec_error=f"{metrics['rec_error']:.3f}",
+                evar=f"{metrics['evar']:.3f}",
+            )
 
             if self._check_convergence(metrics, x, x_hat, lam=None):
-                if self.verbose > 0:
-                    print(f"\nConverged at iteration {i}")
+                logger.info("Converged at iteration %d", i)
                 break
 
         self.w_ = w
@@ -511,7 +513,8 @@ class SRF(TransformerMixin, BaseEstimator):
         v = x.copy()
         x_hat = w @ w.T
 
-        for i in range(1, self.max_outer + 1):
+        pbar = trange(1, self.max_outer + 1, disable=not self.verbose, desc="SRF (ADMM)")
+        for i in pbar:
             v_old = v.copy()
 
             w = _update_w_impl(
@@ -528,18 +531,14 @@ class SRF(TransformerMixin, BaseEstimator):
             for key, value in metrics.items():
                 history[key].append(value)
 
-            if self.verbose > 0:
-                print(
-                    f"Iteration {i}/{self.max_outer}, "
-                    f"Objective: {metrics['total_objective']:.3f}, "
-                    f"Rec Error: {metrics['rec_error']:.3f}, "
-                    f"Evar: {metrics['evar']:.3f}",
-                    end="\r",
-                )
+            pbar.set_postfix(
+                obj=f"{metrics['total_objective']:.3f}",
+                rec_error=f"{metrics['rec_error']:.3f}",
+                evar=f"{metrics['evar']:.3f}",
+            )
 
             if i > 1 and self._check_convergence(metrics, v, x_hat, lam):
-                if self.verbose > 0:
-                    print(f"\nConverged at iteration {i}")
+                logger.info("Converged at iteration %d", i)
                 break
 
         self.w_ = w

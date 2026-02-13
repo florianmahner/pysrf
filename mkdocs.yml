@@ -6,11 +6,11 @@ repo_url: https://github.com/florianmahner/pysrf
 repo_name: florianmahner/pysrf
 
 theme:
-  name: readthedocs
-  highlightjs: true
-  hljs_languages:
-    - python
-    - bash
+  name: material
+  palette:
+    scheme: default
+  features:
+    - content.code.copy
 
 plugins:
   - search

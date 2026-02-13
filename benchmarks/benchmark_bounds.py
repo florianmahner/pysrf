@@ -57,7 +57,6 @@ def main():
                     bounds.estimate_sampling_bounds_fast,
                     S,
                     method=method,
-                    verbose=False,
                     n_jobs=1,
                 )
                 pmin_orig, pmax_orig, _ = result_orig
@@ -73,7 +72,6 @@ def main():
                     bounds_optimized.estimate_sampling_bounds_fast,
                     S,
                     method=method,
-                    verbose=False,
                     n_jobs=1,
                 )
                 pmin_opt, pmax_opt, _ = result_opt
