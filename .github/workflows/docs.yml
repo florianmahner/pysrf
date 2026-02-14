@@ -32,4 +32,10 @@ jobs:
         run: poetry install -E dev --no-root
 
       - name: Build documentation
-        run: poetry run mkdocs gh-deploy --force
+        run: poetry run zensical build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

@@ -15,9 +15,9 @@ repos:
         pass_filenames: false
         always_run: true
 
-      - id: mkdocs-build
-        name: mkdocs build
-        entry: poetry run mkdocs build --strict
+      - id: zensical-build
+        name: zensical build
+        entry: poetry run zensical build
         language: system
         pass_filenames: false
         always_run: true

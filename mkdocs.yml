@@ -1,5 +1,5 @@
 site_name: pysrf
-site_description: Symmetric Representation Factorization for matrix completion and rank estimation
+site_description: Sparse non-negative factorization of similarity matrices
 site_author: Florian Mahner
 site_url: https://florianmahner.github.io/pysrf/
 repo_url: https://github.com/florianmahner/pysrf
@@ -7,10 +7,41 @@ repo_name: florianmahner/pysrf
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
-    scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
   features:
     - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - navigation.tabs
+    - navigation.sections
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
 
 plugins:
   - search
@@ -37,18 +68,25 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
   - tables
   - toc:
       permalink: true
+  - attr_list
+  - md_in_html
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Quick Start: quickstart.md
-  - Examples: examples.md
-  - API Reference:
+  - Get started:
+    - Installation: installation.md
+    - Quick start: quickstart.md
+    - Examples: examples.md
+  - API reference:
     - Model (SRF): api/model.md
-    - Cross-Validation: api/cross_validation.md
-    - Sampling Bounds: api/bounds.md
+    - Cross-validation: api/cross_validation.md
+    - Sampling bounds: api/bounds.md
   - Development: development.md
-

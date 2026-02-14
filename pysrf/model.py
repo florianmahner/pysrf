@@ -37,7 +37,7 @@ except ImportError:
         RuntimeWarning,
         stacklevel=2,
     )
-    from .model import update_w_python as _update_w_impl
+    _update_w_impl = None
 
 
 def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float:
@@ -232,6 +232,10 @@ def update_w(
             break
 
     return w
+
+
+if _update_w_impl is None:
+    _update_w_impl = update_w
 
 
 def update_v_(

@@ -8,6 +8,14 @@ docstrings
 [Dd]ocstring
 mkdocs
 mkdocstrings
+zensical
 ruff
 [Pp]y[Pp][Ii]
 dev
+fMRI
+electrophysiology
+factorizes
+NMF
+Mahner
+Hebart
+overfit

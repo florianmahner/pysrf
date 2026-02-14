@@ -1,8 +1,16 @@
 import numpy as np
-
+import pytest
 
 from pysrf.model import update_w as update_w_python
-from pysrf._bsum import update_w as update_w_cython
+
+try:
+    from pysrf._bsum import update_w as update_w_cython
+except ImportError:
+    update_w_cython = None
+
+pytestmark = pytest.mark.skipif(
+    update_w_cython is None, reason="Cython extension not compiled"
+)
 
 
 def make_data(
