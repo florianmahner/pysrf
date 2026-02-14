@@ -27,7 +27,7 @@
     
     
       
-        <title>pysrf - pysrf</title>
+        <title>PySRF - pysrf</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pysrf
+              PySRF
             
           </span>
         </div>
@@ -385,7 +385,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use pysrf
+        When to use PySRF
       
     </span>
   </a>
@@ -790,7 +790,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use pysrf
+        When to use PySRF
       
     </span>
   </a>
@@ -869,45 +869,22 @@
   
 
 
-<h1 id="pysrf">pysrf<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
+<h1 id="pysrf">PySRF<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
 <p><strong>Discover interpretable dimensions from representational similarities.</strong></p>
-<p>Representational similarity is a widely used tool for comparing biological
-and artificial systems. It captures <em>how much</em> two items align, but not
-<em>why</em> they align. pysrf closes this gap: it decomposes a similarity matrix
-into sparse, non-negative dimensions that reveal the latent structure
-driving the similarities.</p>
-<p>Given a symmetric similarity matrix <span class="arithmatex">\(S\)</span>, pysrf finds a non-negative
-embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each column of <span class="arithmatex">\(W\)</span> is a
-dimension, and each row gives an item's coordinates along those dimensions.
-Because both entries and dimensions are non-negative and sparse, the result
-is an additive, compositional representation where dimensions contribute
-positively without canceling each other out.</p>
-<h2 id="when-to-use-pysrf">When to use pysrf<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
-<p>pysrf operates on similarity matrices from any domain:</p>
+<p>Representational similarity is a widely used tool in cognitive science and machine learning. PySRF decomposes similarity matrices in sparse, non-negative dimensions that reveal the latent structure underlying similarities.</p>
+<p>Say we have a similarity matrix <span class="arithmatex">\(S\)</span>, PySRF finds a non-negative embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each column of <span class="arithmatex">\(W\)</span> is a dimension, and each row gives for an item a numeric weight alongside each dimensions. Because dimensions are non-negative and sparse (e.g. many entries drive toward zero), the embedding is an additive, compositional representation where dimensions contribute positively without canceling each other out.</p>
+<h2 id="when-to-use-pysrf">When to use PySRF<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
+<p>PySRF works very broadly on in principle any (symmetric) similarity matix. These can come from different domains, for example:</p>
 <ul>
-<li><strong>Behavioral data</strong>: odd-one-out judgments, pairwise similarity ratings,
-  or any task that yields a measure of similarity between items.</li>
-<li><strong>Neural data</strong>: representational similarity matrices derived from fMRI,
-  electrophysiology, or other neural recordings.</li>
-<li><strong>Language</strong>: word-association networks, co-occurrence matrices, or
-  semantic similarity graphs.</li>
-<li><strong>Machine learning</strong>: similarity matrices from deep neural network
-  activations, kernel matrices, or model comparison studies.</li>
+<li><strong>Behavioral data</strong>: any task that yields a measure of similarity between items.</li>
+<li><strong>Neural data</strong>: representational similarity matrices derived from fMRI, electrophysiology, or other neural recordings.</li>
+<li><strong>Machine learning</strong>: similarity matrices from deep neural network activations</li>
 </ul>
 <h2 id="key-capabilities">Key capabilities<a class="headerlink" href="#key-capabilities" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Missing data</strong>: real-world similarity matrices are often incomplete.
-  pysrf learns from observed entries and predicts the missing ones, without
-  imputation.</li>
-<li><strong>Rank estimation</strong>: the number of dimensions is chosen through
-  entry-wise cross-validation, holding out individual similarities and
-  testing how well the model predicts them.</li>
-<li><strong>Consensus embeddings</strong>: the non-convex objective admits multiple local
-  minima. pysrf fits an ensemble of embeddings with different
-  initializations, aligns them, and selects the most stable solution.</li>
-<li><strong>Bounded reconstruction</strong>: constrain reconstructed values to a fixed
-  range such as [0, 1].</li>
-<li><strong>Fast solver</strong>: a Cython-accelerated ADMM inner loop provides 10-50x
+<li><strong>Missing data</strong>: real-world similarity matrices are sometimes incomplete and some entries <span class="arithmatex">\(i,j\)</span> in a similarity matrix not observed. PySRF can handle missing entries naturally.</li>
+<li><strong>Dimensionality estimation</strong>: the number of optimal dimensions can be estimated via cross-validation</li>
+<li><strong>Fast solver</strong>: a Cython-accelerated solver provides 10-50x
   speedup over pure Python.</li>
 </ul>
 <h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
