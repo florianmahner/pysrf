@@ -13,6 +13,12 @@ build/
 *.pyc
 *.whl
 
+# SLURM / logs
+*.log
+
+# Generated benchmark data
+benchmarks/*.csv
+
 # Python version manager
 .python-version
 
@@ -42,12 +48,7 @@ coverage.xml
 
 # Documentation
 site/
-styles/Google/
-styles/Vale/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Dev scripts (not for version control)
-CLAUDE.md
