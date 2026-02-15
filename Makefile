@@ -25,6 +25,9 @@ format:
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache .coverage htmlcov/
 	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name "*.so" -delete
+	find pysrf/ -name "*.c" -not -name "*.cfg" -delete
+	find pysrf/ -name "*.cpp" -delete
 
 docs:
 	poetry run zensical build
