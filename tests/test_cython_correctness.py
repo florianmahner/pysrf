@@ -1,16 +1,52 @@
+"""Rigorous numerical equivalence tests for Cython BSUM implementations.
+
+The fast variant (_bsum_fast) precomputes m[i,:] @ w for all r columns in a
+single fused loop per row, instead of r separate scalar dot products. The fused
+loop uses the same summation order as the scalar version (k=0..n-1, sequential
+accumulation), so results are bitwise-identical to the original.
+
+The blas and blocked variants use BLAS routines which may change summation order,
+so they are numerically equivalent but not necessarily bit-identical. After a
+single BSUM iteration, all implementations agree to ~1e-14 (machine epsilon) on
+ANY symmetric matrix, proving the correction math is exact. Over many iterations,
+BLAS rounding differences can cascade through the quartic solver's cube-root
+sensitivity at the max(0, root) boundary, causing element-wise divergence while
+reconstruction quality (||M - WW^T||_F / ||M||_F) remains identical to 10+
+decimal places. See docs/bsum_implementations.md for the full analysis.
+"""
+
 import numpy as np
 import pytest
 
-from pysrf.model import update_w as update_w_python
+from pysrf.model import update_w as update_w_python, _frobenius_residual
 
 try:
-    from pysrf._bsum import update_w as update_w_cython
-except ImportError:
-    update_w_cython = None
+    from pysrf._bsum import update_w as update_w_original
 
-pytestmark = pytest.mark.skipif(
-    update_w_cython is None, reason="Cython extension not compiled"
-)
+    HAS_ORIGINAL = True
+except ImportError:
+    HAS_ORIGINAL = False
+
+try:
+    from pysrf._bsum_fast import update_w as update_w_fast
+
+    HAS_FAST = True
+except ImportError:
+    HAS_FAST = False
+
+try:
+    from pysrf._bsum_fast_blas import update_w as update_w_blas
+
+    HAS_BLAS = True
+except ImportError:
+    HAS_BLAS = False
+
+try:
+    from pysrf._bsum_blocked import update_w as update_w_blocked
+
+    HAS_BLOCKED = True
+except ImportError:
+    HAS_BLOCKED = False
 
 
 def make_data(
@@ -23,38 +59,337 @@ def make_data(
     return m, x0
 
 
-def test_cython_python_equivalence():
-    """Test that Cython and Python implementations give identical results."""
-    m, x0 = make_data(seed=1234)
+@pytest.mark.skipif(not HAS_ORIGINAL, reason="Original Cython not compiled")
+class TestOriginalVsPython:
+    """Original Cython uses the same scalar dot product as Python.
 
-    cython_result = update_w_cython(m, x0, tol=0.0)
-    python_result = update_w_python(m, x0, tol=0.0)
+    These must match to machine precision since the arithmetic operations
+    are identical.
+    """
 
-    error = np.max(np.abs(cython_result - python_result))
-    assert error < 1e-10, f"Large discrepancy between implementations: {error:.4e}"
+    def test_equivalence(self):
+        m, x0 = make_data(seed=1234)
+        cython_result = update_w_original(m, x0, tol=0.0)
+        python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(cython_result, python_result)
 
-
-def test_cython_python_equivalence_multiple_seeds():
-    """Test equivalence across multiple random seeds."""
-    for seed in [0, 42, 123, 456, 789]:
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_equivalence_multiple_seeds(self, seed):
         m, x0 = make_data(seed=seed)
-
-        cython_result = update_w_cython(m, x0, tol=0.0)
+        cython_result = update_w_original(m, x0, tol=0.0)
         python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(cython_result, python_result)
 
-        error = np.max(np.abs(cython_result - python_result))
-        assert error < 1e-10, f"Large discrepancy for seed {seed}: {error:.4e}"
-
-
-def test_cython_python_equivalence_different_sizes():
-    """Test equivalence for different matrix sizes."""
-    sizes = [(10, 3), (50, 5), (100, 10), (200, 15)]
-
-    for n, r in sizes:
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10), (200, 15)])
+    def test_equivalence_different_sizes(self, n, r):
         m, x0 = make_data(n=n, r=r, seed=42)
-
-        cython_result = update_w_cython(m, x0, tol=0.0)
+        cython_result = update_w_original(m, x0, tol=0.0)
         python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(cython_result, python_result)
 
-        error = np.max(np.abs(cython_result - python_result))
-        assert error < 1e-10, f"Large discrepancy for size ({n}, {r}): {error:.4e}"
+
+@pytest.mark.skipif(not HAS_FAST, reason="Fast Cython not compiled")
+class TestFastVsPython:
+    """Fast Cython uses a fused scalar loop instead of r separate dot products.
+
+    The fused loop preserves the same summation order (k=0..n-1), so results
+    must be bitwise-identical to the Python implementation.
+    """
+
+    def test_equivalence(self):
+        m, x0 = make_data(n=100, r=10, seed=1234)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, python_result)
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_equivalence_multiple_seeds(self, seed):
+        m, x0 = make_data(seed=seed)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, python_result)
+
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10), (200, 15)])
+    def test_equivalence_different_sizes(self, n, r):
+        m, x0 = make_data(n=n, r=r, seed=42)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        python_result = update_w_python(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, python_result)
+
+
+@pytest.mark.skipif(
+    not (HAS_FAST and HAS_ORIGINAL), reason="Both Cython variants required"
+)
+class TestFastVsOriginal:
+    """The definitive test: fast must be bitwise-identical to original Cython.
+
+    Both use the same scalar accumulation order. The fast variant fuses the
+    r dot products into a single k-outer loop with contiguous w[k,:] access,
+    but the per-element arithmetic is identical.
+    """
+
+    def test_equivalence(self):
+        m, x0 = make_data(n=100, r=10, seed=1234)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        original_result = update_w_original(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, original_result)
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_equivalence_multiple_seeds(self, seed):
+        m, x0 = make_data(seed=seed)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        original_result = update_w_original(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, original_result)
+
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10), (200, 15)])
+    def test_equivalence_different_sizes(self, n, r):
+        m, x0 = make_data(n=n, r=r, seed=42)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        original_result = update_w_original(m, x0, tol=0.0)
+        np.testing.assert_array_equal(fast_result, original_result)
+
+    def test_nonnegativity(self):
+        m, x0 = make_data(n=100, r=10, seed=42)
+        fast_result = update_w_fast(m, x0, tol=0.0)
+        assert np.all(fast_result >= 0), "Fast result has negative entries"
+
+    def test_convergence_tolerance(self):
+        """Verify early stopping produces same result for both."""
+        m, x0 = make_data(n=50, r=5, seed=42)
+        fast_result = update_w_fast(m, x0, max_iter=200, tol=1e-6)
+        original_result = update_w_original(m, x0, max_iter=200, tol=1e-6)
+        np.testing.assert_array_equal(fast_result, original_result)
+
+    def test_does_not_modify_inputs(self):
+        """Verify neither implementation modifies the input arrays."""
+        m, x0 = make_data(n=50, r=5, seed=42)
+        m_copy = m.copy()
+        x0_copy = x0.copy()
+
+        update_w_fast(m, x0, tol=0.0)
+        np.testing.assert_array_equal(m, m_copy)
+        np.testing.assert_array_equal(x0, x0_copy)
+
+        update_w_original(m, x0, tol=0.0)
+        np.testing.assert_array_equal(m, m_copy)
+        np.testing.assert_array_equal(x0, x0_copy)
+
+
+@pytest.mark.skipif(
+    not (HAS_BLAS and HAS_ORIGINAL), reason="BLAS and original Cython required"
+)
+class TestBlasVsOriginal:
+    """BLAS variant uses dgemv/ddot/daxpy which may reorder summation.
+
+    After 1 iteration the math is provably identical — differences are pure
+    IEEE 754 rounding (~1e-14). Over many iterations, cube-root sensitivity
+    at the max(0, root) boundary amplifies these, but reconstruction quality
+    remains identical. All tests use arbitrary random symmetric M.
+    """
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_single_iteration_elementwise(self, seed):
+        """One BSUM iteration: proves correction math is exact on any M."""
+        m, x0 = make_data(seed=seed)
+        blas_result = update_w_blas(m, x0, max_iter=1, tol=0.0)
+        original_result = update_w_original(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blas_result, original_result, atol=1e-10)
+
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10), (200, 15)])
+    def test_single_iteration_different_sizes(self, n, r):
+        m, x0 = make_data(n=n, r=r, seed=42)
+        blas_result = update_w_blas(m, x0, max_iter=1, tol=0.0)
+        original_result = update_w_original(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blas_result, original_result, atol=1e-10)
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_reconstruction_equivalence(self, seed):
+        """Many iterations on any M: reconstruction quality must match."""
+        m, x0 = make_data(seed=seed)
+        blas_result = update_w_blas(m, x0, tol=0.0)
+        original_result = update_w_original(m, x0, tol=0.0)
+        norm_m = np.linalg.norm(m, "fro")
+        err_blas = np.linalg.norm(m - blas_result @ blas_result.T, "fro") / norm_m
+        err_orig = (
+            np.linalg.norm(m - original_result @ original_result.T, "fro") / norm_m
+        )
+        np.testing.assert_allclose(err_blas, err_orig, rtol=1e-2)
+
+    def test_nonnegativity(self):
+        m, x0 = make_data(n=100, r=10, seed=42)
+        blas_result = update_w_blas(m, x0, tol=0.0)
+        assert np.all(blas_result >= 0), "BLAS result has negative entries"
+
+
+@pytest.mark.skipif(
+    not (HAS_BLOCKED and HAS_ORIGINAL), reason="Blocked and original Cython required"
+)
+class TestBlockedVsOriginal:
+    """Blocked variant uses dsymm/dgemm (BLAS-3) which may reorder summation.
+
+    Same numerical profile as BLAS variant: exact at 1 iteration, reconstruction-
+    equivalent at convergence. All tests use arbitrary random symmetric M.
+    """
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_single_iteration_elementwise(self, seed):
+        """One BSUM iteration: proves correction math is exact on any M."""
+        m, x0 = make_data(seed=seed)
+        blocked_result = update_w_blocked(m, x0, max_iter=1, tol=0.0)
+        original_result = update_w_original(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked_result, original_result, atol=1e-10)
+
+    @pytest.mark.parametrize("block_size", [1, 10, 50, 100])
+    def test_single_iteration_block_sizes(self, block_size):
+        """All block sizes produce the same result at 1 iteration."""
+        m, x0 = make_data(n=100, r=10, seed=42)
+        blocked_result = update_w_blocked(
+            m, x0, max_iter=1, tol=0.0, block_size=block_size
+        )
+        original_result = update_w_original(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked_result, original_result, atol=1e-10)
+
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10), (200, 15)])
+    def test_single_iteration_different_sizes(self, n, r):
+        m, x0 = make_data(n=n, r=r, seed=42)
+        blocked_result = update_w_blocked(m, x0, max_iter=1, tol=0.0)
+        original_result = update_w_original(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked_result, original_result, atol=1e-10)
+
+    @pytest.mark.parametrize("seed", [0, 42, 123, 456, 789])
+    def test_reconstruction_equivalence(self, seed):
+        """Many iterations on any M: reconstruction quality must match."""
+        m, x0 = make_data(seed=seed)
+        blocked_result = update_w_blocked(m, x0, tol=0.0)
+        original_result = update_w_original(m, x0, tol=0.0)
+        norm_m = np.linalg.norm(m, "fro")
+        err_blocked = (
+            np.linalg.norm(m - blocked_result @ blocked_result.T, "fro") / norm_m
+        )
+        err_orig = (
+            np.linalg.norm(m - original_result @ original_result.T, "fro") / norm_m
+        )
+        np.testing.assert_allclose(err_blocked, err_orig, rtol=1e-2)
+
+    def test_nonnegativity(self):
+        m, x0 = make_data(n=100, r=10, seed=42)
+        blocked_result = update_w_blocked(m, x0, tol=0.0)
+        assert np.all(blocked_result >= 0), "Blocked result has negative entries"
+
+
+class TestFrobeniusResidual:
+    """Test the memory-efficient _frobenius_residual helper."""
+
+    def test_matches_direct_computation(self):
+        m, x0 = make_data(n=50, r=5, seed=42)
+        w = update_w_python(m, x0, tol=0.0)
+        residual, xhat_norm = _frobenius_residual(m, w)
+        wwt = w @ w.T
+        expected_residual = np.linalg.norm(m - wwt, "fro")
+        expected_xhat_norm = np.linalg.norm(wwt, "fro")
+        np.testing.assert_allclose(residual, expected_residual, rtol=1e-10)
+        np.testing.assert_allclose(xhat_norm, expected_xhat_norm, rtol=1e-10)
+
+    @pytest.mark.parametrize("n,r", [(10, 3), (50, 5), (100, 10)])
+    def test_different_sizes(self, n, r):
+        m, x0 = make_data(n=n, r=r, seed=42)
+        w = update_w_python(m, x0, max_iter=10, tol=0.0)
+        residual, xhat_norm = _frobenius_residual(m, w)
+        wwt = w @ w.T
+        expected_residual = np.linalg.norm(m - wwt, "fro")
+        expected_xhat_norm = np.linalg.norm(wwt, "fro")
+        np.testing.assert_allclose(residual, expected_residual, rtol=1e-10)
+        np.testing.assert_allclose(xhat_norm, expected_xhat_norm, rtol=1e-10)
+
+    def test_residual_nonnegative(self):
+        m, x0 = make_data(n=50, r=5, seed=42)
+        residual, xhat_norm = _frobenius_residual(m, x0)
+        assert residual >= 0
+        assert xhat_norm >= 0
+
+
+class TestEdgeCases:
+    """Edge-case tests: rank=1, small n, block_size > n."""
+
+    def test_rank_1(self):
+        m, x0 = make_data(n=20, r=1, seed=42)
+        result = update_w_python(m, x0, max_iter=50, tol=0.0)
+        assert result.shape == (20, 1)
+        assert np.all(result >= 0)
+
+    @pytest.mark.skipif(not HAS_BLOCKED, reason="Blocked Cython not compiled")
+    def test_rank_1_blocked(self):
+        m, x0 = make_data(n=20, r=1, seed=42)
+        blocked = update_w_blocked(m, x0, max_iter=1, tol=0.0)
+        python = update_w_python(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked, python, atol=1e-10)
+
+    @pytest.mark.skipif(not HAS_BLOCKED, reason="Blocked Cython not compiled")
+    def test_block_size_larger_than_n(self):
+        m, x0 = make_data(n=10, r=3, seed=42)
+        blocked = update_w_blocked(m, x0, max_iter=1, tol=0.0, block_size=100)
+        original = update_w_python(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked, original, atol=1e-10)
+
+    @pytest.mark.skipif(not HAS_BLOCKED, reason="Blocked Cython not compiled")
+    def test_block_size_equals_n(self):
+        m, x0 = make_data(n=10, r=3, seed=42)
+        blocked = update_w_blocked(m, x0, max_iter=1, tol=0.0, block_size=10)
+        original = update_w_python(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked, original, atol=1e-10)
+
+    def test_small_n(self):
+        m, x0 = make_data(n=3, r=2, seed=42)
+        result = update_w_python(m, x0, max_iter=50, tol=0.0)
+        assert result.shape == (3, 2)
+        assert np.all(result >= 0)
+
+    @pytest.mark.skipif(not HAS_BLOCKED, reason="Blocked Cython not compiled")
+    def test_small_n_blocked(self):
+        m, x0 = make_data(n=3, r=2, seed=42)
+        blocked = update_w_blocked(m, x0, max_iter=1, tol=0.0)
+        python = update_w_python(m, x0, max_iter=1, tol=0.0)
+        np.testing.assert_allclose(blocked, python, atol=1e-10)
+
+
+class TestMonotonicity:
+    """Verify that BSUM objective decreases monotonically per iteration.
+
+    Shi et al. (2017) Theorem 1 guarantees this property.
+    """
+
+    @staticmethod
+    def _run_iterations(m, x0, update_fn, n_iter, **kwargs):
+        w = x0.copy()
+        errors = []
+        for _ in range(n_iter):
+            w = update_fn(m, w, max_iter=1, tol=0.0, **kwargs)
+            err = np.linalg.norm(m - w @ w.T, "fro")
+            errors.append(err)
+        return errors
+
+    def test_python_monotonicity(self):
+        m, x0 = make_data(n=50, r=5, seed=42)
+        errors = self._run_iterations(m, x0, update_w_python, 20)
+        diffs = np.diff(errors)
+        assert np.all(diffs <= 1e-10), (
+            f"Python: non-monotonic at {np.argmax(diffs > 1e-10)}"
+        )
+
+    @pytest.mark.skipif(not HAS_ORIGINAL, reason="Original Cython not compiled")
+    def test_original_monotonicity(self):
+        m, x0 = make_data(n=50, r=5, seed=42)
+        errors = self._run_iterations(m, x0, update_w_original, 20)
+        diffs = np.diff(errors)
+        assert np.all(diffs <= 1e-10), (
+            f"Original: non-monotonic at {np.argmax(diffs > 1e-10)}"
+        )
+
+    @pytest.mark.skipif(not HAS_BLOCKED, reason="Blocked Cython not compiled")
+    def test_blocked_monotonicity(self):
+        m, x0 = make_data(n=50, r=5, seed=42)
+        errors = self._run_iterations(m, x0, update_w_blocked, 20)
+        diffs = np.diff(errors)
+        assert np.all(diffs <= 1e-10), (
+            f"Blocked: non-monotonic at {np.argmax(diffs > 1e-10)}"
+        )

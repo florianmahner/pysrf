@@ -9,6 +9,7 @@ and optional bounded constraints.
 from __future__ import annotations
 
 import math
+import sys
 from collections import defaultdict
 
 import logging
@@ -26,18 +27,56 @@ from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
 logger = logging.getLogger(__name__)
 
 
-try:
-    from ._bsum import update_w as _update_w_impl
-except ImportError:
-    import warnings
+_update_w_impl = None
+_update_w_source = "python"
 
-    warnings.warn(
-        "Cython implementation not available. Using Python implementation "
-        "which is significantly slower. Compile Cython to improve performance.",
-        RuntimeWarning,
-        stacklevel=2,
-    )
-    _update_w_impl = None
+try:
+    from ._bsum_blocked import update_w as _update_w_impl
+
+    _update_w_source = "blocked_cython"
+except ImportError:
+    try:
+        from ._bsum_fast_blas import update_w as _update_w_impl
+
+        _update_w_source = "blas_cython"
+    except ImportError:
+        try:
+            from ._bsum_fast import update_w as _update_w_impl
+
+            _update_w_source = "fast_cython"
+        except ImportError:
+            try:
+                from ._bsum import update_w as _update_w_impl
+
+                _update_w_source = "original_cython"
+            except ImportError:
+                import warnings
+
+                warnings.warn(
+                    "Cython implementation not available. Using Python implementation "
+                    "which is significantly slower. Compile Cython to improve performance.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+
+
+def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
+    """Compute ||X - WW^T||_F and ||WW^T||_F without forming the n×n product.
+
+    Uses the identity:
+        ||X - WW^T||²_F = ||X||²_F - 2·tr(X·W·W^T) + ||WW^T||²_F
+    where tr(X·W·W^T) = sum((X@W) * W) and ||WW^T||²_F = ||W^TW||²_F,
+    both computable in O(n²r) with no n×n temporaries.
+
+    Returns (residual_norm, xhat_norm).
+    """
+    xw = x @ w
+    x_norm_sq = np.sum(x * x)
+    trace_xwwt = np.sum(xw * w)
+    wtw = w.T @ w
+    wwt_norm_sq = np.sum(wtw * wtw)
+    residual_sq = max(0.0, x_norm_sq - 2.0 * trace_xwwt + wwt_norm_sq)
+    return np.sqrt(residual_sq), np.sqrt(wwt_norm_sq)
 
 
 def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float:
@@ -474,28 +513,56 @@ class SRF(TransformerMixin, BaseEstimator):
             return metrics["primal_residual"] <= eps_pri
 
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        """Fit model with complete data (no missing values)."""
+        """Fit model with complete data (no missing values).
+
+        Uses _frobenius_residual to compute ||X - WW^T||_F without forming WW^T,
+        so memory stays at O(n²) (just the input matrix).
+        """
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         history = defaultdict(list)
-        lam = np.zeros_like(x)
 
-        pbar = trange(1, self.max_outer + 1, disable=not self.verbose, desc="SRF")
+        n = x.shape[0]
+        x_norm = np.linalg.norm(x, "fro")
+        eps_rel = 1e-4
+
+        pbar = trange(
+            1,
+            self.max_outer + 1,
+            disable=not self.verbose,
+            desc="SRF",
+            mininterval=10.0 if not sys.stderr.isatty() else 0.1,
+        )
         for i in pbar:
             w = _update_w_impl(x, w, max_iter=self.max_inner, tol=self.tol)
-            x_hat = w @ w.T
 
-            # For complete data: v=x, so primal_residual = x - x_hat
-            metrics = self._compute_metrics(x, x, x_hat, lam)
+            residual_norm, xhat_norm = _frobenius_residual(x, w)
+
+            rec_error = residual_norm
+            total_var = np.var(x)
+            mse = residual_norm**2 / (n * n)
+            evar = 1.0 - mse / total_var if total_var > 0 else 0.0
+
+            metrics = {
+                "rec_error": rec_error,
+                "evar": evar,
+            }
 
             for key, value in metrics.items():
                 history[key].append(value)
 
             pbar.set_postfix(
-                rec_error=f"{metrics['rec_error']:.3f}",
-                evar=f"{metrics['evar']:.3f}",
+                rec_error=f"{rec_error:.3f}",
+                evar=f"{evar:.3f}",
             )
 
-            if self._check_convergence(metrics, x, x_hat, lam=None):
+            # Convergence: same criterion as _check_convergence with lam=None,
+            # but without materializing x_hat = W @ W.T. The primal residual
+            # is ||X - WW^T||_F and eps_pri is a mixed absolute/relative
+            # tolerance: n * tol is the absolute part (equivalent to
+            # sqrt(n²) * tol in the ADMM path), and the relative part scales
+            # with the larger of ||X||_F and ||WW^T||_F.
+            eps_pri = n * self.tol + eps_rel * max(x_norm, xhat_norm)
+            if residual_norm <= eps_pri:
                 logger.info("Converged at iteration %d", i)
                 break
 
@@ -518,7 +585,11 @@ class SRF(TransformerMixin, BaseEstimator):
         x_hat = w @ w.T
 
         pbar = trange(
-            1, self.max_outer + 1, disable=not self.verbose, desc="SRF (ADMM)"
+            1,
+            self.max_outer + 1,
+            disable=not self.verbose,
+            desc="SRF (ADMM)",
+            mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
         for i in pbar:
             v_old = v.copy()
