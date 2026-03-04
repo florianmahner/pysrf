@@ -509,6 +509,7 @@ class SRF(TransformerMixin, BaseEstimator):
 
         n = x.shape[0]
         x_norm = np.linalg.norm(x, "fro")
+        total_var = np.var(x)
         eps_rel = 1e-4
 
         pbar = trange(
@@ -524,7 +525,6 @@ class SRF(TransformerMixin, BaseEstimator):
             residual_norm, xhat_norm = _frobenius_residual(x, w)
 
             rec_error = residual_norm
-            total_var = np.var(x)
             mse = residual_norm**2 / (n * n)
             evar = 1.0 - mse / total_var if total_var > 0 else 0.0
 
