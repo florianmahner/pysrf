@@ -3,14 +3,14 @@
 ## Overview
 
 The BSUM (Block Successive Upper-bound Minimization) algorithm for symmetric NMF
-(S ≈ W @ W.T) has multiple Cython implementations with different performance
-characteristics. The import priority in `model.py` is:
+(S ≈ W @ W.T) has 3 Cython implementations in a single file `pysrf/_bsum.pyx`,
+with different performance characteristics. The `model.py` import uses the fastest
+(BLAS-3 blocked) by default, falling back to Python if Cython is not compiled.
 
-1. `_bsum_blocked` (BLAS-3 blocked, fastest at 19-31x over original)
-2. `_bsum_fast_blas` (BLAS-2 per-row, ~5x over original)
-3. `_bsum_fast` (raw loops with per-row mw_i precomputation)
-4. `_bsum` (original, ground truth)
-5. Python fallback
+Functions in `pysrf._bsum`:
+1. `update_w`: scalar Cython (ground truth, bitwise-identical to Python)
+2. `update_w_blas`: BLAS-2 dgemv (~5x over scalar)
+3. `update_w_blas_blocked`: BLAS-3 dsymm/dgemm (19-31x over scalar, default)
 
 ## Algorithm
 
@@ -28,15 +28,11 @@ Total per iteration: O(n²r + nr²). The mw_i computation is O(n²r) and dominat
 
 ## Implementation details
 
-### `_bsum.pyx` (ground truth)
-
-The reference implementation. Uses Cython memoryviews. Computes `dot(M[i,:], W[:,j])`
-fresh for each (i,j) pair, meaning r separate passes through M[i,:] per row.
-
-### `_bsum_fast.pyx` (per-row precomputation)
+### `update_w` (scalar, ground truth)
 
 Precomputes `mw_i[j] = M[i,:] @ W[:,j]` for all j simultaneously in a single pass
-through M[i,:]. This reduces M memory reads from r passes to 1 pass per row.
+through M[i,:] per row. This reduces M memory reads from r passes to 1 pass per row.
+Uses Cython memoryviews for all array access.
 
 **Mathematical validity**: Within row i's j-loop, mw_i[j] = sum_k M[i,k] * W[k,j].
 When we update W[i, j_prev] for j_prev < j, this does NOT affect mw_i[j] because
@@ -44,11 +40,11 @@ the sum over k includes k=i, but we're modifying W[i, j_prev] (column j_prev),
 not W[k, j] (column j). The effect of W[i, j_prev] changes is captured in the
 WtW terms.
 
-**Numerical agreement**: Bit-for-bit identical to `_bsum.pyx` (max_diff = 0.0).
+**Numerical agreement**: Bit-for-bit identical to the Python `update_w` in `model.py`.
 
-### `_bsum_fast_blas.pyx` (BLAS-2)
+### `update_w_blas` (BLAS-2)
 
-Same per-row mw_i algorithm as `_bsum_fast.pyx`, but uses:
+Same per-row mw_i algorithm as `update_w`, but uses:
 
 - **BLAS dgemv** for `mw_i = M[i,:] @ W` (the dominant 95% cost). OpenBLAS dgemv
   uses optimized cache blocking, SIMD, and prefetching for this matrix-vector product.
@@ -60,7 +56,7 @@ Same per-row mw_i algorithm as `_bsum_fast.pyx`, but uses:
 lda=r, where A = W^T. The call `dgemv('N', r, n, 1.0, W, r, M[i,:], 1, 0.0, mw_i, 1)`
 computes `mw_i = A @ M[i,:] = W^T @ M[i,:] = M[i,:] @ W`.
 
-### `_bsum_blocked.pyx` (BLAS-3 blocked, fastest)
+### `update_w_blas_blocked` (BLAS-3, fastest, default)
 
 Replaces per-row BLAS-2 operations (memory-bound dgemv) with BLAS-3 operations
 (compute-bound dsymm/dgemm):
@@ -80,13 +76,13 @@ The parameter `block_size` controls the trade-off between BLAS-3 efficiency and
 correction overhead. The default block_size is `min(50, max(1, n // 10))` because the dsymm
 dominates and corrections are cheap.
 
-**Numerical agreement**: Same as `_bsum_fast_blas`; small floating-point differences
+**Numerical agreement**: Same as `update_w_blas`; small floating-point differences
 (1e-13 to 1e-9) due to BLAS summation reordering, but reconstruction error matches
 to 12+ decimal places.
 
 ## Compile flags
 
-All four extensions are compiled with `-O3 -march=native -ffp-contract=off`:
+The extension is compiled with `-O3 -march=native -ffp-contract=off`:
 - `-march=native`: enables AVX2/AVX512 SIMD instructions
 - `-ffp-contract=off`: disables FMA contraction to keep scalar loops bit-identical
   (the BLAS calls still use their own internal optimizations)
@@ -97,16 +93,16 @@ Measured on SLURM compute nodes (4 threads), 5 BSUM iterations, tol=0.0:
 
 <!-- vale off -->
 
-| n | rank | original | fast | blas | blocked | blocked speedup |
-|---|------|----------|------|------|---------|-----------------|
-| 5000 | 50 | 5.30s | 2.46s | 0.96s | 0.29s | 18.6x |
-| 10000 | 50 | 21.40s | 9.53s | 4.68s | 0.88s | 24.5x |
-| 20000 | 50 | 94.06s | 37.41s | 18.28s | 3.04s | 30.9x |
+| n | rank | scalar | blas | blocked | blocked speedup |
+|---|------|--------|------|---------|-----------------|
+| 5000 | 50 | 2.46s | 0.96s | 0.29s | 8.5x |
+| 10000 | 50 | 9.53s | 4.68s | 0.88s | 10.8x |
+| 20000 | 50 | 37.41s | 18.28s | 3.04s | 12.3x |
 
 <!-- vale on -->
 
 Speedup grows with n because the BLAS-3 dsymm/dgemm ratio improves with matrix size.
-At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than original.
+At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than scalar.
 
 ## Memory-efficient fitting
 
@@ -123,15 +119,16 @@ costs O(nr²), both with no n×n temporaries.
 
 ## Numerical agreement
 
-### `_bsum_fast` vs `_bsum` (original)
+### `update_w` (scalar) vs Python
 
 Bit-for-bit identical: max_diff = 0.0 in all tests. This is because both
 implementations perform the exact same arithmetic in the exact same order; the
-fast version just reorganizes the loop structure without changing the computation.
+scalar Cython version just reorganizes the loop structure without changing the
+computation.
 
 <!-- vale off -->
 
-### `_bsum_fast_blas` and `_bsum_blocked` vs `_bsum` (original)
+### `update_w_blas` and `update_w_blas_blocked` vs `update_w` (scalar)
 
 The BLAS variants compute mathematically identical quantities via different
 floating-point summation order. This section provides a complete mathematical
@@ -143,13 +140,13 @@ quartic solver, and documents the test strategy.
 The sBSUM algorithm (Shi et al. 2017, Algorithm 1) updates each element W[i,j]
 by solving a quartic subproblem with coefficients (a, b, c, d) that depend on
 the current state of W, WtW = W^T @ W, diag = row norms of W, and
-MW[i,j] = (M @ W)[i,j]. We prove below that all four implementations compute
+MW[i,j] = (M @ W)[i,j]. We prove below that all implementations compute
 identical coefficients for each (i,j) update, up to IEEE 754 rounding in the
 MW term.
 
-**1. Quartic solver**: All four .pyx files contain an identical copy of
-`_quartic_root(a, b, c, d)`, implementing the cubic resolvent from Shi et al.
-(2017) Eq. (11). Identical code, identical inputs → identical outputs. ✓
+**1. Quartic solver**: All implementations use an identical `_quartic_root(a, b, c, d)`,
+implementing the cubic resolvent from Shi et al. (2017) Eq. (11). Identical code,
+identical inputs → identical outputs. ✓
 
 **2. Coefficient a = 4.0**: Hardcoded constant in all implementations. ✓
 
@@ -168,7 +165,7 @@ implementations read `old = W[i,j]` from the same array, so b is identical. ✓
 
 **5. Coefficient d = 4·(W[i,:] · WtW[:,j] − MW[i,j])**:
 
-The first term, `W[i,:] · WtW[:,j]`: The original uses a scalar loop over
+The first term, `W[i,:] · WtW[:,j]`: The scalar variant uses a scalar loop over
 WtW[:,j] (column, stride r). The BLAS variants use `ddot(r, W[i,:], 1,
 WtW[j,:], 1)` on WtW[j,:] (row, stride 1). Since WtW = W^T W is symmetric,
 WtW[j,:] = WtW[:,j] — same values, different memory layout. The ddot result
@@ -176,21 +173,19 @@ differs from the scalar loop only by IEEE 754 rounding.
 
 The second term, `MW[i,j] = (M @ W_current)[i,j]`, is the critical difference:
 
-- **Original** (`_bsum.pyx`): Computes `sum_k M[i,k]·W[k,j]` as a fresh scalar
-  dot product for each (i,j) pair, where W reflects all updates for rows < i.
-- **Fast** (`_bsum_fast.pyx`): Precomputes `mw_i[j] = sum_k M[i,k]·W[k,j]`
+- **Scalar** (`update_w`): Precomputes `mw_i[j] = sum_k M[i,k]·W[k,j]`
   for all j in a single pass at the start of row i. This is valid because
   within row i's j-loop, updating W[i, j_prev] for j_prev < j does not affect
   mw_i[j]: the sum is over W[:,j] (column j), and only W[i, j_prev] (column
-  j_prev ≠ j) was modified. Same summation order as original → bit-identical.
-- **BLAS** (`_bsum_fast_blas.pyx`): Same per-row precomputation via dgemv:
+  j_prev ≠ j) was modified. Same summation order as Python → bit-identical.
+- **BLAS** (`update_w_blas`): Same per-row precomputation via dgemv:
   `mw_i = W^T @ M[i,:]`. The Fortran call `dgemv('N', r, n, 1, W, r,
   M[i,:], 1, 0, mw_i, 1)` interprets C row-major W(n,r) as Fortran
   col-major A(r,n) = W^T, computing A @ M[i,:] = W^T @ M[i,:]. By symmetry
   of M: (W^T @ M[i,:])[j] = sum_k W[k,j]·M[i,k] = (M @ W)[i,j]. Same
   mathematical quantity, but dgemv uses SIMD accumulation which changes
   summation order.
-- **Blocked** (`_bsum_blocked.pyx`): Precomputes MW = M @ W for all rows at
+- **Blocked** (`update_w_blas_blocked`): Precomputes MW = M @ W for all rows at
   once via dsymm, then corrects for W changes during the iteration:
 
   At the start of iteration, MW₀ = M @ W₀ via dsymm. When processing row i,
@@ -288,8 +283,8 @@ equally good local minima.
 
 Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):
 
-| iters | recon err (original) | recon err (blocked) | max W diff |
-|-------|---------------------|---------------------|------------|
+| iters | recon err (scalar) | recon err (blocked) | max W diff |
+|-------|--------------------|---------------------|------------|
 | 1 | 0.561962478782 | 0.561962478782 | 1.2e-12 |
 | 5 | 0.060587047326 | 0.060587047326 | 1.9e-11 |
 | 50 | 0.018596595745 | 0.018596595745 | 2.2e-11 |
