@@ -119,7 +119,7 @@ def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float
 
 
 def _dot(a: np.ndarray, b: np.ndarray) -> float:
-    """Compute dot product of two arrays."""
+    """Compute dot product using scalar accumulation matching Cython summation order."""
     return sum(x * y for x, y in zip(a, b))
 
 

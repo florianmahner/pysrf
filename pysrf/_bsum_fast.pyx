@@ -57,6 +57,9 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
                 b = 12.0 * old
                 c = 4.0 * ((diag_view[i] - m_view[i, i]) + wtw_view[j, j] + old * old)
 
+                # wtw_view[:, j] is a strided column slice of a C-contiguous array,
+                # creating a temporary memoryview per j-iteration. Not performance-
+                # critical since _bsum_fast is the scalar fallback, not the fast path.
                 d = 4.0 * _dot_product(w_view[i, :], wtw_view[:, j]) - 4.0 * mw_i_view[j]
                 new = _quartic_root(a, b, c, d)
                 delta = new - old
