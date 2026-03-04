@@ -241,40 +241,26 @@ def update_w(
     return w
 
 
-_update_w_impl = None
-_update_w_source = "python"
-
+# The BLAS-3 blocked implementation is used by default. Scalar (update_w) and
+# BLAS-2 (update_w_blas) variants are available in _bsum for benchmarking.
 try:
-    from ._bsum_blocked import update_w as _update_w_impl
+    from ._bsum import update_w_blas_blocked as _update_w_impl
 
-    _update_w_source = "blocked_cython"
+    _update_w_source = "cython"
 except ImportError:
-    try:
-        from ._bsum_fast_blas import update_w as _update_w_impl
+    import warnings
 
-        _update_w_source = "blas_cython"
-    except ImportError:
-        try:
-            from ._bsum_fast import update_w as _update_w_impl
-
-            _update_w_source = "fast_cython"
-        except ImportError:
-            try:
-                from ._bsum import update_w as _update_w_impl
-
-                _update_w_source = "original_cython"
-            except ImportError:
-                import warnings
-
-                warnings.warn(
-                    "Cython implementation not available. Using Python implementation "
-                    "which is significantly slower. Compile Cython to improve performance.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
+    warnings.warn(
+        "Cython implementation not available. Using Python implementation "
+        "which is significantly slower. Compile Cython to improve performance.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    _update_w_impl = None
 
 if _update_w_impl is None:
     _update_w_impl = update_w
+    _update_w_source = "python"
 
 
 def update_v_(

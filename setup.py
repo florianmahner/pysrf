@@ -1,4 +1,5 @@
 """Setup script for pysrf with Cython extension compilation."""
+
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import numpy as np
@@ -25,27 +26,6 @@ def get_extensions():
             Extension(
                 "pysrf._bsum",
                 sources=["pysrf/_bsum.pyx"],
-                include_dirs=[np.get_include()],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-                extra_compile_args=["-O3", "-march=native", "-ffp-contract=off"],
-            ),
-            Extension(
-                "pysrf._bsum_fast",
-                sources=["pysrf/_bsum_fast.pyx"],
-                include_dirs=[np.get_include()],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-                extra_compile_args=["-O3", "-march=native", "-ffp-contract=off"],
-            ),
-            Extension(
-                "pysrf._bsum_fast_blas",
-                sources=["pysrf/_bsum_fast_blas.pyx"],
-                include_dirs=[np.get_include()],
-                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-                extra_compile_args=["-O3", "-march=native", "-ffp-contract=off"],
-            ),
-            Extension(
-                "pysrf._bsum_blocked",
-                sources=["pysrf/_bsum_blocked.pyx"],
                 include_dirs=[np.get_include()],
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_compile_args=["-O3", "-march=native", "-ffp-contract=off"],
