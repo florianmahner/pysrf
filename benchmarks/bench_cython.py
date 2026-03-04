@@ -17,7 +17,7 @@ pyximport.install(
     language_level=3,
 )
 
-from pysrf.model import update_w_python
+from pysrf.model import update_w as update_w_python
 from pysrf._bsum import update_w as update_w_cython
 
 
