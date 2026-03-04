@@ -1,4 +1,4 @@
-# distutils: language = c++
+# distutils: language = c
 # cython: boundscheck=False, wraparound=False, cdivision=True, nonecheck=False, language_level=3
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
@@ -12,28 +12,12 @@
 
 import numpy as np
 cimport numpy as np
-from libc.math cimport sqrt, pow, fabs, cbrt
+from libc.math cimport fabs
+from pysrf._quartic cimport _quartic_root
 
 np.import_array()
 
 ctypedef np.float64_t DTYPE_t
-
-
-cpdef double _quartic_root(double a, double b, double c, double d) nogil:
-    cdef double bb  = b * b
-    cdef double a2  = a * a
-    cdef double p   = (3.0 * a * c - bb) / (3.0 * a2)
-    cdef double q   = (9.0 * a * b * c - 27.0 * a2 * d - 2.0 * b * bb) / (27.0 * a2 * a)
-    cdef double root, delta, tmp
-
-    if c > bb / (3.0 * a):
-        delta = sqrt(q * q * 0.25 + p * p * p / 27.0)
-        root  = cbrt(q * 0.5 - delta) + cbrt(q * 0.5 + delta)
-    else:
-        tmp   = b * bb / (27.0 * a2 * a) - d / a
-        root  = cbrt(tmp)
-
-    return 0.0 if root < 0.0 else root
 
 
 cdef inline double _dot_product(double[:] a, double[:] b) nogil:
@@ -77,8 +61,8 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
                 new = _quartic_root(a, b, c, d)
                 delta = new - old
                 
-                if abs(delta) > max_delta:
-                    max_delta = abs(delta)
+                if fabs(delta) > max_delta:
+                    max_delta = fabs(delta)
                 
                 diag_view[i] += new * new - old * old
 
