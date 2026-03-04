@@ -33,7 +33,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=61", "wheel", "cython>=3.0", "numpy>=1.23"]
+requires = ["setuptools>=61", "wheel", "cython>=3.0", "numpy>=1.23", "scipy>=1.13"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
