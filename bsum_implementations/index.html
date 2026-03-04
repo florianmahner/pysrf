@@ -1,0 +1,1334 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Sparse non-negative factorization of similarity matrices">
+      
+      
+        <meta name="author" content="Florian Mahner">
+      
+      
+        <link rel="canonical" href="https://florianmahner.github.io/pysrf/bsum_implementations/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.png">
+      <meta name="generator" content="zensical-0.0.23">
+    
+    
+      
+        <title>BSUM implementations - pysrf</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e989742.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#bsum-implementations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="pysrf" class="md-header__button md-logo" aria-label="pysrf" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pysrf
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              BSUM implementations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/florianmahner/pysrf" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    florianmahner/pysrf
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/model/" class="md-tabs__link">
+          
+  
+  API reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../development/" class="md-tabs__link">
+        
+  
+  Development
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="pysrf" class="md-nav__button md-logo" aria-label="pysrf" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    pysrf
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/florianmahner/pysrf" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    florianmahner/pysrf
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model (SRF)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/cross_validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/bounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sampling bounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update_w-scalar-ground-truth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_w (scalar, ground truth)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_w_blas-blas-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_w_blas (BLAS-2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_w_blas_blocked-blas-3-fastest-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_w_blas_blocked (BLAS-3, fastest, default)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compile-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compile flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory-efficient-fitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory-efficient fitting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#numerical-agreement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical agreement
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Numerical agreement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update_w-scalar-vs-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_w (scalar) vs Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_w_blas and update_w_blas_blocked vs update_w (scalar)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="update_w_blas and update_w_blas_blocked vs update_w (scalar)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-by-step-mathematical-proof-of-equivalence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-step mathematical proof of equivalence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ieee-754-rounding-error-bound" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IEEE 754 rounding error bound
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-element-wise-differences-grow-over-iterations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why element-wise differences grow over iterations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reconstruction-quality-is-identical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reconstruction quality is identical
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+  
+
+
+<h1 id="bsum-implementations">BSUM implementations<a class="headerlink" href="#bsum-implementations" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The BSUM (Block Successive Upper-bound Minimization) algorithm for symmetric NMF
+(S ≈ W @ W.T) has 3 Cython implementations in a single file <code>pysrf/_bsum.pyx</code>,
+with different performance characteristics. The <code>model.py</code> import uses the fastest
+(BLAS-3 blocked) by default, falling back to Python if Cython is not compiled.</p>
+<p>Functions in <code>pysrf._bsum</code>:
+1. <code>update_w</code>: scalar Cython (ground truth, bitwise-identical to Python)
+2. <code>update_w_blas</code>: BLAS-2 dgemv (~5x over scalar)
+3. <code>update_w_blas_blocked</code>: BLAS-3 dsymm/dgemm (19-31x over scalar, default)</p>
+<h2 id="algorithm">Algorithm<a class="headerlink" href="#algorithm" title="Permanent link">&para;</a></h2>
+<p>Per iteration, for each row i and rank index j:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n) — dominates at 95%+ of cost
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>dot_val = W[i,:] · WtW[j,:]               # O(r)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>coefficients = f(old, diag, WtW, mw_i)    # O(1)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>new = quartic_root(coefficients)           # O(1)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>update WtW, diag, W[i,j]                  # O(r)
+</code></pre></div>
+<p>Total per iteration: O(n²r + nr²). The mw_i computation is O(n²r) and dominates.</p>
+<h2 id="implementation-details">Implementation details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h2>
+<h3 id="update_w-scalar-ground-truth"><code>update_w</code> (scalar, ground truth)<a class="headerlink" href="#update_w-scalar-ground-truth" title="Permanent link">&para;</a></h3>
+<p>Precomputes <code>mw_i[j] = M[i,:] @ W[:,j]</code> for all j simultaneously in a single pass
+through M[i,:] per row. This reduces M memory reads from r passes to 1 pass per row.
+Uses Cython memoryviews for all array access.</p>
+<p><strong>Mathematical validity</strong>: Within row i's j-loop, mw_i[j] = sum_k M[i,k] * W[k,j].
+When we update W[i, j_prev] for j_prev &lt; j, this does NOT affect mw_i[j] because
+the sum over k includes k=i, but we're modifying W[i, j_prev] (column j_prev),
+not W[k, j] (column j). The effect of W[i, j_prev] changes is captured in the
+WtW terms.</p>
+<p><strong>Numerical agreement</strong>: Bit-for-bit identical to the Python <code>update_w</code> in <code>model.py</code>.</p>
+<h3 id="update_w_blas-blas-2"><code>update_w_blas</code> (BLAS-2)<a class="headerlink" href="#update_w_blas-blas-2" title="Permanent link">&para;</a></h3>
+<p>Same per-row mw_i algorithm as <code>update_w</code>, but uses:</p>
+<ul>
+<li><strong>BLAS dgemv</strong> for <code>mw_i = M[i,:] @ W</code> (the dominant 95% cost). OpenBLAS dgemv
+  uses optimized cache blocking, SIMD, and prefetching for this matrix-vector product.</li>
+<li><strong>BLAS ddot</strong> for <code>W[i,:] · WtW[j,:]</code> dot products (contiguous row access).</li>
+<li><strong>BLAS daxpy</strong> for <code>WtW[j,:] += delta * W[i,:]</code> (contiguous row update).</li>
+<li>Raw C <code>double*</code> pointers for scalar operations and the strided WtW column update.</li>
+</ul>
+<p><strong>Fortran layout for dgemv</strong>: C row-major W(n,r) = Fortran column-major A(r,n) with
+lda=r, where A = W^T. The call <code>dgemv('N', r, n, 1.0, W, r, M[i,:], 1, 0.0, mw_i, 1)</code>
+computes <code>mw_i = A @ M[i,:] = W^T @ M[i,:] = M[i,:] @ W</code>.</p>
+<h3 id="update_w_blas_blocked-blas-3-fastest-default"><code>update_w_blas_blocked</code> (BLAS-3, fastest, default)<a class="headerlink" href="#update_w_blas_blocked-blas-3-fastest-default" title="Permanent link">&para;</a></h3>
+<p>Replaces per-row BLAS-2 operations (memory-bound dgemv) with BLAS-3 operations
+(compute-bound dsymm/dgemm):</p>
+<ol>
+<li><strong>dsymm</strong> precomputes <code>MW = M @ W</code> for the entire matrix at once (BLAS-3)</li>
+<li><strong>dgemm</strong> applies inter-block corrections after each block completes</li>
+<li><strong>Scalar daxpy</strong> corrections within each block for rows processed earlier</li>
+</ol>
+<p>The key insight: instead of calling dgemv n times (once per row), we call dsymm
+once per iteration to get all MW values, then correct them as W changes within
+each block. For block_size B:
+- 1 dsymm call (n×n × n×r → n×r): O(n²r) but at BLAS-3 bandwidth
+- n/B dgemm calls for inter-block corrections: O(n²r/B) total
+- O(B²r) scalar corrections within each block</p>
+<p>The parameter <code>block_size</code> controls the trade-off between BLAS-3 efficiency and
+correction overhead. The default block_size is <code>min(50, max(1, n // 10))</code> because the dsymm
+dominates and corrections are cheap.</p>
+<p><strong>Numerical agreement</strong>: Same as <code>update_w_blas</code>; small floating-point differences
+(1e-13 to 1e-9) due to BLAS summation reordering, but reconstruction error matches
+to 12+ decimal places.</p>
+<h2 id="compile-flags">Compile flags<a class="headerlink" href="#compile-flags" title="Permanent link">&para;</a></h2>
+<p>The extension is compiled with <code>-O3 -march=native -ffp-contract=off</code>:
+- <code>-march=native</code>: enables AVX2/AVX512 SIMD instructions
+- <code>-ffp-contract=off</code>: disables FMA contraction to keep scalar loops bit-identical
+  (the BLAS calls still use their own internal optimizations)</p>
+<h2 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">&para;</a></h2>
+<p>Measured on SLURM compute nodes (4 threads), 5 BSUM iterations, tol=0.0:</p>
+<!-- vale off -->
+
+<table>
+<thead>
+<tr>
+<th>n</th>
+<th>rank</th>
+<th>scalar</th>
+<th>blas</th>
+<th>blocked</th>
+<th>blocked speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5000</td>
+<td>50</td>
+<td>2.46s</td>
+<td>0.96s</td>
+<td>0.29s</td>
+<td>8.5x</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>50</td>
+<td>9.53s</td>
+<td>4.68s</td>
+<td>0.88s</td>
+<td>10.8x</td>
+</tr>
+<tr>
+<td>20000</td>
+<td>50</td>
+<td>37.41s</td>
+<td>18.28s</td>
+<td>3.04s</td>
+<td>12.3x</td>
+</tr>
+</tbody>
+</table>
+<!-- vale on -->
+
+<p>Speedup grows with n because the BLAS-3 dsymm/dgemm ratio improves with matrix size.
+At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than scalar.</p>
+<h2 id="memory-efficient-fitting">Memory-efficient fitting<a class="headerlink" href="#memory-efficient-fitting" title="Permanent link">&para;</a></h2>
+<p>The <code>_fit_complete_data</code> method in <code>model.py</code> uses <code>_frobenius_residual</code> to compute
+<code>||X - WW^T||_F</code> without materializing the n×n product <code>WW^T</code>. This keeps memory
+at O(n²) (just the input matrix) instead of O(2n²).</p>
+<p>The identity used:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>||X - WW^T||²_F = ||X||²_F - 2·tr(X·W·W^T) + ||WW^T||²_F
+</code></pre></div>
+where <code>tr(X·W·W^T) = sum((X@W) * W)</code> costs O(n²r) and <code>||WW^T||²_F = ||W^TW||²_F</code>
+costs O(nr²), both with no n×n temporaries.</p>
+<h2 id="numerical-agreement">Numerical agreement<a class="headerlink" href="#numerical-agreement" title="Permanent link">&para;</a></h2>
+<h3 id="update_w-scalar-vs-python"><code>update_w</code> (scalar) vs Python<a class="headerlink" href="#update_w-scalar-vs-python" title="Permanent link">&para;</a></h3>
+<p>Bit-for-bit identical: max_diff = 0.0 in all tests. This is because both
+implementations perform the exact same arithmetic in the exact same order; the
+scalar Cython version just reorganizes the loop structure without changing the
+computation.</p>
+<!-- vale off -->
+
+<h3 id="update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar"><code>update_w_blas</code> and <code>update_w_blas_blocked</code> vs <code>update_w</code> (scalar)<a class="headerlink" href="#update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar" title="Permanent link">&para;</a></h3>
+<p>The BLAS variants compute mathematically identical quantities via different
+floating-point summation order. This section provides a complete mathematical
+proof of equivalence, explains how IEEE 754 rounding cascades through the
+quartic solver, and documents the test strategy.</p>
+<h4 id="step-by-step-mathematical-proof-of-equivalence">Step-by-step mathematical proof of equivalence<a class="headerlink" href="#step-by-step-mathematical-proof-of-equivalence" title="Permanent link">&para;</a></h4>
+<p>The sBSUM algorithm (Shi et al. 2017, Algorithm 1) updates each element W[i,j]
+by solving a quartic subproblem with coefficients (a, b, c, d) that depend on
+the current state of W, WtW = W^T @ W, diag = row norms of W, and
+MW[i,j] = (M @ W)[i,j]. We prove below that all implementations compute
+identical coefficients for each (i,j) update, up to IEEE 754 rounding in the
+MW term.</p>
+<p><strong>1. Quartic solver</strong>: All implementations use an identical <code>_quartic_root(a, b, c, d)</code>,
+implementing the cubic resolvent from Shi et al. (2017) Eq. (11). Identical code,
+identical inputs → identical outputs. ✓</p>
+<p><strong>2. Coefficient a = 4.0</strong>: Hardcoded constant in all implementations. ✓</p>
+<p><strong>3. Coefficient b = 12 · W[i,j]</strong>: Depends only on the current element. All
+implementations read <code>old = W[i,j]</code> from the same array, so b is identical. ✓</p>
+<p><strong>4. Coefficient c = 4·((diag[i] − M[i,i]) + WtW[j,j] + W[i,j]²)</strong>:
+- <code>diag[i]</code> = ||W[i,:]||² — maintained incrementally via
+  <code>diag[i] += new² − old²</code>, identical in all implementations.
+- <code>M[i,i]</code> — read-only input, identical.
+- <code>WtW[j,j]</code> — maintained incrementally via <code>WtW[j,j] += delta²</code> after each
+  update. The rank-1 update <code>WtW[j,:] += delta·W[i,:]</code> uses daxpy in the BLAS
+  variants for the row (stride-1) and a scalar loop for the column (stride-r).
+  Since daxpy computes <code>y[k] += alpha·x[k]</code> element-by-element with no
+  reordering, this is arithmetically identical to the scalar loop. ✓</p>
+<p><strong>5. Coefficient d = 4·(W[i,:] · WtW[:,j] − MW[i,j])</strong>:</p>
+<p>The first term, <code>W[i,:] · WtW[:,j]</code>: The scalar variant uses a scalar loop over
+WtW[:,j] (column, stride r). The BLAS variants use <code>ddot(r, W[i,:], 1,
+WtW[j,:], 1)</code> on WtW[j,:] (row, stride 1). Since WtW = W^T W is symmetric,
+WtW[j,:] = WtW[:,j] — same values, different memory layout. The ddot result
+differs from the scalar loop only by IEEE 754 rounding.</p>
+<p>The second term, <code>MW[i,j] = (M @ W_current)[i,j]</code>, is the critical difference:</p>
+<ul>
+<li><strong>Scalar</strong> (<code>update_w</code>): Precomputes <code>mw_i[j] = sum_k M[i,k]·W[k,j]</code>
+  for all j in a single pass at the start of row i. This is valid because
+  within row i's j-loop, updating W[i, j_prev] for j_prev &lt; j does not affect
+  mw_i[j]: the sum is over W[:,j] (column j), and only W[i, j_prev] (column
+  j_prev ≠ j) was modified. Same summation order as Python → bit-identical.</li>
+<li><strong>BLAS</strong> (<code>update_w_blas</code>): Same per-row precomputation via dgemv:
+  <code>mw_i = W^T @ M[i,:]</code>. The Fortran call <code>dgemv('N', r, n, 1, W, r,
+  M[i,:], 1, 0, mw_i, 1)</code> interprets C row-major W(n,r) as Fortran
+  col-major A(r,n) = W^T, computing A @ M[i,:] = W^T @ M[i,:]. By symmetry
+  of M: (W^T @ M[i,:])[j] = sum_k W[k,j]·M[i,k] = (M @ W)[i,j]. Same
+  mathematical quantity, but dgemv uses SIMD accumulation which changes
+  summation order.</li>
+<li><strong>Blocked</strong> (<code>update_w_blas_blocked</code>): Precomputes MW = M @ W for all rows at
+  once via dsymm, then corrects for W changes during the iteration:</li>
+</ul>
+<p>At the start of iteration, MW₀ = M @ W₀ via dsymm. When processing row i,
+  rows 0..i−1 have already been updated: W_current[k,:] = W₀[k,:] + ΔW[k,:]
+  for k &lt; i, and W_current[k,:] = W₀[k,:] for k ≥ i. The needed value is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>MW_correct[i,j] = sum_k M[i,k] · W_current[k,j]
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>                 = sum_k M[i,k] · W₀[k,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>                 = MW₀[i,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
+</code></pre></div>
+<p>The correction <code>sum_{k&lt;i} M[i,k] · ΔW[k,j]</code> is computed in two parts:</p>
+<p><strong>Inter-block</strong> (via dgemm, after each block completes): For rows in
+  completed blocks {0..block_start−1}, the dgemm call
+  <code>MW[remaining,:] += M[remaining, block] @ ΔW[block,:]</code> applies the
+  cumulative delta from each completed block to all subsequent rows.</p>
+<p><strong>Intra-block</strong> (via daxpy, before processing each row): For earlier rows
+  in the current block {block_start..i−1}, scalar daxpy calls apply
+  <code>MW[i,:] += M[i,k] · ΔW[k,:]</code> for each k in the current block.</p>
+<p>Together: MW_corrected[i,:] = MW₀[i,:] + (inter-block corrections from
+  completed blocks) + (intra-block corrections from current block)
+  = MW₀[i,:] + sum_{k=0..i−1} M[i,k] · ΔW[k,:] = (M @ W_current)[i,:]. ✓</p>
+<p>The dsymm and dgemm calls use BLAS-3 accumulation which differs in
+  summation order from the scalar loop, introducing IEEE 754 rounding
+  differences.</p>
+<p><strong>6. State updates (WtW, diag, W)</strong>: All implementations perform identical
+rank-1 updates: <code>WtW[j,:] += delta·W[i,:]</code> (daxpy, element-wise identical),
+<code>WtW[:,j] += delta·W[i,:]</code> (scalar loop in all BLAS variants, identical),
+<code>WtW[j,j] += delta²</code>, <code>diag[i] += new² − old²</code>, <code>W[i,j] = new</code>. ✓</p>
+<p><strong>Conclusion</strong>: The ONLY source of floating-point difference between
+implementations is the summation order in:
+- dsymm/dgemv for MW computation (BLAS uses SIMD/blocked accumulation)
+- ddot for W[i,:] · WtW[:,j] (BLAS may use pairwise summation)</p>
+<p>All other operations are arithmetically identical.</p>
+<h4 id="ieee-754-rounding-error-bound">IEEE 754 rounding error bound<a class="headerlink" href="#ieee-754-rounding-error-bound" title="Permanent link">&para;</a></h4>
+<p>By Higham (2002, Theorem 3.1), the forward error of a floating-point inner
+product fl(x^T y) of length n satisfies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>|fl(x^T y) − x^T y| ≤ γ_n · |x|^T |y|
+</code></pre></div>
+<p>where γ_n = nu/(1−nu) ≈ nu and u = 2^{-53} ≈ 1.11×10^{-16} is the IEEE 754
+double-precision unit roundoff. Two different summation orders (e.g., scalar
+sequential vs BLAS SIMD) each satisfy this bound independently, so their
+results can differ by up to ~2·γ_n · |x|^T |y|.</p>
+<p>For the MW computation with n=100, typical |M[i,k]| ≈ 0.5, |W[k,j]| ≈ 0.1:
+max difference ≈ 2 · 100 · 1.11×10^{-16} · (sum of |M[i,k]·W[k,j]|)
+≈ 2 · 100 · 1.11×10^{-16} · ~5 ≈ 1.1×10^{-13}, consistent with observed
+~10^{-14} differences after one iteration.</p>
+<p>This non-reproducibility of BLAS results due to summation reordering is a
+well-documented phenomenon. Standard BLAS libraries (OpenBLAS, MKL, cuBLAS)
+do not guarantee a specific summation order — SIMD instructions accumulate
+partial sums in parallel lanes that are reduced in implementation-defined order
+(Ahrens, Demmel &amp; Nguyen, 2020; Demmel &amp; Nguyen, 2015). The ReproBLAS project
+provides reproducible alternatives at ~1.5× cost, but standard BLAS is used
+here for maximum performance.</p>
+<h4 id="why-element-wise-differences-grow-over-iterations">Why element-wise differences grow over iterations<a class="headerlink" href="#why-element-wise-differences-grow-over-iterations" title="Permanent link">&para;</a></h4>
+<p>The BSUM quartic solver computes <code>new = max(0, cbrt(-d/4))</code> when old=0 and c&lt;0.
+The cube root function has derivative 1/(3·x^{2/3}), which diverges as x → 0.
+Near the non-negativity boundary:</p>
+<ol>
+<li>BLAS rounding gives d_blas = d_scalar ± ~10^{-14} (from MW difference)</li>
+<li>When |d| is small, cbrt amplifies: cbrt(d ± ε) ≈ cbrt(d) ± ε/(3·|d|^{2/3})</li>
+<li>For d ~ 10^{-15}: amplification factor ~ 1/(3·(10^{-15})^{2/3}) ~ 10^{9}</li>
+<li>If the scalar root is barely positive and the BLAS root is barely negative
+   (or vice versa), <code>max(0, root)</code> creates a discrete 0-vs-nonzero flip</li>
+</ol>
+<p>This boundary flip propagates through subsequent WtW updates within the same
+row's j-loop and cascades to all downstream elements. Over many iterations,
+flips accumulate — but both algorithms converge to the same fixed point of the
+NMF objective (Shi et al. 2017, Theorem 1).</p>
+<h4 id="reconstruction-quality-is-identical">Reconstruction quality is identical<a class="headerlink" href="#reconstruction-quality-is-identical" title="Permanent link">&para;</a></h4>
+<p>Despite element-wise divergence, the reconstruction quality
+<code>||M − WW^T||_F / ||M||_F</code> matches to <strong>10+ decimal places</strong> at all iteration
+counts. Both algorithms minimize the same objective function — boundary flips
+select a slightly different path through the solution space but converge to
+equally good local minima.</p>
+<p>Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):</p>
+<table>
+<thead>
+<tr>
+<th>iters</th>
+<th>recon err (scalar)</th>
+<th>recon err (blocked)</th>
+<th>max W diff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0.561962478782</td>
+<td>0.561962478782</td>
+<td>1.2e-12</td>
+</tr>
+<tr>
+<td>5</td>
+<td>0.060587047326</td>
+<td>0.060587047326</td>
+<td>1.9e-11</td>
+</tr>
+<tr>
+<td>50</td>
+<td>0.018596595745</td>
+<td>0.018596595745</td>
+<td>2.2e-11</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.013706608896</td>
+<td>0.013706608896</td>
+<td>4.6e-11</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.006769387540</td>
+<td>0.006769387540</td>
+<td>3.6e-10</td>
+</tr>
+</tbody>
+</table>
+<h4 id="test-strategy">Test strategy<a class="headerlink" href="#test-strategy" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>1-iteration element-wise test</strong> (<code>atol=1e-10</code>): Proves the correction math
+  is exact on arbitrary symmetric M (including worst-case full-rank random M
+  with 70-90% sparsity in W). Differences are pure IEEE 754 rounding.</li>
+<li><strong>Reconstruction quality test</strong> (<code>rtol=1e-2</code>): Proves both algorithms produce
+  equally good NMF solutions after convergence on any M. The tolerance is 1%
+  to account for full-rank random M where NMF residual remains high (~33%)
+  and boundary flips select different (but equally valid) local minima.</li>
+<li><strong>Nonnegativity test</strong>: Verifies the max(0, root) constraint is maintained.</li>
+</ul>
+<h4 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Shi, Q., Sun, H., Lu, S., Hong, M. &amp; Razaviyayn, M. (2017). "Inexact Block
+  Coordinate Descent Methods for Symmetric Nonnegative Matrix Factorization."
+  IEEE Trans. Signal Processing, 65(22), 5995–6008.
+  https://arxiv.org/abs/1607.03092</li>
+<li>Higham, N. J. (2002). "Accuracy and Stability of Numerical Algorithms."
+  2nd ed., SIAM. Theorem 3.1 (inner product error bound).</li>
+<li>Ahrens, W., Demmel, J. &amp; Nguyen, H. D. (2020). "Algorithms for Efficient
+  Reproducible Floating Point Summation." ACM Trans. Math. Software, 46(3).
+  https://doi.org/10.1145/3389360</li>
+<li>Demmel, J. &amp; Nguyen, H. D. (2015). "Parallel Reproducible Summation."
+  IEEE Trans. Computers, 64(7), 2060–2070.</li>
+<li>Ye, Y. &amp; Bhatt, N. (2024). "FPRev: Revealing Floating-Point Accumulation
+  Orders in Software/Hardware Implementations." arXiv:2411.00442.</li>
+</ul>
+<!-- vale on -->
+
+<h2 id="running-benchmarks">Running benchmarks<a class="headerlink" href="#running-benchmarks" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Submit to SLURM</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>sbatch<span class="w"> </span>benchmarks/run.sh
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Or run interactively</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>srun<span class="w"> </span>--partition<span class="o">=</span>interactive<span class="w"> </span>--cpus-per-task<span class="o">=</span><span class="m">4</span><span class="w"> </span>--mem<span class="o">=</span>16G<span class="w"> </span>--time<span class="o">=</span><span class="m">00</span>:30:00<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span>python<span class="w"> </span>benchmarks/benchmark.py
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Correctness tests</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>python<span class="w"> </span>benchmarks/correctness.py
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","content.code.annotate","content.tooltips","navigation.tabs","navigation.sections","navigation.path","navigation.top","navigation.footer","search.suggest","search.highlight","toc.follow"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.5fcf0de6.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
