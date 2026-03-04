@@ -138,7 +138,6 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas(double[:, ::1] m,
     cdef double* m_p = &m[0, 0]
 
     # BLAS parameters
-    cdef char trans_t = b'T'
     cdef char trans_n = b'N'
     cdef int blas_n = n
     cdef int blas_r = r
