@@ -24,40 +24,8 @@ from sklearn.utils.validation import (
 )
 from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
 
+
 logger = logging.getLogger(__name__)
-
-
-_update_w_impl = None
-_update_w_source = "python"
-
-try:
-    from ._bsum_blocked import update_w as _update_w_impl
-
-    _update_w_source = "blocked_cython"
-except ImportError:
-    try:
-        from ._bsum_fast_blas import update_w as _update_w_impl
-
-        _update_w_source = "blas_cython"
-    except ImportError:
-        try:
-            from ._bsum_fast import update_w as _update_w_impl
-
-            _update_w_source = "fast_cython"
-        except ImportError:
-            try:
-                from ._bsum import update_w as _update_w_impl
-
-                _update_w_source = "original_cython"
-            except ImportError:
-                import warnings
-
-                warnings.warn(
-                    "Cython implementation not available. Using Python implementation "
-                    "which is significantly slower. Compile Cython to improve performance.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
 
 
 def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
@@ -146,7 +114,7 @@ def _initialize_w(
 ) -> np.ndarray:
     """
     Initialize factor matrix W for symmetric NMF.
-    
+
     Parameters
     ----------
     X : ndarray of shape (n_samples, n_samples)
@@ -156,7 +124,7 @@ def _initialize_w(
     method : {'random', 'random_sqrt', 'nndsvd', 'nndsvda', 'nndsvdar'}, \
              default='random_sqrt'
         Initialization strategy:
-        
+
         - 'random' : Random Gaussian, scaled by sqrt(X.mean() / n_components)
         - 'random_sqrt' : Element-wise sqrt(|N(0,1)|), popular for SymNMF
         - 'nndsvd' : Non-Negative Double SVD (deterministic, sparse)
@@ -166,12 +134,12 @@ def _initialize_w(
         Controls random number generation
     eps : float, default=1e-6
         Small constant added to avoid exact zeros
-    
+
     Returns
     -------
     W : ndarray of shape (n_samples, n_components)
         Initialized non-negative factor matrix
-    
+
     References
     ----------
     .. [1] Boutsidis & Gallopoulos (2008). "SVD based initialization:
@@ -272,6 +240,38 @@ def update_w(
 
     return w
 
+
+_update_w_impl = None
+_update_w_source = "python"
+
+try:
+    from ._bsum_blocked import update_w as _update_w_impl
+
+    _update_w_source = "blocked_cython"
+except ImportError:
+    try:
+        from ._bsum_fast_blas import update_w as _update_w_impl
+
+        _update_w_source = "blas_cython"
+    except ImportError:
+        try:
+            from ._bsum_fast import update_w as _update_w_impl
+
+            _update_w_source = "fast_cython"
+        except ImportError:
+            try:
+                from ._bsum import update_w as _update_w_impl
+
+                _update_w_source = "original_cython"
+            except ImportError:
+                import warnings
+
+                warnings.warn(
+                    "Cython implementation not available. Using Python implementation "
+                    "which is significantly slower. Compile Cython to improve performance.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
 
 if _update_w_impl is None:
     _update_w_impl = update_w
