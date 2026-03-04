@@ -531,6 +531,7 @@ class SRF(TransformerMixin, BaseEstimator):
             metrics = {
                 "rec_error": rec_error,
                 "evar": evar,
+                "primal_residual": residual_norm,
             }
 
             for key, value in metrics.items():
