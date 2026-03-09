@@ -238,7 +238,7 @@ def update_w(
     return w
 
 
-def _resolve_solver() -> tuple:
+def _resolve_solver() -> tuple[callable, str]:
     """Resolve the best available BSUM solver at import time."""
     try:
         from ._bsum import update_w_blas_blocked
@@ -534,7 +534,6 @@ class SRF(TransformerMixin, BaseEstimator):
             monitor.record(
                 rec_error=rec_error,
                 evar=evar,
-                data_fit=residual_norm**2,
                 primal_residual=residual_norm,
             )
 
@@ -547,10 +546,7 @@ class SRF(TransformerMixin, BaseEstimator):
                 logger.info("Converged at iteration %d", i)
                 break
 
-        self.w_ = w
-        self.components_ = w
-        self.n_iter_ = i
-        self.history_ = monitor.history
+        self._store_results(w, i, monitor)
 
         return self
 
@@ -567,6 +563,7 @@ class SRF(TransformerMixin, BaseEstimator):
 
         v_old = np.empty_like(x)
         target = np.empty_like(x)
+        primal_residual = np.empty_like(x)
 
         pbar = trange(
             1,
@@ -586,7 +583,7 @@ class SRF(TransformerMixin, BaseEstimator):
             update_v_(
                 self._observation_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
             )
-            primal_residual = v - x_hat
+            np.subtract(v, x_hat, out=primal_residual)
             lam += self.rho * primal_residual
 
             metrics = self._compute_metrics(x, v, x_hat, lam, primal_residual, v_old)
@@ -608,12 +605,17 @@ class SRF(TransformerMixin, BaseEstimator):
                 logger.info("Converged at iteration %d", i)
                 break
 
-        self.w_ = w
-        self.components_ = w
-        self.n_iter_ = i
-        self.history_ = monitor.history
+        self._store_results(w, i, monitor)
 
         return self
+
+    def _store_results(
+        self, w: np.ndarray, n_iter: int, monitor: ConvergenceMonitor
+    ) -> None:
+        self.w_ = w
+        self.components_ = w
+        self.n_iter_ = n_iter
+        self.history_ = monitor.history
 
     def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> SRF:
         """
@@ -659,10 +661,10 @@ class SRF(TransformerMixin, BaseEstimator):
         x = check_symmetric(x, raise_exception=True, tol=1e-10)
 
         observed = self._observation_mask
-        self._observed_count = int(np.sum(observed))
-        if self._observed_count > 0:
-            self._observed_mean = np.sum(x[observed]) / self._observed_count
-            self._total_var = np.sum((x[observed] - self._observed_mean) ** 2)
+        observed_count = int(np.sum(observed))
+        if observed_count > 0:
+            observed_mean = np.sum(x[observed]) / observed_count
+            self._total_var = np.sum((x[observed] - observed_mean) ** 2)
         else:
             self._total_var = 0.0
 
