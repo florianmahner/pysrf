@@ -1,8 +1,11 @@
 """Setup script for pysrf with Cython extension compilation."""
 
+import os
+
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import numpy as np
+import scipy
 
 
 class BuildExtWithFallback(build_ext):
@@ -26,7 +29,7 @@ def get_extensions():
             Extension(
                 "pysrf._bsum",
                 sources=["pysrf/_bsum.pyx"],
-                include_dirs=[np.get_include()],
+                include_dirs=[np.get_include(), os.path.dirname(os.path.dirname(scipy.__file__))],
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 extra_compile_args=["-O3", "-march=native", "-ffp-contract=off"],
             ),
