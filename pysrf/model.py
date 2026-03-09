@@ -8,11 +8,9 @@ and optional bounded constraints.
 
 from __future__ import annotations
 
+import logging
 import math
 import sys
-from collections import defaultdict
-
-import logging
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -241,26 +239,25 @@ def update_w(
     return w
 
 
-# The BLAS-3 blocked implementation is used by default. Scalar (update_w) and
-# BLAS-2 (update_w_blas) variants are available in _bsum for benchmarking.
-try:
-    from ._bsum import update_w_blas_blocked as _update_w_impl
+def _resolve_solver() -> tuple:
+    """Resolve the best available BSUM solver at import time."""
+    try:
+        from ._bsum import update_w_blas_blocked
 
-    _update_w_source = "cython"
-except ImportError:
-    import warnings
+        return update_w_blas_blocked, "cython"
+    except ImportError:
+        import warnings
 
-    warnings.warn(
-        "Cython implementation not available. Using Python implementation "
-        "which is significantly slower. Compile Cython to improve performance.",
-        RuntimeWarning,
-        stacklevel=2,
-    )
-    _update_w_impl = None
+        warnings.warn(
+            "Cython implementation not available. Using Python implementation "
+            "which is significantly slower. Compile Cython to improve performance.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return update_w, "python"
 
-if _update_w_impl is None:
-    _update_w_impl = update_w
-    _update_w_source = "python"
+
+_update_w_impl, _update_w_source = _resolve_solver()
 
 
 def update_v_(
@@ -314,6 +311,44 @@ def update_lambda_(
         rho: Penalty parameter
     """
     lam += rho * (v - x_hat)
+
+
+class ConvergenceMonitor:
+    """Track optimization metrics and check convergence criteria."""
+
+    def __init__(self, tol: float, eps_rel: float = 1e-4) -> None:
+        self.tol = tol
+        self.eps_rel = eps_rel
+        self.history: dict[str, list[float]] = {}
+
+    def record(self, **metrics: float) -> None:
+        for k, v in metrics.items():
+            self.history.setdefault(k, []).append(v)
+
+    def check_complete(
+        self,
+        residual_norm: float,
+        x_norm: float,
+        xhat_norm: float,
+        n: int,
+    ) -> bool:
+        eps_pri = n * self.tol + self.eps_rel * max(x_norm, xhat_norm)
+        return residual_norm <= eps_pri
+
+    def check_admm(
+        self,
+        primal_res: float,
+        dual_res: float,
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray,
+    ) -> bool:
+        n = v.size
+        eps_pri = np.sqrt(n) * self.tol + self.eps_rel * max(
+            np.linalg.norm(v), np.linalg.norm(x_hat)
+        )
+        eps_dual = np.sqrt(n) * self.tol + self.eps_rel * np.linalg.norm(lam)
+        return primal_res <= eps_pri and dual_res <= eps_dual
 
 
 class SRF(TransformerMixin, BaseEstimator):
@@ -398,6 +433,7 @@ class SRF(TransformerMixin, BaseEstimator):
         "missing_values": [None, Real, np.nan],
         "bounds": [None, tuple],
     }
+    _solver = staticmethod(_update_w_impl)
 
     def __init__(
         self,
@@ -473,31 +509,6 @@ class SRF(TransformerMixin, BaseEstimator):
             "dual_residual": dual_res,
         }
 
-    def _check_convergence(
-        self,
-        metrics: dict[str, float],
-        v: np.ndarray,
-        x_hat: np.ndarray,
-        lam: np.ndarray | None,
-    ) -> bool:
-        """Check ADMM convergence using primal and dual residuals."""
-        eps_abs = self.tol
-        eps_rel = 1e-4
-        n = v.size
-
-        eps_pri = np.sqrt(n) * eps_abs + eps_rel * max(
-            np.linalg.norm(v), np.linalg.norm(x_hat)
-        )
-
-        if lam is not None:
-            eps_dual = np.sqrt(n) * eps_abs + eps_rel * np.linalg.norm(lam)
-            return (
-                metrics["primal_residual"] <= eps_pri
-                and metrics["dual_residual"] <= eps_dual
-            )
-        else:
-            return metrics["primal_residual"] <= eps_pri
-
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
         """Fit model with complete data (no missing values).
 
@@ -505,12 +516,11 @@ class SRF(TransformerMixin, BaseEstimator):
         so memory stays at O(n²) (just the input matrix).
         """
         w = _initialize_w(x, self.rank, self.init, self.random_state)
-        history = defaultdict(list)
+        monitor = ConvergenceMonitor(self.tol)
 
         n = x.shape[0]
         x_norm = np.linalg.norm(x, "fro")
         total_var = np.var(x)
-        eps_rel = 1e-4
 
         pbar = trange(
             1,
@@ -520,7 +530,7 @@ class SRF(TransformerMixin, BaseEstimator):
             mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
         for i in pbar:
-            w = _update_w_impl(x, w, max_iter=self.max_inner, tol=self.tol)
+            w = self._solver(x, w, max_iter=self.max_inner, tol=self.tol)
 
             residual_norm, xhat_norm = _frobenius_residual(x, w)
 
@@ -528,42 +538,33 @@ class SRF(TransformerMixin, BaseEstimator):
             mse = residual_norm**2 / (n * n)
             evar = 1.0 - mse / total_var if total_var > 0 else 0.0
 
-            metrics = {
-                "rec_error": rec_error,
-                "evar": evar,
-                "primal_residual": residual_norm,
-            }
-
-            for key, value in metrics.items():
-                history[key].append(value)
+            monitor.record(
+                rec_error=rec_error,
+                evar=evar,
+                data_fit=residual_norm**2,
+                primal_residual=residual_norm,
+            )
 
             pbar.set_postfix(
                 rec_error=f"{rec_error:.3f}",
                 evar=f"{evar:.3f}",
             )
 
-            # Convergence: same criterion as _check_convergence with lam=None,
-            # but without materializing x_hat = W @ W.T. The primal residual
-            # is ||X - WW^T||_F and eps_pri is a mixed absolute/relative
-            # tolerance: n * tol is the absolute part (equivalent to
-            # sqrt(n²) * tol in the ADMM path), and the relative part scales
-            # with the larger of ||X||_F and ||WW^T||_F.
-            eps_pri = n * self.tol + eps_rel * max(x_norm, xhat_norm)
-            if residual_norm <= eps_pri:
+            if monitor.check_complete(residual_norm, x_norm, xhat_norm, n):
                 logger.info("Converged at iteration %d", i)
                 break
 
         self.w_ = w
         self.components_ = w
         self.n_iter_ = i
-        self.history_ = history
+        self.history_ = monitor.history
 
         return self
 
     def _fit_missing_data(self, x: np.ndarray) -> SRF:
         """Fit model with missing data using ADMM."""
         bound_min, bound_max = self.bounds
-        history = defaultdict(list)
+        monitor = ConvergenceMonitor(self.tol)
 
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         lam = np.zeros_like(x)
@@ -581,7 +582,7 @@ class SRF(TransformerMixin, BaseEstimator):
         for i in pbar:
             v_old = v.copy()
 
-            w = _update_w_impl(
+            w = self._solver(
                 v + lam / self.rho, w, max_iter=self.max_inner, tol=self.tol
             )
             x_hat[:] = w @ w.T
@@ -592,8 +593,7 @@ class SRF(TransformerMixin, BaseEstimator):
             update_lambda_(lam, v, x_hat, self.rho)
 
             metrics = self._compute_metrics(x, v, x_hat, lam, v_old)
-            for key, value in metrics.items():
-                history[key].append(value)
+            monitor.record(**metrics)
 
             pbar.set_postfix(
                 obj=f"{metrics['total_objective']:.3f}",
@@ -601,14 +601,20 @@ class SRF(TransformerMixin, BaseEstimator):
                 evar=f"{metrics['evar']:.3f}",
             )
 
-            if i > 1 and self._check_convergence(metrics, v, x_hat, lam):
+            if i > 1 and monitor.check_admm(
+                metrics["primal_residual"],
+                metrics["dual_residual"],
+                v,
+                x_hat,
+                lam,
+            ):
                 logger.info("Converged at iteration %d", i)
                 break
 
         self.w_ = w
         self.components_ = w
         self.n_iter_ = i
-        self.history_ = history
+        self.history_ = monitor.history
 
         return self
 
