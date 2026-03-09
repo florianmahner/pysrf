@@ -56,7 +56,7 @@ plugins:
             show_signature_annotations: true
             separate_signature: true
             merge_init_into_class: true
-            filters: ["!^_"]
+            filters: ["!^__"]
 
 markdown_extensions:
   - admonition
