@@ -566,6 +566,9 @@ class SRF(TransformerMixin, BaseEstimator):
         v = x.copy()
         x_hat = w @ w.T
 
+        v_old = np.empty_like(x)
+        target = np.empty_like(x)
+
         pbar = trange(
             1,
             self.max_outer + 1,
@@ -574,11 +577,11 @@ class SRF(TransformerMixin, BaseEstimator):
             mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
         for i in pbar:
-            v_old = v.copy()
+            v_old[:] = v
 
-            w = self._solver(
-                v + lam / self.rho, w, max_iter=self.max_inner, tol=self.tol
-            )
+            np.divide(lam, self.rho, out=target)
+            np.add(v, target, out=target)
+            w = self._solver(target, w, max_iter=self.max_inner, tol=self.tol)
             x_hat[:] = w @ w.T
 
             update_v_(
