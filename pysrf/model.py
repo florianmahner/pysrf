@@ -26,14 +26,26 @@ logger = logging.getLogger(__name__)
 
 
 def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
-    """Compute ||X - WW^T||_F and ||WW^T||_F without forming the n×n product.
+    r"""Compute $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$ and $\|\mathbf{W}\mathbf{W}^\top\|_F$ without forming the $n \times n$ product.
 
     Uses the identity:
-        ||X - WW^T||²_F = ||X||²_F - 2·tr(X·W·W^T) + ||WW^T||²_F
-    where tr(X·W·W^T) = sum((X@W) * W) and ||WW^T||²_F = ||W^TW||²_F,
-    both computable in O(n²r) with no n×n temporaries.
 
-    Returns (residual_norm, xhat_norm).
+    $$\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F^2
+      = \|\mathbf{X}\|_F^2
+      - 2\,\mathrm{tr}(\mathbf{X}\mathbf{W}\mathbf{W}^\top)
+      + \|\mathbf{W}\mathbf{W}^\top\|_F^2$$
+
+    where $\mathrm{tr}(\mathbf{X}\mathbf{W}\mathbf{W}^\top)
+    = \sum_{ij}(\mathbf{X}\mathbf{W})_{ij}\,\mathbf{W}_{ij}$ and
+    $\|\mathbf{W}\mathbf{W}^\top\|_F^2 = \|\mathbf{W}^\top\mathbf{W}\|_F^2$,
+    both computable in $O(n^2 r)$ with no $n \times n$ temporaries.
+
+    Returns
+    -------
+    residual_norm : float
+        $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$
+    xhat_norm : float
+        $\|\mathbf{W}\mathbf{W}^\top\|_F$
     """
     xw = x @ w
     x_norm_sq = np.sum(x * x)
@@ -45,11 +57,12 @@ def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
 
 
 def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float:
-    """
-    Find x >= 0 minimizing quartic polynomial g(x) = a/4 x^4 + b/3 x^3 + c/2 x^2 + d x.
+    r"""Find $x \ge 0$ minimizing the quartic polynomial:
+
+    $$g(x) = \frac{a}{4}\,x^4 + \frac{b}{3}\,x^3 + \frac{c}{2}\,x^2 + d\,x$$
 
     This is a key subroutine in the BSUM algorithm for updating individual
-    elements of the factor matrix W.
+    elements of the factor matrix $\mathbf{W}$.
 
     Parameters
     ----------
@@ -59,7 +72,7 @@ def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float
     Returns
     -------
     root : float
-        Non-negative minimizer of g(x)
+        Non-negative minimizer of $g(x)$
 
     References
     ----------
@@ -190,18 +203,30 @@ def update_w(
     max_iter: int = 100,
     tol: float = 1e-6,
 ) -> np.ndarray:
-    """
-    Block successive upper bound minimization (Shi et al., 2016).
-    Implementation of the algorithm. See TABLE 1 in "Inexact Block Coordinate
-    Descent Methods For Symmetric Nonnegative Matrix Factorization".
+    r"""Block successive upper-bound minimization (BSUM) for SymNMF.
 
-    Args:
-        m: Target symmetric matrix to factorize
-        x0: Initial factor matrix
-        max_iter: Maximum number of iterations
-        tol: Convergence tolerance
+    Solves the $\mathbf{W}$-subproblem by minimizing:
 
-    Returns:
+    $$\|\mathbf{M} - \mathbf{W}\mathbf{W}^\top\|_F^2$$
+
+    element-wise via quartic surrogate functions. See TABLE 1 in
+    Shi et al. (2016), "Inexact Block Coordinate Descent Methods For
+    Symmetric Nonnegative Matrix Factorization".
+
+    Parameters
+    ----------
+    m : ndarray of shape (n, n)
+        Target symmetric matrix to factorize
+    w0 : ndarray of shape (n, r)
+        Initial factor matrix
+    max_iter : int, default=100
+        Maximum number of iterations
+    tol : float, default=1e-6
+        Convergence tolerance
+
+    Returns
+    -------
+    w : ndarray of shape (n, r)
         Optimized factor matrix
     """
     w = w0.copy()
@@ -269,18 +294,36 @@ def update_v_(
     bound_max: float,
     v: np.ndarray,
 ) -> None:
-    """
-    Update auxiliary variable v in SRF algorithm.
+    r"""Update auxiliary variable $\mathbf{V}$ in the ADMM algorithm.
 
-    Args:
-        observed_mask: Binary observation mask
-        x: Original similarity matrix
-        x_hat: Current estimate of the similarity matrix
-        lam: Lagrange multipliers
-        rho: Penalty parameter
-        bound_min: Lower bound constraint
-        bound_max: Upper bound constraint
-        v: Auxiliary variable to be updated in place
+    For unobserved entries:
+
+    $$v_{ij} = \hat{x}_{ij} - \frac{\lambda_{ij}}{\rho}$$
+
+    For observed entries:
+
+    $$v_{ij} = \frac{x_{ij} + \rho\,\hat{x}_{ij} - \lambda_{ij}}{1 + \rho}$$
+
+    The result is symmetrized and optionally projected onto $[\ell, u]$.
+
+    Parameters
+    ----------
+    observed_mask : ndarray of shape (n, n)
+        Binary observation mask
+    x : ndarray of shape (n, n)
+        Original similarity matrix
+    x_hat : ndarray of shape (n, n)
+        Current estimate $\mathbf{W}\mathbf{W}^\top$
+    lam : ndarray of shape (n, n)
+        Lagrange multipliers $\boldsymbol{\Lambda}$
+    rho : float
+        Penalty parameter $\rho$
+    bound_min : float or None
+        Lower bound constraint
+    bound_max : float or None
+        Upper bound constraint
+    v : ndarray of shape (n, n)
+        Auxiliary variable, updated in place
     """
     v[:] = lam
     v /= -rho
@@ -300,20 +343,32 @@ def update_v_(
 def update_lambda_(
     lam: np.ndarray, v: np.ndarray, x_hat: np.ndarray, rho: float
 ) -> None:
-    """
-    Update Lagrange multipliers in SRF algorithm.
+    r"""Update Lagrange multipliers via dual ascent.
 
-    Args:
-        lam: Current Lagrange multipliers
-        v: Auxiliary variable
-        x_hat: Current matrix estimate (w @ w.T)
-        rho: Penalty parameter
+    $$\boldsymbol{\Lambda} \leftarrow \boldsymbol{\Lambda}
+      + \rho\,(\mathbf{V} - \mathbf{W}\mathbf{W}^\top)$$
+
+    Parameters
+    ----------
+    lam : ndarray of shape (n, n)
+        Current Lagrange multipliers $\boldsymbol{\Lambda}$
+    v : ndarray of shape (n, n)
+        Auxiliary variable $\mathbf{V}$
+    x_hat : ndarray of shape (n, n)
+        Current matrix estimate $\mathbf{W}\mathbf{W}^\top$
+    rho : float
+        Penalty parameter $\rho$
     """
     lam += rho * (v - x_hat)
 
 
 class ConvergenceMonitor:
-    """Track optimization metrics and check convergence criteria."""
+    r"""Track optimization metrics and check convergence criteria.
+
+    Uses mixed absolute/relative tolerances for primal and dual residuals.
+    Convergence is declared when $r^k \le \epsilon_{\mathrm{pri}}$ and
+    $s^k \le \epsilon_{\mathrm{dual}}$.
+    """
 
     def __init__(self, tol: float, eps_rel: float = 1e-4) -> None:
         self.tol = tol
@@ -351,15 +406,21 @@ class ConvergenceMonitor:
 
 
 class SRF(TransformerMixin, BaseEstimator):
-    """
+    r"""
     Symmetric Non-negative Matrix Factorization using SRF.
 
     This class implements symmetric non-negative matrix factorization (SymNMF) using
     the Alternating Direction Method of Multipliers (SRF). It can handle missing
     entries and optional bound constraints on the factorization.
 
-    The algorithm solves: min_{w>=0,v} ||M o (S - v)||^2_F + rho/2 ||v - ww^T||^2_F
-    subject to optional bounds on v, where M is an observation mask.
+    The algorithm solves:
+
+    $$\min_{\mathbf{W} \ge 0,\,\mathbf{V}}
+      \|\mathbf{M} \odot (\mathbf{S} - \mathbf{V})\|_F^2
+      + \frac{\rho}{2}\|\mathbf{V} - \mathbf{W}\mathbf{W}^\top\|_F^2$$
+
+    subject to optional bounds on $\mathbf{V}$, where $\mathbf{M}$ is an
+    observation mask.
 
     Parameters
     ----------
@@ -467,7 +528,13 @@ class SRF(TransformerMixin, BaseEstimator):
         primal_residual: np.ndarray,
         v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
-        """Compute comprehensive optimization metrics for monitoring and convergence."""
+        r"""Compute ADMM optimization metrics.
+
+        Returns data fit $\|\mathbf{M} \odot (\mathbf{X} - \mathbf{V})\|_F^2$,
+        penalty $\frac{\rho}{2}\|\mathbf{V} - \hat{\mathbf{X}}\|_F^2$,
+        Lagrangian coupling, reconstruction error, explained variance,
+        and primal/dual residual norms.
+        """
         data_residual = x - v
 
         observed_mask = self._observation_mask
@@ -503,10 +570,11 @@ class SRF(TransformerMixin, BaseEstimator):
         }
 
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        """Fit model with complete data (no missing values).
+        r"""Fit model with complete data (no missing values).
 
-        Uses _frobenius_residual to compute ||X - WW^T||_F without forming WW^T,
-        so memory stays at O(n²) (just the input matrix).
+        Uses :func:`_frobenius_residual` to compute
+        $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$ without forming
+        $\mathbf{W}\mathbf{W}^\top$, so memory stays at $O(n^2)$.
         """
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         monitor = ConvergenceMonitor(self.tol)
