@@ -465,12 +465,11 @@ class SRF(TransformerMixin, BaseEstimator):
         v: np.ndarray,
         x_hat: np.ndarray,
         lam: np.ndarray,
+        primal_residual: np.ndarray,
         v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
         """Compute comprehensive optimization metrics for monitoring and convergence."""
         data_residual = x - v
-        primal_residual = v - x_hat
-        rec_residual = x - x_hat
 
         observed_mask = self._observation_mask
         data_fit = np.sum(data_residual[observed_mask] ** 2)
@@ -481,7 +480,8 @@ class SRF(TransformerMixin, BaseEstimator):
         lagrangian = np.sum(lam * primal_residual)
         total_obj = data_fit + penalty + lagrangian
 
-        rec_ss = np.sum(rec_residual[observed_mask] ** 2)
+        rec_residual_obs = (data_residual + primal_residual)[observed_mask]
+        rec_ss = np.sum(rec_residual_obs**2)
         rec_error = np.sqrt(rec_ss)
 
         if self._total_var > 0:
@@ -489,7 +489,7 @@ class SRF(TransformerMixin, BaseEstimator):
         else:
             evar = 0.0
 
-        primal_res = np.linalg.norm(primal_residual)
+        primal_res = np.sqrt(penalty_term)
         dual_res = self.rho * np.linalg.norm(v - v_old) if v_old is not None else np.inf
 
         return {
@@ -584,9 +584,10 @@ class SRF(TransformerMixin, BaseEstimator):
             update_v_(
                 self._observation_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
             )
-            update_lambda_(lam, v, x_hat, self.rho)
+            primal_residual = v - x_hat
+            lam += self.rho * primal_residual
 
-            metrics = self._compute_metrics(x, v, x_hat, lam, v_old)
+            metrics = self._compute_metrics(x, v, x_hat, lam, primal_residual, v_old)
             monitor.record(**metrics)
 
             pbar.set_postfix(
