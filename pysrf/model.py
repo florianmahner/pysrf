@@ -1,9 +1,8 @@
 """
-SRF-based Symmetric Non-negative Matrix Factorization
+Symmetric Non-negative Matrix Factorization via BSUM/ADMM.
 
-This module implements the Alternating Direction Method of Multipliers (SRF)
-for symmetric non-negative matrix factorization, with support for missing entries
-and optional bounded constraints.
+SRF uses Block Successive Upper-bound Minimization (BSUM) for the W-subproblem
+and Alternating Direction Method of Multipliers (ADMM) for the missing-data path.
 """
 
 from __future__ import annotations
@@ -115,9 +114,9 @@ def _initialize_w(
 
     Parameters
     ----------
-    X : ndarray of shape (n_samples, n_samples)
+    x : ndarray of shape (n_samples, n_samples)
         Symmetric input matrix (used for scaling in some methods)
-    n_components : int
+    rank : int
         Number of components (columns in W)
     method : {'random', 'random_sqrt', 'nndsvd', 'nndsvda', 'nndsvdar'}, \
              default='random_sqrt'
