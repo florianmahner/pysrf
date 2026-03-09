@@ -27,7 +27,7 @@
     
     
       
-        <title>PySRF - pysrf</title>
+        <title>pysrf - pysrf</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PySRF
+              pysrf
             
           </span>
         </div>
@@ -385,7 +385,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use PySRF
+        When to use pysrf
       
     </span>
   </a>
@@ -790,7 +790,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use PySRF
+        When to use pysrf
       
     </span>
   </a>
@@ -869,12 +869,12 @@
   
 
 
-<h1 id="pysrf">PySRF<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
+<h1 id="pysrf">pysrf<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
 <p><strong>Discover interpretable dimensions from representational similarities.</strong></p>
-<p>Representational similarity is a widely used tool in cognitive science and machine learning. PySRF decomposes similarity matrices in sparse, non-negative dimensions that reveal the latent structure underlying similarities.</p>
-<p>Say we have a similarity matrix <span class="arithmatex">\(S\)</span>, PySRF finds a non-negative embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each column of <span class="arithmatex">\(W\)</span> is a dimension, and each row gives for an item a numeric weight alongside each dimensions. Because dimensions are non-negative and sparse (e.g. many entries drive toward zero), the embedding is an additive, compositional representation where dimensions contribute positively without canceling each other out.</p>
-<h2 id="when-to-use-pysrf">When to use PySRF<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
-<p>PySRF works very broadly on in principle any (symmetric) similarity matix. These can come from different domains, for example:</p>
+<p>Representational similarity is a widely used tool in cognitive science and machine learning. pysrf decomposes similarity matrices into sparse, non-negative dimensions that reveal the latent structure underlying similarities.</p>
+<p>Given a similarity matrix <span class="arithmatex">\(S\)</span>, pysrf finds a non-negative embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each column of <span class="arithmatex">\(W\)</span> is a dimension, and each row gives for an item a numeric weight alongside each dimension. Because dimensions are non-negative and sparse (for example, many entries drive toward zero), the embedding is an additive, compositional representation where dimensions contribute positively without canceling each other out.</p>
+<h2 id="when-to-use-pysrf">When to use pysrf<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
+<p>pysrf works broadly on any symmetric similarity matrix. These can come from different domains, for example:</p>
 <ul>
 <li><strong>Behavioral data</strong>: any task that yields a measure of similarity between items.</li>
 <li><strong>Neural data</strong>: representational similarity matrices derived from fMRI, electrophysiology, or other neural recordings.</li>
@@ -882,7 +882,7 @@
 </ul>
 <h2 id="key-capabilities">Key capabilities<a class="headerlink" href="#key-capabilities" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Missing data</strong>: real-world similarity matrices are sometimes incomplete and some entries <span class="arithmatex">\(i,j\)</span> in a similarity matrix not observed. PySRF can handle missing entries naturally.</li>
+<li><strong>Missing data</strong>: real-world similarity matrices are sometimes incomplete and some entries <span class="arithmatex">\(i,j\)</span> in a similarity matrix not observed. pysrf can handle missing entries naturally.</li>
 <li><strong>Dimensionality estimation</strong>: the number of optimal dimensions can be estimated via cross-validation</li>
 <li><strong>Fast solver</strong>: a Cython-accelerated solver provides 10-50x
   speedup over pure Python.</li>
