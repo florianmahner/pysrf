@@ -481,17 +481,11 @@ class SRF(TransformerMixin, BaseEstimator):
         lagrangian = np.sum(lam * primal_residual)
         total_obj = data_fit + penalty + lagrangian
 
-        rec_error = np.sqrt(np.sum(rec_residual[observed_mask] ** 2))
+        rec_ss = np.sum(rec_residual[observed_mask] ** 2)
+        rec_error = np.sqrt(rec_ss)
 
-        if observed_mask.any():
-            observed_count = np.sum(observed_mask)
-            observed_mean = np.sum(x[observed_mask]) / observed_count
-            total_var = np.sum((x[observed_mask] - observed_mean) ** 2)
-            if total_var > 0:
-                residual_var = np.sum(rec_residual[observed_mask] ** 2)
-                evar = 1.0 - residual_var / total_var
-            else:
-                evar = 0.0
+        if self._total_var > 0:
+            evar = 1.0 - rec_ss / self._total_var
         else:
             evar = 0.0
 
@@ -660,6 +654,14 @@ class SRF(TransformerMixin, BaseEstimator):
         self._observation_mask = ~self._missing_mask
         x[self._missing_mask] = 0.0
         x = check_symmetric(x, raise_exception=True, tol=1e-10)
+
+        observed = self._observation_mask
+        self._observed_count = int(np.sum(observed))
+        if self._observed_count > 0:
+            self._observed_mean = np.sum(x[observed]) / self._observed_count
+            self._total_var = np.sum((x[observed] - self._observed_mean) ** 2)
+        else:
+            self._total_var = 0.0
 
         if np.all(self._observation_mask):
             return self._fit_complete_data(x)
