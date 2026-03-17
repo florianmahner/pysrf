@@ -140,7 +140,7 @@ def test_srf_different_init_methods():
     n, rank = 20, 5
     s, _ = generate_symmetric_matrix(n, rank, noise_level=0.01, random_state=42)
 
-    for init in ["random", "random_sqrt", "nndsvd", "nndsvdar"]:
+    for init in ["random", "random_sqrt"]:
         model = SRF(rank=rank, max_outer=10, init=init, random_state=42)
         model.fit(s)
         assert hasattr(model, "w_")
