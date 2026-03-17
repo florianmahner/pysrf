@@ -633,6 +633,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pysrf.SRF._check_convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _check_convergence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pysrf.SRF._compute_metrics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -659,6 +670,17 @@
     <span class="md-ellipsis">
       
         _fit_missing_data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pysrf.SRF._store_results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _store_results
       
     </span>
   </a>
@@ -881,6 +903,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#pysrf.SRF._check_convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _check_convergence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pysrf.SRF._compute_metrics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -907,6 +940,17 @@
     <span class="md-ellipsis">
       
         _fit_missing_data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pysrf.SRF._store_results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _store_results
       
     </span>
   </a>
@@ -1077,16 +1121,12 @@
 
 
 
-        <p>Symmetric Non-negative Matrix Factorization using SRF.</p>
-<p>This class implements symmetric non-negative matrix factorization (SymNMF) using
-the Alternating Direction Method of Multipliers (SRF). It can handle missing
-entries and optional bound constraints on the factorization.</p>
-<p>The algorithm solves:</p>
-<div class="arithmatex">\[\min_{\mathbf{W} \ge 0,\,\mathbf{V}}
-  \|\mathbf{M} \odot (\mathbf{S} - \mathbf{V})\|_F^2
-  + \frac{\rho}{2}\|\mathbf{V} - \mathbf{W}\mathbf{W}^\top\|_F^2\]</div>
-<p>subject to optional bounds on <span class="arithmatex">\(\mathbf{V}\)</span>, where <span class="arithmatex">\(\mathbf{M}\)</span> is an
-observation mask.</p>
+        <p>Symmetric non-negative matrix factorization via ADMM.</p>
+<p>Factorizes a symmetric similarity matrix S into WW' where W &gt;= 0.
+Handles missing entries and optional bound constraints on V.</p>
+<p>The objective is:
+    min_{W&gt;=0, V} ||M * (S - V)||^2_F + rho/2 * ||V - WW'||^2_F
+where M is the observation mask.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1205,8 +1245,7 @@ observation mask.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Method for factor initialization ('random', 'random_sqrt', 'nndsvd',
-'nndsvdar', 'eigenspectrum')</p>
+                <p>Method for factor initialization ('random', 'random_sqrt')</p>
               </div>
             </td>
             <td>
@@ -1354,51 +1393,51 @@ In practice, one can also pass the expected bounds of the matrix
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>pysrf/model.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span>
-<span class="normal"><a href="#__codelineno-0-512">512</a></span>
-<span class="normal"><a href="#__codelineno-0-513">513</a></span>
-<span class="normal"><a href="#__codelineno-0-514">514</a></span>
-<span class="normal"><a href="#__codelineno-0-515">515</a></span>
-<span class="normal"><a href="#__codelineno-0-516">516</a></span>
-<span class="normal"><a href="#__codelineno-0-517">517</a></span>
-<span class="normal"><a href="#__codelineno-0-518">518</a></span>
-<span class="normal"><a href="#__codelineno-0-519">519</a></span>
-<span class="normal"><a href="#__codelineno-0-520">520</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-498" name="__codelineno-0-498"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">rho</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="n">max_outer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">max_inner</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>    <span class="n">init</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;random_sqrt&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">=</span> <span class="n">rho</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">=</span> <span class="n">max_outer</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span> <span class="o">=</span> <span class="n">max_inner</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span> <span class="o">=</span> <span class="n">missing_values</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="n">rho</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">max_outer</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">max_inner</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="n">init</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;random_sqrt&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">=</span> <span class="n">rho</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">=</span> <span class="n">max_outer</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span> <span class="o">=</span> <span class="n">max_inner</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span> <span class="o">=</span> <span class="n">missing_values</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -1414,6 +1453,227 @@ In practice, one can also pass the expected bounds of the matrix
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="pysrf.SRF._check_convergence" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_check_convergence</span>
+
+
+<a href="#pysrf.SRF._check_convergence" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_check_convergence</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">primal_res</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">dual_res</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">v</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">x_hat</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">lam</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Check ADMM convergence using primal and dual residual norms.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>primal_res</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Norm of the primal residual ||V - WW'||_F</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>dual_res</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Norm of the dual residual rho * ||V - V_old||_F</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current auxiliary variable</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>x_hat</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current estimate WW'</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>lam</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current Lagrange multipliers</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>converged</code></td>            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if both primal and dual tolerances are satisfied</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pysrf/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#__codelineno-0-579">579</a></span>
+<span class="normal"><a href="#__codelineno-0-580">580</a></span>
+<span class="normal"><a href="#__codelineno-0-581">581</a></span>
+<span class="normal"><a href="#__codelineno-0-582">582</a></span>
+<span class="normal"><a href="#__codelineno-0-583">583</a></span>
+<span class="normal"><a href="#__codelineno-0-584">584</a></span>
+<span class="normal"><a href="#__codelineno-0-585">585</a></span>
+<span class="normal"><a href="#__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#__codelineno-0-587">587</a></span>
+<span class="normal"><a href="#__codelineno-0-588">588</a></span>
+<span class="normal"><a href="#__codelineno-0-589">589</a></span>
+<span class="normal"><a href="#__codelineno-0-590">590</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="k">def</span><span class="w"> </span><span class="nf">_check_convergence</span><span class="p">(</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="n">primal_res</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="n">dual_res</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="n">x_hat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="n">lam</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check ADMM convergence using primal and dual residual norms.</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">    primal_res : float</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">        Norm of the primal residual ||V - WW&#39;||_F</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">    dual_res : float</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        Norm of the dual residual rho * ||V - V_old||_F</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">    v : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">        Current auxiliary variable</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">    x_hat : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">        Current estimate WW&#39;</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">    lam : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        Current Lagrange multipliers</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">    converged : bool</span>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">        True if both primal and dual tolerances are satisfied</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="n">eps_abs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>    <span class="n">eps_rel</span> <span class="o">=</span> <span class="mf">1e-4</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="n">n</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">size</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="n">eps_pri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">eps_abs</span> <span class="o">+</span> <span class="n">eps_rel</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x_hat</span><span class="p">)</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>    <span class="p">)</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>    <span class="n">eps_dual</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">eps_abs</span> <span class="o">+</span> <span class="n">eps_rel</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">lam</span><span class="p">)</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a>    <span class="k">return</span> <span class="n">primal_res</span> <span class="o">&lt;=</span> <span class="n">eps_pri</span> <span class="ow">and</span> <span class="n">dual_res</span> <span class="o">&lt;=</span> <span class="n">eps_dual</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -1435,16 +1695,181 @@ In practice, one can also pass the expected bounds of the matrix
 
     <div class="doc doc-contents ">
 
-        <p>Compute ADMM optimization metrics.</p>
-<p>Returns data fit <span class="arithmatex">\(\|\mathbf{M} \odot (\mathbf{X} - \mathbf{V})\|_F^2\)</span>,
-penalty <span class="arithmatex">\(\frac{\rho}{2}\|\mathbf{V} - \hat{\mathbf{X}}\|_F^2\)</span>,
-Lagrangian coupling, reconstruction error, explained variance,
-and primal/dual residual norms.</p>
+        <p>Compute ADMM optimization metrics for monitoring and convergence.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Original similarity matrix</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Auxiliary variable</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>x_hat</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current estimate WW'</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>lam</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Lagrange multipliers</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>primal_residual</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>V - WW'</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v_old</code>
+            </td>
+            <td>
+                  <code>ndarray of shape (n, n) or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Previous V, used to compute the dual residual</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>metrics</code></td>            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="float">float</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keys: total_objective, data_fit, penalty, lagrangian,
+rec_error, evar, primal_residual, dual_residual</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-522">522</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#__codelineno-0-513">513</a></span>
+<span class="normal"><a href="#__codelineno-0-514">514</a></span>
+<span class="normal"><a href="#__codelineno-0-515">515</a></span>
+<span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span>
+<span class="normal"><a href="#__codelineno-0-518">518</a></span>
+<span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
 <span class="normal"><a href="#__codelineno-0-523">523</a></span>
 <span class="normal"><a href="#__codelineno-0-524">524</a></span>
 <span class="normal"><a href="#__codelineno-0-525">525</a></span>
@@ -1474,73 +1899,71 @@ and primal/dual residual norms.</p>
 <span class="normal"><a href="#__codelineno-0-549">549</a></span>
 <span class="normal"><a href="#__codelineno-0-550">550</a></span>
 <span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span>
-<span class="normal"><a href="#__codelineno-0-553">553</a></span>
-<span class="normal"><a href="#__codelineno-0-554">554</a></span>
-<span class="normal"><a href="#__codelineno-0-555">555</a></span>
-<span class="normal"><a href="#__codelineno-0-556">556</a></span>
-<span class="normal"><a href="#__codelineno-0-557">557</a></span>
-<span class="normal"><a href="#__codelineno-0-558">558</a></span>
-<span class="normal"><a href="#__codelineno-0-559">559</a></span>
-<span class="normal"><a href="#__codelineno-0-560">560</a></span>
-<span class="normal"><a href="#__codelineno-0-561">561</a></span>
-<span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#__codelineno-0-564">564</a></span>
-<span class="normal"><a href="#__codelineno-0-565">565</a></span>
-<span class="normal"><a href="#__codelineno-0-566">566</a></span>
-<span class="normal"><a href="#__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="k">def</span><span class="w"> </span><span class="nf">_compute_metrics</span><span class="p">(</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="n">x_hat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a>    <span class="n">lam</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a>    <span class="n">primal_residual</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="n">v_old</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute ADMM optimization metrics.</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">    Returns data fit $\|\mathbf{M} \odot (\mathbf{X} - \mathbf{V})\|_F^2$,</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">    penalty $\frac{\rho}{2}\|\mathbf{V} - \hat{\mathbf{X}}\|_F^2$,</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">    Lagrangian coupling, reconstruction error, explained variance,</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">    and primal/dual residual norms.</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>    <span class="n">data_residual</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">v</span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="k">def</span><span class="w"> </span><span class="nf">_compute_metrics</span><span class="p">(</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="n">x_hat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="n">lam</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="n">primal_residual</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">v_old</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute ADMM optimization metrics for monitoring and convergence.</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a><span class="sd">    x : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="sd">        Original similarity matrix</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="sd">    v : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="sd">        Auxiliary variable</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">    x_hat : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">        Current estimate WW&#39;</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">    lam : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">        Lagrange multipliers</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">    primal_residual : ndarray of shape (n, n)</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">        V - WW&#39;</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    v_old : ndarray of shape (n, n) or None</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">        Previous V, used to compute the dual residual</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">    metrics : dict[str, float]</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        Keys: total_objective, data_fit, penalty, lagrangian,</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">        rec_error, evar, primal_residual, dual_residual</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="n">data_residual</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">v</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a>    <span class="n">observed_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="n">data_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data_residual</span><span class="p">[</span><span class="n">observed_mask</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="n">penalty_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">primal_residual</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="n">penalty</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">penalty_term</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>    <span class="n">lagrangian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lam</span> <span class="o">*</span> <span class="n">primal_residual</span><span class="p">)</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="n">total_obj</span> <span class="o">=</span> <span class="n">data_fit</span> <span class="o">+</span> <span class="n">penalty</span> <span class="o">+</span> <span class="n">lagrangian</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="n">rec_residual_obs</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_residual</span> <span class="o">+</span> <span class="n">primal_residual</span><span class="p">)[</span><span class="n">observed_mask</span><span class="p">]</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="n">rec_ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rec_residual_obs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="n">rec_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rec_ss</span><span class="p">)</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">rec_ss</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">0.0</span>
 <a id="__codelineno-0-539" name="__codelineno-0-539"></a>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="n">observed_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">data_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data_residual</span><span class="p">[</span><span class="n">observed_mask</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="n">primal_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">penalty_term</span><span class="p">)</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">dual_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">v_old</span><span class="p">)</span> <span class="k">if</span> <span class="n">v_old</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
 <a id="__codelineno-0-542" name="__codelineno-0-542"></a>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">penalty_term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">primal_residual</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="n">penalty</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">penalty_term</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">lagrangian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lam</span> <span class="o">*</span> <span class="n">primal_residual</span><span class="p">)</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">total_obj</span> <span class="o">=</span> <span class="n">data_fit</span> <span class="o">+</span> <span class="n">penalty</span> <span class="o">+</span> <span class="n">lagrangian</span>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">rec_residual_obs</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_residual</span> <span class="o">+</span> <span class="n">primal_residual</span><span class="p">)[</span><span class="n">observed_mask</span><span class="p">]</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">rec_ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rec_residual_obs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">rec_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rec_ss</span><span class="p">)</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">rec_ss</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="n">primal_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">penalty_term</span><span class="p">)</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="n">dual_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">v_old</span><span class="p">)</span> <span class="k">if</span> <span class="n">v_old</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>    <span class="k">return</span> <span class="p">{</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="s2">&quot;total_objective&quot;</span><span class="p">:</span> <span class="n">total_obj</span><span class="p">,</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="s2">&quot;data_fit&quot;</span><span class="p">:</span> <span class="n">data_fit</span><span class="p">,</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="s2">&quot;penalty&quot;</span><span class="p">:</span> <span class="n">penalty</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>        <span class="s2">&quot;lagrangian&quot;</span><span class="p">:</span> <span class="n">lagrangian</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>        <span class="s2">&quot;rec_error&quot;</span><span class="p">:</span> <span class="n">rec_error</span><span class="p">,</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>        <span class="s2">&quot;evar&quot;</span><span class="p">:</span> <span class="n">evar</span><span class="p">,</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>        <span class="s2">&quot;primal_residual&quot;</span><span class="p">:</span> <span class="n">primal_res</span><span class="p">,</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="s2">&quot;dual_residual&quot;</span><span class="p">:</span> <span class="n">dual_res</span><span class="p">,</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="p">}</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>        <span class="s2">&quot;total_objective&quot;</span><span class="p">:</span> <span class="n">total_obj</span><span class="p">,</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>        <span class="s2">&quot;data_fit&quot;</span><span class="p">:</span> <span class="n">data_fit</span><span class="p">,</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>        <span class="s2">&quot;penalty&quot;</span><span class="p">:</span> <span class="n">penalty</span><span class="p">,</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>        <span class="s2">&quot;lagrangian&quot;</span><span class="p">:</span> <span class="n">lagrangian</span><span class="p">,</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="s2">&quot;rec_error&quot;</span><span class="p">:</span> <span class="n">rec_error</span><span class="p">,</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>        <span class="s2">&quot;evar&quot;</span><span class="p">:</span> <span class="n">evar</span><span class="p">,</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="s2">&quot;primal_residual&quot;</span><span class="p">:</span> <span class="n">primal_res</span><span class="p">,</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="s2">&quot;dual_residual&quot;</span><span class="p">:</span> <span class="n">dual_res</span><span class="p">,</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1561,34 +1984,13 @@ and primal/dual residual norms.</p>
     <div class="doc doc-contents ">
 
         <p>Fit model with complete data (no missing values).</p>
-<p>Uses :func:<code>_frobenius_residual</code> to compute
-<span class="arithmatex">\(\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F\)</span> without forming
-<span class="arithmatex">\(\mathbf{W}\mathbf{W}^\top\)</span>, so memory stays at <span class="arithmatex">\(O(n^2)\)</span>.</p>
+<p>Uses _frobenius_residual to compute ||X - WW'||_F without forming WW',
+so memory stays at O(n^2).</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-572">572</a></span>
-<span class="normal"><a href="#__codelineno-0-573">573</a></span>
-<span class="normal"><a href="#__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span>
-<span class="normal"><a href="#__codelineno-0-582">582</a></span>
-<span class="normal"><a href="#__codelineno-0-583">583</a></span>
-<span class="normal"><a href="#__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#__codelineno-0-585">585</a></span>
-<span class="normal"><a href="#__codelineno-0-586">586</a></span>
-<span class="normal"><a href="#__codelineno-0-587">587</a></span>
-<span class="normal"><a href="#__codelineno-0-588">588</a></span>
-<span class="normal"><a href="#__codelineno-0-589">589</a></span>
-<span class="normal"><a href="#__codelineno-0-590">590</a></span>
-<span class="normal"><a href="#__codelineno-0-591">591</a></span>
-<span class="normal"><a href="#__codelineno-0-592">592</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-592">592</a></span>
 <span class="normal"><a href="#__codelineno-0-593">593</a></span>
 <span class="normal"><a href="#__codelineno-0-594">594</a></span>
 <span class="normal"><a href="#__codelineno-0-595">595</a></span>
@@ -1615,54 +2017,72 @@ and primal/dual residual norms.</p>
 <span class="normal"><a href="#__codelineno-0-616">616</a></span>
 <span class="normal"><a href="#__codelineno-0-617">617</a></span>
 <span class="normal"><a href="#__codelineno-0-618">618</a></span>
-<span class="normal"><a href="#__codelineno-0-619">619</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="k">def</span><span class="w"> </span><span class="nf">_fit_complete_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Fit model with complete data (no missing values).</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">    Uses :func:`_frobenius_residual` to compute</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">    $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$ without forming</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">    $\mathbf{W}\mathbf{W}^\top$, so memory stays at $O(n^2)$.</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a>    <span class="n">w</span> <span class="o">=</span> <span class="n">_initialize_w</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a>    <span class="n">monitor</span> <span class="o">=</span> <span class="n">ConvergenceMonitor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a>    <span class="n">x_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;fro&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="n">total_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="n">pbar</span> <span class="o">=</span> <span class="n">trange</span><span class="p">(</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a>        <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a>        <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a>        <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;SRF&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a>        <span class="n">mininterval</span><span class="o">=</span><span class="mf">10.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="k">else</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="p">)</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solver</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>        <span class="n">residual_norm</span><span class="p">,</span> <span class="n">xhat_norm</span> <span class="o">=</span> <span class="n">_frobenius_residual</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="n">rec_error</span> <span class="o">=</span> <span class="n">residual_norm</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>        <span class="n">mse</span> <span class="o">=</span> <span class="n">residual_norm</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">mse</span> <span class="o">/</span> <span class="n">total_var</span> <span class="k">if</span> <span class="n">total_var</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a>        <span class="n">monitor</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a>            <span class="n">rec_error</span><span class="o">=</span><span class="n">rec_error</span><span class="p">,</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>            <span class="n">evar</span><span class="o">=</span><span class="n">evar</span><span class="p">,</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>            <span class="n">primal_residual</span><span class="o">=</span><span class="n">residual_norm</span><span class="p">,</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a>        <span class="p">)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>        <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>            <span class="n">rec_error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rec_error</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a>            <span class="n">evar</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">evar</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a>        <span class="p">)</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a>        <span class="k">if</span> <span class="n">monitor</span><span class="o">.</span><span class="n">check_complete</span><span class="p">(</span><span class="n">residual_norm</span><span class="p">,</span> <span class="n">x_norm</span><span class="p">,</span> <span class="n">xhat_norm</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converged at iteration </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a>            <span class="k">break</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_store_results</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">monitor</span><span class="p">)</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>    <span class="k">return</span> <span class="bp">self</span>
+<span class="normal"><a href="#__codelineno-0-619">619</a></span>
+<span class="normal"><a href="#__codelineno-0-620">620</a></span>
+<span class="normal"><a href="#__codelineno-0-621">621</a></span>
+<span class="normal"><a href="#__codelineno-0-622">622</a></span>
+<span class="normal"><a href="#__codelineno-0-623">623</a></span>
+<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+<span class="normal"><a href="#__codelineno-0-625">625</a></span>
+<span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span>
+<span class="normal"><a href="#__codelineno-0-628">628</a></span>
+<span class="normal"><a href="#__codelineno-0-629">629</a></span>
+<span class="normal"><a href="#__codelineno-0-630">630</a></span>
+<span class="normal"><a href="#__codelineno-0-631">631</a></span>
+<span class="normal"><a href="#__codelineno-0-632">632</a></span>
+<span class="normal"><a href="#__codelineno-0-633">633</a></span>
+<span class="normal"><a href="#__codelineno-0-634">634</a></span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span>
+<span class="normal"><a href="#__codelineno-0-638">638</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="k">def</span><span class="w"> </span><span class="nf">_fit_complete_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit model with complete data (no missing values).</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    Uses _frobenius_residual to compute ||X - WW&#39;||_F without forming WW&#39;,</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">    so memory stays at O(n^2).</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a>    <span class="n">w</span> <span class="o">=</span> <span class="n">_initialize_w</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>    <span class="n">history</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a>    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a>    <span class="n">x_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;fro&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>    <span class="n">total_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="n">eps_rel</span> <span class="o">=</span> <span class="mf">1e-4</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="n">pbar</span> <span class="o">=</span> <span class="n">trange</span><span class="p">(</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>        <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>        <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>        <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;SRF&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a>        <span class="n">mininterval</span><span class="o">=</span><span class="mf">10.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="k">else</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="p">)</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solver</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>        <span class="n">residual_norm</span><span class="p">,</span> <span class="n">xhat_norm</span> <span class="o">=</span> <span class="n">_frobenius_residual</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>        <span class="n">rec_error</span> <span class="o">=</span> <span class="n">residual_norm</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>        <span class="n">mse</span> <span class="o">=</span> <span class="n">residual_norm</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>        <span class="n">evar</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">mse</span> <span class="o">/</span> <span class="n">total_var</span> <span class="k">if</span> <span class="n">total_var</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>        <span class="n">history</span><span class="p">[</span><span class="s2">&quot;rec_error&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec_error</span><span class="p">)</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>        <span class="n">history</span><span class="p">[</span><span class="s2">&quot;evar&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">evar</span><span class="p">)</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>        <span class="n">history</span><span class="p">[</span><span class="s2">&quot;primal_residual&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residual_norm</span><span class="p">)</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>        <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>            <span class="n">rec_error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rec_error</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>            <span class="n">evar</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">evar</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>        <span class="p">)</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>        <span class="n">eps_pri</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">+</span> <span class="n">eps_rel</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">x_norm</span><span class="p">,</span> <span class="n">xhat_norm</span><span class="p">)</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>        <span class="k">if</span> <span class="n">residual_norm</span> <span class="o">&lt;=</span> <span class="n">eps_pri</span><span class="p">:</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converged at iteration </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="k">break</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_store_results</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">history</span><span class="p">)</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>    <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1687,26 +2107,7 @@ and primal/dual residual norms.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-621">621</a></span>
-<span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
-<span class="normal"><a href="#__codelineno-0-625">625</a></span>
-<span class="normal"><a href="#__codelineno-0-626">626</a></span>
-<span class="normal"><a href="#__codelineno-0-627">627</a></span>
-<span class="normal"><a href="#__codelineno-0-628">628</a></span>
-<span class="normal"><a href="#__codelineno-0-629">629</a></span>
-<span class="normal"><a href="#__codelineno-0-630">630</a></span>
-<span class="normal"><a href="#__codelineno-0-631">631</a></span>
-<span class="normal"><a href="#__codelineno-0-632">632</a></span>
-<span class="normal"><a href="#__codelineno-0-633">633</a></span>
-<span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span>
-<span class="normal"><a href="#__codelineno-0-636">636</a></span>
-<span class="normal"><a href="#__codelineno-0-637">637</a></span>
-<span class="normal"><a href="#__codelineno-0-638">638</a></span>
-<span class="normal"><a href="#__codelineno-0-639">639</a></span>
-<span class="normal"><a href="#__codelineno-0-640">640</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-640">640</a></span>
 <span class="normal"><a href="#__codelineno-0-641">641</a></span>
 <span class="normal"><a href="#__codelineno-0-642">642</a></span>
 <span class="normal"><a href="#__codelineno-0-643">643</a></span>
@@ -1744,64 +2145,122 @@ and primal/dual residual norms.</p>
 <span class="normal"><a href="#__codelineno-0-675">675</a></span>
 <span class="normal"><a href="#__codelineno-0-676">676</a></span>
 <span class="normal"><a href="#__codelineno-0-677">677</a></span>
-<span class="normal"><a href="#__codelineno-0-678">678</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="k">def</span><span class="w"> </span><span class="nf">_fit_missing_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit model with missing data using ADMM.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="n">bound_min</span><span class="p">,</span> <span class="n">bound_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">monitor</span> <span class="o">=</span> <span class="n">ConvergenceMonitor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">w</span> <span class="o">=</span> <span class="n">_initialize_w</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">lam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">v</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a>    <span class="n">x_hat</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>    <span class="n">v_old</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>    <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">primal_residual</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="n">pbar</span> <span class="o">=</span> <span class="n">trange</span><span class="p">(</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>        <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>        <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;SRF (ADMM)&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="n">mininterval</span><span class="o">=</span><span class="mf">10.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="k">else</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>    <span class="p">)</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="n">v_old</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">v</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>        <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>        <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solver</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="n">x_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
+<span class="normal"><a href="#__codelineno-0-678">678</a></span>
+<span class="normal"><a href="#__codelineno-0-679">679</a></span>
+<span class="normal"><a href="#__codelineno-0-680">680</a></span>
+<span class="normal"><a href="#__codelineno-0-681">681</a></span>
+<span class="normal"><a href="#__codelineno-0-682">682</a></span>
+<span class="normal"><a href="#__codelineno-0-683">683</a></span>
+<span class="normal"><a href="#__codelineno-0-684">684</a></span>
+<span class="normal"><a href="#__codelineno-0-685">685</a></span>
+<span class="normal"><a href="#__codelineno-0-686">686</a></span>
+<span class="normal"><a href="#__codelineno-0-687">687</a></span>
+<span class="normal"><a href="#__codelineno-0-688">688</a></span>
+<span class="normal"><a href="#__codelineno-0-689">689</a></span>
+<span class="normal"><a href="#__codelineno-0-690">690</a></span>
+<span class="normal"><a href="#__codelineno-0-691">691</a></span>
+<span class="normal"><a href="#__codelineno-0-692">692</a></span>
+<span class="normal"><a href="#__codelineno-0-693">693</a></span>
+<span class="normal"><a href="#__codelineno-0-694">694</a></span>
+<span class="normal"><a href="#__codelineno-0-695">695</a></span>
+<span class="normal"><a href="#__codelineno-0-696">696</a></span>
+<span class="normal"><a href="#__codelineno-0-697">697</a></span>
+<span class="normal"><a href="#__codelineno-0-698">698</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="k">def</span><span class="w"> </span><span class="nf">_fit_missing_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit model with missing data using ADMM.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>    <span class="n">bound_min</span><span class="p">,</span> <span class="n">bound_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="n">history</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="n">w</span> <span class="o">=</span> <span class="n">_initialize_w</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="n">lam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">v</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">x_hat</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
 <a id="__codelineno-0-650" name="__codelineno-0-650"></a>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="n">update_v_</span><span class="p">(</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="n">bound_min</span><span class="p">,</span> <span class="n">bound_max</span><span class="p">,</span> <span class="n">v</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>        <span class="p">)</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>        <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">primal_residual</span><span class="p">)</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>        <span class="n">lam</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">*</span> <span class="n">primal_residual</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_metrics</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">primal_residual</span><span class="p">,</span> <span class="n">v_old</span><span class="p">)</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="n">monitor</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="o">**</span><span class="n">metrics</span><span class="p">)</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>            <span class="n">obj</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;total_objective&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>            <span class="n">rec_error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;rec_error&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>            <span class="n">evar</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;evar&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>        <span class="p">)</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">monitor</span><span class="o">.</span><span class="n">check_admm</span><span class="p">(</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;primal_residual&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;dual_residual&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>            <span class="n">v</span><span class="p">,</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>            <span class="n">x_hat</span><span class="p">,</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>            <span class="n">lam</span><span class="p">,</span>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a>        <span class="p">):</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converged at iteration </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a>            <span class="k">break</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">v_old</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">target</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">primal_residual</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">pbar</span> <span class="o">=</span> <span class="n">trange</span><span class="p">(</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>        <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_outer</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="n">disable</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>        <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;SRF&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="n">mininterval</span><span class="o">=</span><span class="mf">10.0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="k">else</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="p">)</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="n">v_old</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">v</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a>        <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solver</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_inner</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>        <span class="n">x_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="n">update_v_</span><span class="p">(</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="n">bound_min</span><span class="p">,</span> <span class="n">bound_max</span><span class="p">,</span> <span class="n">v</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>        <span class="p">)</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>        <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">primal_residual</span><span class="p">)</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>        <span class="n">lam</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">*</span> <span class="n">primal_residual</span>
 <a id="__codelineno-0-675" name="__codelineno-0-675"></a>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_store_results</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">monitor</span><span class="p">)</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="k">return</span> <span class="bp">self</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_metrics</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">primal_residual</span><span class="p">,</span> <span class="n">v_old</span><span class="p">)</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>            <span class="n">history</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>        <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>            <span class="n">obj</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;total_objective&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>            <span class="n">rec_error</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;rec_error&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>            <span class="n">evar</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;evar&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>        <span class="p">)</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_convergence</span><span class="p">(</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;primal_residual&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;dual_residual&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>            <span class="n">v</span><span class="p">,</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>            <span class="n">x_hat</span><span class="p">,</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>            <span class="n">lam</span><span class="p">,</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>        <span class="p">):</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converged at iteration </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>            <span class="k">break</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_store_results</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">history</span><span class="p">)</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="k">return</span> <span class="bp">self</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="pysrf.SRF._store_results" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_store_results</span>
+
+
+<a href="#pysrf.SRF._store_results" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_store_results</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">w</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">history</span><span class="p">:</span> <span class="nb">dict</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set fitted attributes after optimization.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>pysrf/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-700">700</a></span>
+<span class="normal"><a href="#__codelineno-0-701">701</a></span>
+<span class="normal"><a href="#__codelineno-0-702">702</a></span>
+<span class="normal"><a href="#__codelineno-0-703">703</a></span>
+<span class="normal"><a href="#__codelineno-0-704">704</a></span>
+<span class="normal"><a href="#__codelineno-0-705">705</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="k">def</span><span class="w"> </span><span class="nf">_store_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">history</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set fitted attributes after optimization.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">w_</span> <span class="o">=</span> <span class="n">w</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">components_</span> <span class="o">=</span> <span class="n">w</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">n_iter_</span> <span class="o">=</span> <span class="n">n_iter</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">history_</span> <span class="o">=</span> <span class="n">history</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1897,26 +2356,7 @@ be marked according to the missing_values parameter.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-688">688</a></span>
-<span class="normal"><a href="#__codelineno-0-689">689</a></span>
-<span class="normal"><a href="#__codelineno-0-690">690</a></span>
-<span class="normal"><a href="#__codelineno-0-691">691</a></span>
-<span class="normal"><a href="#__codelineno-0-692">692</a></span>
-<span class="normal"><a href="#__codelineno-0-693">693</a></span>
-<span class="normal"><a href="#__codelineno-0-694">694</a></span>
-<span class="normal"><a href="#__codelineno-0-695">695</a></span>
-<span class="normal"><a href="#__codelineno-0-696">696</a></span>
-<span class="normal"><a href="#__codelineno-0-697">697</a></span>
-<span class="normal"><a href="#__codelineno-0-698">698</a></span>
-<span class="normal"><a href="#__codelineno-0-699">699</a></span>
-<span class="normal"><a href="#__codelineno-0-700">700</a></span>
-<span class="normal"><a href="#__codelineno-0-701">701</a></span>
-<span class="normal"><a href="#__codelineno-0-702">702</a></span>
-<span class="normal"><a href="#__codelineno-0-703">703</a></span>
-<span class="normal"><a href="#__codelineno-0-704">704</a></span>
-<span class="normal"><a href="#__codelineno-0-705">705</a></span>
-<span class="normal"><a href="#__codelineno-0-706">706</a></span>
-<span class="normal"><a href="#__codelineno-0-707">707</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-707">707</a></span>
 <span class="normal"><a href="#__codelineno-0-708">708</a></span>
 <span class="normal"><a href="#__codelineno-0-709">709</a></span>
 <span class="normal"><a href="#__codelineno-0-710">710</a></span>
@@ -1951,61 +2391,80 @@ be marked according to the missing_values parameter.</p>
 <span class="normal"><a href="#__codelineno-0-739">739</a></span>
 <span class="normal"><a href="#__codelineno-0-740">740</a></span>
 <span class="normal"><a href="#__codelineno-0-741">741</a></span>
-<span class="normal"><a href="#__codelineno-0-742">742</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">    Fit the symmetric NMF model to the data.</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">        Symmetric similarity matrix. Missing values are allowed and should</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">        be marked according to the missing_values parameter.</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">    y : Ignored</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">    self : object</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">        Fitted estimator.</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="n">_validate_bounds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">validate_data</span><span class="p">(</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a>        <span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a>        <span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="n">ensure_all_finite</span><span class="o">=</span><span class="p">(</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>            <span class="s2">&quot;allow-nan&quot;</span> <span class="k">if</span> <span class="n">_is_nan_marker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span> <span class="k">else</span> <span class="kc">True</span>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a>        <span class="p">),</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a>        <span class="n">ensure_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a>        <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a>    <span class="p">)</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span> <span class="o">=</span> <span class="n">_get_missing_mask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">):</span>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>            <span class="s2">&quot;No observed entries found in the data. All values are missing.&quot;</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>        <span class="p">)</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a>    <span class="n">check_symmetric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">,</span> <span class="n">raise_exception</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span> <span class="o">=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a>    <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">check_symmetric</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">raise_exception</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a>    <span class="n">observed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a>    <span class="n">observed_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">observed</span><span class="p">))</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a>    <span class="k">if</span> <span class="n">observed_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a>        <span class="n">observed_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">observed</span><span class="p">])</span> <span class="o">/</span> <span class="n">observed_count</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="n">observed</span><span class="p">]</span> <span class="o">-</span> <span class="n">observed_mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="normal"><a href="#__codelineno-0-742">742</a></span>
+<span class="normal"><a href="#__codelineno-0-743">743</a></span>
+<span class="normal"><a href="#__codelineno-0-744">744</a></span>
+<span class="normal"><a href="#__codelineno-0-745">745</a></span>
+<span class="normal"><a href="#__codelineno-0-746">746</a></span>
+<span class="normal"><a href="#__codelineno-0-747">747</a></span>
+<span class="normal"><a href="#__codelineno-0-748">748</a></span>
+<span class="normal"><a href="#__codelineno-0-749">749</a></span>
+<span class="normal"><a href="#__codelineno-0-750">750</a></span>
+<span class="normal"><a href="#__codelineno-0-751">751</a></span>
+<span class="normal"><a href="#__codelineno-0-752">752</a></span>
+<span class="normal"><a href="#__codelineno-0-753">753</a></span>
+<span class="normal"><a href="#__codelineno-0-754">754</a></span>
+<span class="normal"><a href="#__codelineno-0-755">755</a></span>
+<span class="normal"><a href="#__codelineno-0-756">756</a></span>
+<span class="normal"><a href="#__codelineno-0-757">757</a></span>
+<span class="normal"><a href="#__codelineno-0-758">758</a></span>
+<span class="normal"><a href="#__codelineno-0-759">759</a></span>
+<span class="normal"><a href="#__codelineno-0-760">760</a></span>
+<span class="normal"><a href="#__codelineno-0-761">761</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-707" name="__codelineno-0-707"></a><span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SRF</span><span class="p">:</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a><span class="sd">    Fit the symmetric NMF model to the data.</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a><span class="sd">        Symmetric similarity matrix. Missing values are allowed and should</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a><span class="sd">        be marked according to the missing_values parameter.</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">    y : Ignored</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="sd">    self : object</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a><span class="sd">        Fitted estimator.</span>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>    <span class="n">_validate_bounds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bounds</span><span class="p">)</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">validate_data</span><span class="p">(</span>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>        <span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>        <span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>        <span class="n">ensure_all_finite</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a>            <span class="s2">&quot;allow-nan&quot;</span> <span class="k">if</span> <span class="n">_is_nan_marker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span> <span class="k">else</span> <span class="kc">True</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a>        <span class="p">),</span>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a>        <span class="n">ensure_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a>        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>        <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a>    <span class="p">)</span>
 <a id="__codelineno-0-738" name="__codelineno-0-738"></a>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span><span class="p">):</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_complete_data</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_missing_data</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span> <span class="o">=</span> <span class="n">_get_missing_mask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">):</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>            <span class="s2">&quot;No observed entries found in the data. All values are missing.&quot;</span>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a>        <span class="p">)</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a>    <span class="n">check_symmetric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">,</span> <span class="n">raise_exception</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span> <span class="o">=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>    <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_missing_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">check_symmetric</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">raise_exception</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">observed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="n">observed_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">observed</span><span class="p">))</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a>    <span class="k">if</span> <span class="n">observed_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a>        <span class="n">observed_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">observed</span><span class="p">])</span> <span class="o">/</span> <span class="n">observed_count</span>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="n">observed</span><span class="p">]</span> <span class="o">-</span> <span class="n">observed_mean</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-756" name="__codelineno-0-756"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_total_var</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-0-757" name="__codelineno-0-757"></a>
+<a id="__codelineno-0-758" name="__codelineno-0-758"></a>    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_observation_mask</span><span class="p">):</span>
+<a id="__codelineno-0-759" name="__codelineno-0-759"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_complete_data</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-0-760" name="__codelineno-0-760"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-761" name="__codelineno-0-761"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_missing_data</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2102,39 +2561,39 @@ be marked according to the missing_values parameter.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-761">761</a></span>
-<span class="normal"><a href="#__codelineno-0-762">762</a></span>
-<span class="normal"><a href="#__codelineno-0-763">763</a></span>
-<span class="normal"><a href="#__codelineno-0-764">764</a></span>
-<span class="normal"><a href="#__codelineno-0-765">765</a></span>
-<span class="normal"><a href="#__codelineno-0-766">766</a></span>
-<span class="normal"><a href="#__codelineno-0-767">767</a></span>
-<span class="normal"><a href="#__codelineno-0-768">768</a></span>
-<span class="normal"><a href="#__codelineno-0-769">769</a></span>
-<span class="normal"><a href="#__codelineno-0-770">770</a></span>
-<span class="normal"><a href="#__codelineno-0-771">771</a></span>
-<span class="normal"><a href="#__codelineno-0-772">772</a></span>
-<span class="normal"><a href="#__codelineno-0-773">773</a></span>
-<span class="normal"><a href="#__codelineno-0-774">774</a></span>
-<span class="normal"><a href="#__codelineno-0-775">775</a></span>
-<span class="normal"><a href="#__codelineno-0-776">776</a></span>
-<span class="normal"><a href="#__codelineno-0-777">777</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-761" name="__codelineno-0-761"></a><span class="k">def</span><span class="w"> </span><span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a><span class="sd">    Fit the model and return the learned factors.</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a><span class="sd">        Symmetric similarity matrix</span>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">    y : Ignored</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a><span class="sd">    w : array-like of shape (n_samples, rank)</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">        Learned factor matrix</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-780">780</a></span>
+<span class="normal"><a href="#__codelineno-0-781">781</a></span>
+<span class="normal"><a href="#__codelineno-0-782">782</a></span>
+<span class="normal"><a href="#__codelineno-0-783">783</a></span>
+<span class="normal"><a href="#__codelineno-0-784">784</a></span>
+<span class="normal"><a href="#__codelineno-0-785">785</a></span>
+<span class="normal"><a href="#__codelineno-0-786">786</a></span>
+<span class="normal"><a href="#__codelineno-0-787">787</a></span>
+<span class="normal"><a href="#__codelineno-0-788">788</a></span>
+<span class="normal"><a href="#__codelineno-0-789">789</a></span>
+<span class="normal"><a href="#__codelineno-0-790">790</a></span>
+<span class="normal"><a href="#__codelineno-0-791">791</a></span>
+<span class="normal"><a href="#__codelineno-0-792">792</a></span>
+<span class="normal"><a href="#__codelineno-0-793">793</a></span>
+<span class="normal"><a href="#__codelineno-0-794">794</a></span>
+<span class="normal"><a href="#__codelineno-0-795">795</a></span>
+<span class="normal"><a href="#__codelineno-0-796">796</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="k">def</span><span class="w"> </span><span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a><span class="sd">    Fit the model and return the learned factors.</span>
+<a id="__codelineno-0-783" name="__codelineno-0-783"></a>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">        Symmetric similarity matrix</span>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a><span class="sd">    y : Ignored</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="sd">    w : array-like of shape (n_samples, rank)</span>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="sd">        Learned factor matrix</span>
+<a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2214,45 +2673,45 @@ If None, uses the fitted factors.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-779">779</a></span>
-<span class="normal"><a href="#__codelineno-0-780">780</a></span>
-<span class="normal"><a href="#__codelineno-0-781">781</a></span>
-<span class="normal"><a href="#__codelineno-0-782">782</a></span>
-<span class="normal"><a href="#__codelineno-0-783">783</a></span>
-<span class="normal"><a href="#__codelineno-0-784">784</a></span>
-<span class="normal"><a href="#__codelineno-0-785">785</a></span>
-<span class="normal"><a href="#__codelineno-0-786">786</a></span>
-<span class="normal"><a href="#__codelineno-0-787">787</a></span>
-<span class="normal"><a href="#__codelineno-0-788">788</a></span>
-<span class="normal"><a href="#__codelineno-0-789">789</a></span>
-<span class="normal"><a href="#__codelineno-0-790">790</a></span>
-<span class="normal"><a href="#__codelineno-0-791">791</a></span>
-<span class="normal"><a href="#__codelineno-0-792">792</a></span>
-<span class="normal"><a href="#__codelineno-0-793">793</a></span>
-<span class="normal"><a href="#__codelineno-0-794">794</a></span>
-<span class="normal"><a href="#__codelineno-0-795">795</a></span>
-<span class="normal"><a href="#__codelineno-0-796">796</a></span>
-<span class="normal"><a href="#__codelineno-0-797">797</a></span>
-<span class="normal"><a href="#__codelineno-0-798">798</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-779" name="__codelineno-0-779"></a><span class="k">def</span><span class="w"> </span><span class="nf">reconstruct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">    Reconstruct the similarity matrix from factors.</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">    w : array-like of shape (n_samples, rank) or None</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">        Factor matrix to use for reconstruction.</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">        If None, uses the fitted factors.</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a><span class="sd">    s_hat : array-like of shape (n_samples, n_samples)</span>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="sd">        Reconstructed similarity matrix</span>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a>    <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a>        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a>    <span class="k">return</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-798">798</a></span>
+<span class="normal"><a href="#__codelineno-0-799">799</a></span>
+<span class="normal"><a href="#__codelineno-0-800">800</a></span>
+<span class="normal"><a href="#__codelineno-0-801">801</a></span>
+<span class="normal"><a href="#__codelineno-0-802">802</a></span>
+<span class="normal"><a href="#__codelineno-0-803">803</a></span>
+<span class="normal"><a href="#__codelineno-0-804">804</a></span>
+<span class="normal"><a href="#__codelineno-0-805">805</a></span>
+<span class="normal"><a href="#__codelineno-0-806">806</a></span>
+<span class="normal"><a href="#__codelineno-0-807">807</a></span>
+<span class="normal"><a href="#__codelineno-0-808">808</a></span>
+<span class="normal"><a href="#__codelineno-0-809">809</a></span>
+<span class="normal"><a href="#__codelineno-0-810">810</a></span>
+<span class="normal"><a href="#__codelineno-0-811">811</a></span>
+<span class="normal"><a href="#__codelineno-0-812">812</a></span>
+<span class="normal"><a href="#__codelineno-0-813">813</a></span>
+<span class="normal"><a href="#__codelineno-0-814">814</a></span>
+<span class="normal"><a href="#__codelineno-0-815">815</a></span>
+<span class="normal"><a href="#__codelineno-0-816">816</a></span>
+<span class="normal"><a href="#__codelineno-0-817">817</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-798" name="__codelineno-0-798"></a><span class="k">def</span><span class="w"> </span><span class="nf">reconstruct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">    Reconstruct the similarity matrix from factors.</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">    w : array-like of shape (n_samples, rank) or None</span>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">        Factor matrix to use for reconstruction.</span>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">        If None, uses the fitted factors.</span>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">    s_hat : array-like of shape (n_samples, n_samples)</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">        Reconstructed similarity matrix</span>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-813" name="__codelineno-0-813"></a>    <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-814" name="__codelineno-0-814"></a>        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a>        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a>    <span class="k">return</span> <span class="n">w</span> <span class="o">@</span> <span class="n">w</span><span class="o">.</span><span class="n">T</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2348,26 +2807,7 @@ be marked according to the missing_values parameter.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-800">800</a></span>
-<span class="normal"><a href="#__codelineno-0-801">801</a></span>
-<span class="normal"><a href="#__codelineno-0-802">802</a></span>
-<span class="normal"><a href="#__codelineno-0-803">803</a></span>
-<span class="normal"><a href="#__codelineno-0-804">804</a></span>
-<span class="normal"><a href="#__codelineno-0-805">805</a></span>
-<span class="normal"><a href="#__codelineno-0-806">806</a></span>
-<span class="normal"><a href="#__codelineno-0-807">807</a></span>
-<span class="normal"><a href="#__codelineno-0-808">808</a></span>
-<span class="normal"><a href="#__codelineno-0-809">809</a></span>
-<span class="normal"><a href="#__codelineno-0-810">810</a></span>
-<span class="normal"><a href="#__codelineno-0-811">811</a></span>
-<span class="normal"><a href="#__codelineno-0-812">812</a></span>
-<span class="normal"><a href="#__codelineno-0-813">813</a></span>
-<span class="normal"><a href="#__codelineno-0-814">814</a></span>
-<span class="normal"><a href="#__codelineno-0-815">815</a></span>
-<span class="normal"><a href="#__codelineno-0-816">816</a></span>
-<span class="normal"><a href="#__codelineno-0-817">817</a></span>
-<span class="normal"><a href="#__codelineno-0-818">818</a></span>
-<span class="normal"><a href="#__codelineno-0-819">819</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-819">819</a></span>
 <span class="normal"><a href="#__codelineno-0-820">820</a></span>
 <span class="normal"><a href="#__codelineno-0-821">821</a></span>
 <span class="normal"><a href="#__codelineno-0-822">822</a></span>
@@ -2378,37 +2818,56 @@ be marked according to the missing_values parameter.</p>
 <span class="normal"><a href="#__codelineno-0-827">827</a></span>
 <span class="normal"><a href="#__codelineno-0-828">828</a></span>
 <span class="normal"><a href="#__codelineno-0-829">829</a></span>
-<span class="normal"><a href="#__codelineno-0-830">830</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">    Score the model using reconstruction error on observed entries only.</span>
-<a id="__codelineno-0-803" name="__codelineno-0-803"></a>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">        Symmetric similarity matrix. Missing values are allowed and should</span>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">        be marked according to the missing_values parameter.</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">    y : Ignored</span>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">    mse : float</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a><span class="sd">        Mean squared error of the reconstruction on observed entries.</span>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a>    <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">validate_data</span><span class="p">(</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a>        <span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a>        <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a>        <span class="n">ensure_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a>        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a>        <span class="n">ensure_all_finite</span><span class="o">=</span><span class="s2">&quot;allow-nan&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a>    <span class="p">)</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a>    <span class="n">observation_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">_get_missing_mask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a>    <span class="n">reconstruction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a>    <span class="n">mse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="n">observation_mask</span><span class="p">]</span> <span class="o">-</span> <span class="n">reconstruction</span><span class="p">[</span><span class="n">observation_mask</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a>    <span class="k">return</span> <span class="o">-</span><span class="n">mse</span>
+<span class="normal"><a href="#__codelineno-0-830">830</a></span>
+<span class="normal"><a href="#__codelineno-0-831">831</a></span>
+<span class="normal"><a href="#__codelineno-0-832">832</a></span>
+<span class="normal"><a href="#__codelineno-0-833">833</a></span>
+<span class="normal"><a href="#__codelineno-0-834">834</a></span>
+<span class="normal"><a href="#__codelineno-0-835">835</a></span>
+<span class="normal"><a href="#__codelineno-0-836">836</a></span>
+<span class="normal"><a href="#__codelineno-0-837">837</a></span>
+<span class="normal"><a href="#__codelineno-0-838">838</a></span>
+<span class="normal"><a href="#__codelineno-0-839">839</a></span>
+<span class="normal"><a href="#__codelineno-0-840">840</a></span>
+<span class="normal"><a href="#__codelineno-0-841">841</a></span>
+<span class="normal"><a href="#__codelineno-0-842">842</a></span>
+<span class="normal"><a href="#__codelineno-0-843">843</a></span>
+<span class="normal"><a href="#__codelineno-0-844">844</a></span>
+<span class="normal"><a href="#__codelineno-0-845">845</a></span>
+<span class="normal"><a href="#__codelineno-0-846">846</a></span>
+<span class="normal"><a href="#__codelineno-0-847">847</a></span>
+<span class="normal"><a href="#__codelineno-0-848">848</a></span>
+<span class="normal"><a href="#__codelineno-0-849">849</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">    Score the model using reconstruction error on observed entries only.</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a>
+<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
+<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">        Symmetric similarity matrix. Missing values are allowed and should</span>
+<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">        be marked according to the missing_values parameter.</span>
+<a id="__codelineno-0-828" name="__codelineno-0-828"></a><span class="sd">    y : Ignored</span>
+<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">        Not used, present here for API consistency by convention.</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">    mse : float</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">        Mean squared error of the reconstruction on observed entries.</span>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a>    <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a>    <span class="n">x</span> <span class="o">=</span> <span class="n">validate_data</span><span class="p">(</span>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a>        <span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>        <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a>        <span class="n">ensure_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="n">ensure_all_finite</span><span class="o">=</span><span class="s2">&quot;allow-nan&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="p">)</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a>    <span class="n">observation_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">_get_missing_mask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_values</span><span class="p">)</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="n">reconstruction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="n">mse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="n">observation_mask</span><span class="p">]</span> <span class="o">-</span> <span class="n">reconstruction</span><span class="p">[</span><span class="n">observation_mask</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a>    <span class="k">return</span> <span class="o">-</span><span class="n">mse</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2487,37 +2946,37 @@ be marked according to the missing_values parameter.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-744">744</a></span>
-<span class="normal"><a href="#__codelineno-0-745">745</a></span>
-<span class="normal"><a href="#__codelineno-0-746">746</a></span>
-<span class="normal"><a href="#__codelineno-0-747">747</a></span>
-<span class="normal"><a href="#__codelineno-0-748">748</a></span>
-<span class="normal"><a href="#__codelineno-0-749">749</a></span>
-<span class="normal"><a href="#__codelineno-0-750">750</a></span>
-<span class="normal"><a href="#__codelineno-0-751">751</a></span>
-<span class="normal"><a href="#__codelineno-0-752">752</a></span>
-<span class="normal"><a href="#__codelineno-0-753">753</a></span>
-<span class="normal"><a href="#__codelineno-0-754">754</a></span>
-<span class="normal"><a href="#__codelineno-0-755">755</a></span>
-<span class="normal"><a href="#__codelineno-0-756">756</a></span>
-<span class="normal"><a href="#__codelineno-0-757">757</a></span>
-<span class="normal"><a href="#__codelineno-0-758">758</a></span>
-<span class="normal"><a href="#__codelineno-0-759">759</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-744" name="__codelineno-0-744"></a><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a><span class="sd">    Project data onto the learned factor space.</span>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a><span class="sd">        Symmetric matrix to transform</span>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a><span class="sd">    w : array-like of shape (n_samples, rank)</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a><span class="sd">        Transformed data</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>    <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-763">763</a></span>
+<span class="normal"><a href="#__codelineno-0-764">764</a></span>
+<span class="normal"><a href="#__codelineno-0-765">765</a></span>
+<span class="normal"><a href="#__codelineno-0-766">766</a></span>
+<span class="normal"><a href="#__codelineno-0-767">767</a></span>
+<span class="normal"><a href="#__codelineno-0-768">768</a></span>
+<span class="normal"><a href="#__codelineno-0-769">769</a></span>
+<span class="normal"><a href="#__codelineno-0-770">770</a></span>
+<span class="normal"><a href="#__codelineno-0-771">771</a></span>
+<span class="normal"><a href="#__codelineno-0-772">772</a></span>
+<span class="normal"><a href="#__codelineno-0-773">773</a></span>
+<span class="normal"><a href="#__codelineno-0-774">774</a></span>
+<span class="normal"><a href="#__codelineno-0-775">775</a></span>
+<span class="normal"><a href="#__codelineno-0-776">776</a></span>
+<span class="normal"><a href="#__codelineno-0-777">777</a></span>
+<span class="normal"><a href="#__codelineno-0-778">778</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-763" name="__codelineno-0-763"></a><span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a><span class="sd">    Project data onto the learned factor space.</span>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">    x : array-like of shape (n_samples, n_samples)</span>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a><span class="sd">        Symmetric matrix to transform</span>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a><span class="sd">    w : array-like of shape (n_samples, rank)</span>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">        Transformed data</span>
+<a id="__codelineno-0-776" name="__codelineno-0-776"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
