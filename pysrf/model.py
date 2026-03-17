@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import math
 import sys
+from collections import defaultdict
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -26,26 +27,21 @@ logger = logging.getLogger(__name__)
 
 
 def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
-    r"""Compute $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$ and $\|\mathbf{W}\mathbf{W}^\top\|_F$ without forming the $n \times n$ product.
+    """Compute ||X - WW'||_F and ||WW'||_F without forming the n x n product.
 
-    Uses the identity:
-
-    $$\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F^2
-      = \|\mathbf{X}\|_F^2
-      - 2\,\mathrm{tr}(\mathbf{X}\mathbf{W}\mathbf{W}^\top)
-      + \|\mathbf{W}\mathbf{W}^\top\|_F^2$$
-
-    where $\mathrm{tr}(\mathbf{X}\mathbf{W}\mathbf{W}^\top)
-    = \sum_{ij}(\mathbf{X}\mathbf{W})_{ij}\,\mathbf{W}_{ij}$ and
-    $\|\mathbf{W}\mathbf{W}^\top\|_F^2 = \|\mathbf{W}^\top\mathbf{W}\|_F^2$,
-    both computable in $O(n^2 r)$ with no $n \times n$ temporaries.
+    Parameters
+    ----------
+    x : ndarray of shape (n, n)
+        Symmetric input matrix
+    w : ndarray of shape (n, r)
+        Factor matrix
 
     Returns
     -------
     residual_norm : float
-        $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$
+        Frobenius norm of the reconstruction error
     xhat_norm : float
-        $\|\mathbf{W}\mathbf{W}^\top\|_F$
+        Frobenius norm of the approximation WW'
     """
     xw = x @ w
     x_norm_sq = np.sum(x * x)
@@ -57,12 +53,10 @@ def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
 
 
 def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float:
-    r"""Find $x \ge 0$ minimizing the quartic polynomial:
+    """Find x >= 0 minimizing g(x) = a/4 x^4 + b/3 x^3 + c/2 x^2 + d*x.
 
-    $$g(x) = \frac{a}{4}\,x^4 + \frac{b}{3}\,x^3 + \frac{c}{2}\,x^2 + d\,x$$
-
-    This is a key subroutine in the BSUM algorithm for updating individual
-    elements of the factor matrix $\mathbf{W}$.
+    Key subroutine in the BSUM algorithm for updating individual
+    elements of the factor matrix W.
 
     Parameters
     ----------
@@ -72,7 +66,7 @@ def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float
     Returns
     -------
     root : float
-        Non-negative minimizer of $g(x)$
+        Non-negative minimizer of g(x)
 
     References
     ----------
@@ -97,18 +91,56 @@ def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float
 
 
 def _dot(a: np.ndarray, b: np.ndarray) -> float:
-    """Compute dot product using scalar accumulation matching Cython summation order."""
+    """Dot product via scalar accumulation, matching Cython summation order.
+
+    Parameters
+    ----------
+    a, b : ndarray of shape (n,)
+        Input vectors
+
+    Returns
+    -------
+    result : float
+        Dot product of a and b
+    """
     return sum(x * y for x, y in zip(a, b))
 
 
 def _is_nan_marker(missing_values: float | None) -> bool:
-    """Check if missing_values represents NaN (handles identity issues after cloning)."""
+    """Check if missing_values represents NaN.
+
+    Needed because sklearn clone() can break ``is np.nan`` identity checks.
+
+    Parameters
+    ----------
+    missing_values : float or None
+        The sentinel value to test
+
+    Returns
+    -------
+    is_nan : bool
+        True if missing_values is NaN
+    """
     return missing_values is np.nan or (
         isinstance(missing_values, float) and np.isnan(missing_values)
     )
 
 
 def _get_missing_mask(x: np.ndarray, missing_values: float | None) -> np.ndarray:
+    """Boolean mask where True marks missing entries in x.
+
+    Parameters
+    ----------
+    x : ndarray of shape (n, n)
+        Input matrix
+    missing_values : float or None
+        Sentinel value for missing data. If None or NaN, uses ``np.isnan``.
+
+    Returns
+    -------
+    mask : ndarray of shape (n, n)
+        Boolean array, True where x has missing values
+    """
     if _is_nan_marker(missing_values) or missing_values is None:
         return np.isnan(x)
     else:
@@ -120,7 +152,6 @@ def _initialize_w(
     rank: int,
     method: str = "random_sqrt",
     random_state: int | np.random.RandomState | None = None,
-    eps: float = 1e-6,
 ) -> np.ndarray:
     """
     Initialize factor matrix W for symmetric NMF.
@@ -128,32 +159,21 @@ def _initialize_w(
     Parameters
     ----------
     x : ndarray of shape (n_samples, n_samples)
-        Symmetric input matrix (used for scaling in some methods)
+        Symmetric input matrix (used for scaling)
     rank : int
         Number of components (columns in W)
-    method : {'random', 'random_sqrt', 'nndsvd', 'nndsvda', 'nndsvdar'}, \
-             default='random_sqrt'
+    method : {'random', 'random_sqrt'}, default='random_sqrt'
         Initialization strategy:
 
-        - 'random' : Random Gaussian, scaled by sqrt(X.mean() / n_components)
-        - 'random_sqrt' : Element-wise sqrt(|N(0,1)|), popular for SymNMF
-        - 'nndsvd' : Non-Negative Double SVD (deterministic, sparse)
-        - 'nndsvda' : NNDSVD with zeros filled by column average
-        - 'nndsvdar' : NNDSVD with zeros filled by small random values
+        - 'random' : Uniform [0, 0.1], simple baseline
+        - 'random_sqrt' : Uniform scaled by sqrt(X.mean() / rank)
     random_state : int, RandomState or None
         Controls random number generation
-    eps : float, default=1e-6
-        Small constant added to avoid exact zeros
 
     Returns
     -------
-    W : ndarray of shape (n_samples, n_components)
+    w : ndarray of shape (n_samples, n_components)
         Initialized non-negative factor matrix
-
-    References
-    ----------
-    .. [1] Boutsidis & Gallopoulos (2008). "SVD based initialization:
-           A head start for nonnegative matrix factorization."
     """
     rng = np.random.RandomState(random_state)
     n_samples = x.shape[0]
@@ -163,23 +183,23 @@ def _initialize_w(
     elif method == "random_sqrt":
         avg = np.sqrt(x.mean() / rank)
         w = rng.rand(n_samples, rank) * avg
-
-    elif method in ("nndsvd", "nndsvda", "nndsvdar"):
-        # Leverage sklearn's implementation
-        from sklearn.decomposition._nmf import _initialize_nmf
-
-        w, _ = _initialize_nmf(x, rank, init=method, random_state=random_state, eps=eps)
-
     else:
         raise ValueError(
             f"Invalid initialization method '{method}'. "
-            f"Choose from: 'random', 'random_sqrt', 'nndsvd', 'nndsvda', 'nndsvdar'"
+            f"Choose from: 'random', 'random_sqrt'"
         )
 
     return w
 
 
 def _validate_bounds(val) -> None:
+    """Raise ValueError if val is not a valid (lower, upper) bounds tuple.
+
+    Parameters
+    ----------
+    val : tuple of (float, float) or None
+        Bounds to validate. None means no bounds.
+    """
     if val is None:
         return
     if not (isinstance(val, tuple) and len(val) == 2):
@@ -203,15 +223,12 @@ def update_w(
     max_iter: int = 100,
     tol: float = 1e-6,
 ) -> np.ndarray:
-    r"""Block successive upper-bound minimization (BSUM) for SymNMF.
+    """Block successive upper-bound minimization (BSUM) for SymNMF.
 
-    Solves the $\mathbf{W}$-subproblem by minimizing:
-
-    $$\|\mathbf{M} - \mathbf{W}\mathbf{W}^\top\|_F^2$$
-
-    element-wise via quartic surrogate functions. See TABLE 1 in
-    Shi et al. (2016), "Inexact Block Coordinate Descent Methods For
-    Symmetric Nonnegative Matrix Factorization".
+    Solves the W-subproblem by minimizing ||M - WW'||^2_F element-wise
+    via quartic surrogate functions. See TABLE 1 in Shi et al. (2016),
+    "Inexact Block Coordinate Descent Methods For Symmetric Nonnegative
+    Matrix Factorization".
 
     Parameters
     ----------
@@ -264,7 +281,18 @@ def update_w(
 
 
 def _resolve_solver() -> tuple[callable, str]:
-    """Resolve the best available BSUM solver at import time."""
+    """Return the best available BSUM solver and its source label.
+
+    Tries the Cython BLAS-blocked implementation first; falls back to the
+    pure-Python solver with a warning.
+
+    Returns
+    -------
+    solver : callable
+        The update_w function to use
+    source : str
+        ``'cython'`` or ``'python'``
+    """
     try:
         from ._bsum import update_w_blas_blocked
 
@@ -294,17 +322,11 @@ def update_v_(
     bound_max: float,
     v: np.ndarray,
 ) -> None:
-    r"""Update auxiliary variable $\mathbf{V}$ in the ADMM algorithm.
+    """Update auxiliary variable V in the ADMM algorithm.
 
-    For unobserved entries:
-
-    $$v_{ij} = \hat{x}_{ij} - \frac{\lambda_{ij}}{\rho}$$
-
-    For observed entries:
-
-    $$v_{ij} = \frac{x_{ij} + \rho\,\hat{x}_{ij} - \lambda_{ij}}{1 + \rho}$$
-
-    The result is symmetrized and optionally projected onto $[\ell, u]$.
+    For unobserved entries: v_ij = x_hat_ij - lambda_ij / rho.
+    For observed entries: v_ij = (x_ij + rho * x_hat_ij - lambda_ij) / (1 + rho).
+    The result is symmetrized and optionally clipped to [bound_min, bound_max].
 
     Parameters
     ----------
@@ -313,11 +335,11 @@ def update_v_(
     x : ndarray of shape (n, n)
         Original similarity matrix
     x_hat : ndarray of shape (n, n)
-        Current estimate $\mathbf{W}\mathbf{W}^\top$
+        Current estimate WW'
     lam : ndarray of shape (n, n)
-        Lagrange multipliers $\boldsymbol{\Lambda}$
+        Lagrange multipliers
     rho : float
-        Penalty parameter $\rho$
+        Penalty parameter
     bound_min : float or None
         Lower bound constraint
     bound_max : float or None
@@ -343,84 +365,31 @@ def update_v_(
 def update_lambda_(
     lam: np.ndarray, v: np.ndarray, x_hat: np.ndarray, rho: float
 ) -> None:
-    r"""Update Lagrange multipliers via dual ascent.
-
-    $$\boldsymbol{\Lambda} \leftarrow \boldsymbol{\Lambda}
-      + \rho\,(\mathbf{V} - \mathbf{W}\mathbf{W}^\top)$$
+    """Update Lagrange multipliers via dual ascent: lam += rho * (V - WW').
 
     Parameters
     ----------
     lam : ndarray of shape (n, n)
-        Current Lagrange multipliers $\boldsymbol{\Lambda}$
+        Current Lagrange multipliers
     v : ndarray of shape (n, n)
-        Auxiliary variable $\mathbf{V}$
+        Auxiliary variable
     x_hat : ndarray of shape (n, n)
-        Current matrix estimate $\mathbf{W}\mathbf{W}^\top$
+        Current matrix estimate WW'
     rho : float
-        Penalty parameter $\rho$
+        Penalty parameter
     """
     lam += rho * (v - x_hat)
 
 
-class ConvergenceMonitor:
-    r"""Track optimization metrics and check convergence criteria.
-
-    Uses mixed absolute/relative tolerances for primal and dual residuals.
-    Convergence is declared when $r^k \le \epsilon_{\mathrm{pri}}$ and
-    $s^k \le \epsilon_{\mathrm{dual}}$.
-    """
-
-    def __init__(self, tol: float, eps_rel: float = 1e-4) -> None:
-        self.tol = tol
-        self.eps_rel = eps_rel
-        self.history: dict[str, list[float]] = {}
-
-    def record(self, **metrics: float) -> None:
-        for k, v in metrics.items():
-            self.history.setdefault(k, []).append(v)
-
-    def check_complete(
-        self,
-        residual_norm: float,
-        x_norm: float,
-        xhat_norm: float,
-        n: int,
-    ) -> bool:
-        eps_pri = n * self.tol + self.eps_rel * max(x_norm, xhat_norm)
-        return residual_norm <= eps_pri
-
-    def check_admm(
-        self,
-        primal_res: float,
-        dual_res: float,
-        v: np.ndarray,
-        x_hat: np.ndarray,
-        lam: np.ndarray,
-    ) -> bool:
-        n = v.size
-        eps_pri = np.sqrt(n) * self.tol + self.eps_rel * max(
-            np.linalg.norm(v), np.linalg.norm(x_hat)
-        )
-        eps_dual = np.sqrt(n) * self.tol + self.eps_rel * np.linalg.norm(lam)
-        return primal_res <= eps_pri and dual_res <= eps_dual
-
-
 class SRF(TransformerMixin, BaseEstimator):
-    r"""
-    Symmetric Non-negative Matrix Factorization using SRF.
+    """Symmetric non-negative matrix factorization via ADMM.
 
-    This class implements symmetric non-negative matrix factorization (SymNMF) using
-    the Alternating Direction Method of Multipliers (SRF). It can handle missing
-    entries and optional bound constraints on the factorization.
+    Factorizes a symmetric similarity matrix S into WW' where W >= 0.
+    Handles missing entries and optional bound constraints on V.
 
-    The algorithm solves:
-
-    $$\min_{\mathbf{W} \ge 0,\,\mathbf{V}}
-      \|\mathbf{M} \odot (\mathbf{S} - \mathbf{V})\|_F^2
-      + \frac{\rho}{2}\|\mathbf{V} - \mathbf{W}\mathbf{W}^\top\|_F^2$$
-
-    subject to optional bounds on $\mathbf{V}$, where $\mathbf{M}$ is an
-    observation mask.
+    The objective is:
+        min_{W>=0, V} ||M * (S - V)||^2_F + rho/2 * ||V - WW'||^2_F
+    where M is the observation mask.
 
     Parameters
     ----------
@@ -437,8 +406,7 @@ class SRF(TransformerMixin, BaseEstimator):
     verbose : int, default=0
         Whether to print optimization progress
     init : str, default='random_sqrt'
-        Method for factor initialization ('random', 'random_sqrt', 'nndsvd',
-        'nndsvdar', 'eigenspectrum')
+        Method for factor initialization ('random', 'random_sqrt')
     random_state : int or None, default=None
         Random seed for reproducible initialization
     missing_values : float or None, default=np.nan
@@ -485,9 +453,7 @@ class SRF(TransformerMixin, BaseEstimator):
         "max_outer": [Interval(Integral, 1, None, closed="left")],
         "max_inner": [Interval(Integral, 1, None, closed="left")],
         "tol": [Interval(Real, 0.0, None, closed="left")],
-        "init": [
-            StrOptions({"random", "random_sqrt", "nndsvd", "nndsvda", "nndsvdar"})
-        ],
+        "init": [StrOptions({"random", "random_sqrt"})],
         "verbose": [Interval(Integral, 0, None, closed="left")],
         "random_state": ["random_state"],  # sklearn's special validator
         "missing_values": [None, Real, np.nan],
@@ -528,12 +494,28 @@ class SRF(TransformerMixin, BaseEstimator):
         primal_residual: np.ndarray,
         v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
-        r"""Compute ADMM optimization metrics.
+        """Compute ADMM optimization metrics for monitoring and convergence.
 
-        Returns data fit $\|\mathbf{M} \odot (\mathbf{X} - \mathbf{V})\|_F^2$,
-        penalty $\frac{\rho}{2}\|\mathbf{V} - \hat{\mathbf{X}}\|_F^2$,
-        Lagrangian coupling, reconstruction error, explained variance,
-        and primal/dual residual norms.
+        Parameters
+        ----------
+        x : ndarray of shape (n, n)
+            Original similarity matrix
+        v : ndarray of shape (n, n)
+            Auxiliary variable
+        x_hat : ndarray of shape (n, n)
+            Current estimate WW'
+        lam : ndarray of shape (n, n)
+            Lagrange multipliers
+        primal_residual : ndarray of shape (n, n)
+            V - WW'
+        v_old : ndarray of shape (n, n) or None
+            Previous V, used to compute the dual residual
+
+        Returns
+        -------
+        metrics : dict[str, float]
+            Keys: total_objective, data_fit, penalty, lagrangian,
+            rec_error, evar, primal_residual, dual_residual
         """
         data_residual = x - v
 
@@ -569,19 +551,57 @@ class SRF(TransformerMixin, BaseEstimator):
             "dual_residual": dual_res,
         }
 
-    def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        r"""Fit model with complete data (no missing values).
+    def _check_convergence(
+        self,
+        primal_res: float,
+        dual_res: float,
+        v: np.ndarray,
+        x_hat: np.ndarray,
+        lam: np.ndarray,
+    ) -> bool:
+        """Check ADMM convergence using primal and dual residual norms.
 
-        Uses :func:`_frobenius_residual` to compute
-        $\|\mathbf{X} - \mathbf{W}\mathbf{W}^\top\|_F$ without forming
-        $\mathbf{W}\mathbf{W}^\top$, so memory stays at $O(n^2)$.
+        Parameters
+        ----------
+        primal_res : float
+            Norm of the primal residual ||V - WW'||_F
+        dual_res : float
+            Norm of the dual residual rho * ||V - V_old||_F
+        v : ndarray of shape (n, n)
+            Current auxiliary variable
+        x_hat : ndarray of shape (n, n)
+            Current estimate WW'
+        lam : ndarray of shape (n, n)
+            Current Lagrange multipliers
+
+        Returns
+        -------
+        converged : bool
+            True if both primal and dual tolerances are satisfied
+        """
+        eps_abs = self.tol
+        eps_rel = 1e-4
+        n = v.size
+
+        eps_pri = np.sqrt(n) * eps_abs + eps_rel * max(
+            np.linalg.norm(v), np.linalg.norm(x_hat)
+        )
+        eps_dual = np.sqrt(n) * eps_abs + eps_rel * np.linalg.norm(lam)
+        return primal_res <= eps_pri and dual_res <= eps_dual
+
+    def _fit_complete_data(self, x: np.ndarray) -> SRF:
+        """Fit model with complete data (no missing values).
+
+        Uses _frobenius_residual to compute ||X - WW'||_F without forming WW',
+        so memory stays at O(n^2).
         """
         w = _initialize_w(x, self.rank, self.init, self.random_state)
-        monitor = ConvergenceMonitor(self.tol)
+        history = defaultdict(list)
 
         n = x.shape[0]
         x_norm = np.linalg.norm(x, "fro")
         total_var = np.var(x)
+        eps_rel = 1e-4
 
         pbar = trange(
             1,
@@ -599,29 +619,28 @@ class SRF(TransformerMixin, BaseEstimator):
             mse = residual_norm**2 / (n * n)
             evar = 1.0 - mse / total_var if total_var > 0 else 0.0
 
-            monitor.record(
-                rec_error=rec_error,
-                evar=evar,
-                primal_residual=residual_norm,
-            )
+            history["rec_error"].append(rec_error)
+            history["evar"].append(evar)
+            history["primal_residual"].append(residual_norm)
 
             pbar.set_postfix(
                 rec_error=f"{rec_error:.3f}",
                 evar=f"{evar:.3f}",
             )
 
-            if monitor.check_complete(residual_norm, x_norm, xhat_norm, n):
+            eps_pri = n * self.tol + eps_rel * max(x_norm, xhat_norm)
+            if residual_norm <= eps_pri:
                 logger.info("Converged at iteration %d", i)
                 break
 
-        self._store_results(w, i, monitor)
+        self._store_results(w, i, history)
 
         return self
 
     def _fit_missing_data(self, x: np.ndarray) -> SRF:
         """Fit model with missing data using ADMM."""
         bound_min, bound_max = self.bounds
-        monitor = ConvergenceMonitor(self.tol)
+        history = defaultdict(list)
 
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         lam = np.zeros_like(x)
@@ -637,7 +656,7 @@ class SRF(TransformerMixin, BaseEstimator):
             1,
             self.max_outer + 1,
             disable=not self.verbose,
-            desc="SRF (ADMM)",
+            desc="SRF",
             mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
         for i in pbar:
@@ -655,7 +674,8 @@ class SRF(TransformerMixin, BaseEstimator):
             lam += self.rho * primal_residual
 
             metrics = self._compute_metrics(x, v, x_hat, lam, primal_residual, v_old)
-            monitor.record(**metrics)
+            for key, value in metrics.items():
+                history[key].append(value)
 
             pbar.set_postfix(
                 obj=f"{metrics['total_objective']:.3f}",
@@ -663,7 +683,7 @@ class SRF(TransformerMixin, BaseEstimator):
                 evar=f"{metrics['evar']:.3f}",
             )
 
-            if i > 1 and monitor.check_admm(
+            if i > 1 and self._check_convergence(
                 metrics["primal_residual"],
                 metrics["dual_residual"],
                 v,
@@ -673,17 +693,16 @@ class SRF(TransformerMixin, BaseEstimator):
                 logger.info("Converged at iteration %d", i)
                 break
 
-        self._store_results(w, i, monitor)
+        self._store_results(w, i, history)
 
         return self
 
-    def _store_results(
-        self, w: np.ndarray, n_iter: int, monitor: ConvergenceMonitor
-    ) -> None:
+    def _store_results(self, w: np.ndarray, n_iter: int, history: dict) -> None:
+        """Set fitted attributes after optimization."""
         self.w_ = w
         self.components_ = w
         self.n_iter_ = n_iter
-        self.history_ = monitor.history
+        self.history_ = history
 
     def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> SRF:
         """
