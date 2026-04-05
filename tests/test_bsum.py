@@ -18,6 +18,7 @@ decimal places.
 import numpy as np
 import pytest
 
+from helpers import make_bsum_data
 from pysrf._bsum import update_w as update_w_python
 from pysrf.model import _frobenius_residual, _w_solver_backend
 
@@ -41,16 +42,6 @@ try:
     HAS_BLOCKED = True
 except ImportError:
     HAS_BLOCKED = False
-
-
-def make_bsum_data(
-    n: int = 100, r: int = 10, seed: int = 0
-) -> tuple[np.ndarray, np.ndarray]:
-    rng = np.random.default_rng(seed)
-    m = rng.random((n, n))
-    m = (m + m.T) * 0.5
-    w0 = rng.random((n, r))
-    return m, w0
 
 
 class TestPythonFallback:
