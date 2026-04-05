@@ -128,8 +128,8 @@ def test_fallback_chain_prefers_blocked():
     except ImportError:
         pytest.skip("Cython module not available")
 
-    from pysrf.model import _update_w_source
+    from pysrf.model import _w_solver_backend
 
-    assert _update_w_source == "cython", (
-        f"Expected 'cython' but got '{_update_w_source}'"
+    assert _w_solver_backend == "cython", (
+        f"Expected 'cython' but got '{_w_solver_backend}'"
     )
