@@ -1,18 +1,31 @@
-"""
-Symmetric Non-negative Matrix Factorization via BSUM/ADMM.
+"""Similarity-based Representation Factorization (SRF).
 
-SRF uses Block Successive Upper-bound Minimization (BSUM) for the W-subproblem
-and Alternating Direction Method of Multipliers (ADMM) for the missing-data path.
+Decomposes symmetric similarity matrices into sparse, non-negative
+dimensions. Given a similarity matrix S, SRF finds a non-negative
+embedding W such that S ~ WW'. Each row of W gives the loadings of
+an item on the recovered dimensions, where small or near-zero loadings
+indicate that a dimension is largely irrelevant to that item.
+
+SRF handles missing entries in the similarity matrix without imputation
+and supports cross-validated estimation of the number of dimensions.
+
+Reference
+---------
+Mahner, F.P., Lam, K.C. & Hebart, M.N. Interpretable dimensions
+from sparse representational similarities. In preparation.
 """
+
+# Author: Florian P. Mahner
+# License: MIT
 
 from __future__ import annotations
 
 import logging
-import math
 import sys
 from collections import defaultdict
 
 import numpy as np
+from scipy.linalg.blas import dsymm
 from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import trange
 from sklearn.utils.validation import (
@@ -32,78 +45,25 @@ def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
     Parameters
     ----------
     x : ndarray of shape (n, n)
-        Symmetric input matrix
+        Symmetric matrix
     w : ndarray of shape (n, r)
         Factor matrix
 
     Returns
     -------
-    residual_norm : float
-        Frobenius norm of the reconstruction error
-    xhat_norm : float
-        Frobenius norm of the approximation WW'
+    reconstruction_err : float
+        ||X - WW'||_F, Frobenius distance between X and its approximation
+    approx_norm : float
+        ||WW'||_F, Frobenius norm of the low-rank approximation
     """
-    xw = x @ w
-    x_norm_sq = np.sum(x * x)
-    trace_xwwt = np.sum(xw * w)
+    xw = dsymm(1.0, x, w)
     wtw = w.T @ w
-    wwt_norm_sq = np.sum(wtw * wtw)
-    residual_sq = max(0.0, x_norm_sq - 2.0 * trace_xwwt + wwt_norm_sq)
-    return np.sqrt(residual_sq), np.sqrt(wwt_norm_sq)
-
-
-def _solve_quartic_minimization(a: float, b: float, c: float, d: float) -> float:
-    """Find x >= 0 minimizing g(x) = a/4 x^4 + b/3 x^3 + c/2 x^2 + d*x.
-
-    Key subroutine in the BSUM algorithm for updating individual
-    elements of the factor matrix W.
-
-    Parameters
-    ----------
-    a, b, c, d : float
-        Polynomial coefficients
-
-    Returns
-    -------
-    root : float
-        Non-negative minimizer of g(x)
-
-    References
-    ----------
-    Shi et al. (2016), "Inexact Block Coordinate Descent Methods For
-    Symmetric Nonnegative Matrix Factorization", Equation (11)
-    """
-    a, b, c, d = float(a), float(b), float(c), float(d)
-    bb = b * b
-    a2 = a * a
-    p = (3.0 * a * c - bb) / (3.0 * a2)
-
-    q = (9.0 * a * b * c - 27.0 * a2 * d - 2.0 * b * bb) / (27.0 * a2 * a)
-
-    if c > bb / (3.0 * a):
-        delta = math.sqrt(q * q * 0.25 + p * p * p / 27.0)
-        root = math.cbrt(q * 0.5 - delta) + math.cbrt(q * 0.5 + delta)
-    else:
-        tmp = b * bb / (27.0 * a2 * a) - d / a
-        root = math.cbrt(tmp)
-
-    return max(0.0, root)
-
-
-def _dot(a: np.ndarray, b: np.ndarray) -> float:
-    """Dot product via scalar accumulation, matching Cython summation order.
-
-    Parameters
-    ----------
-    a, b : ndarray of shape (n,)
-        Input vectors
-
-    Returns
-    -------
-    result : float
-        Dot product of a and b
-    """
-    return sum(x * y for x, y in zip(a, b))
+    ss_x = np.einsum("ij,ij->", x, x)
+    ss_xw = np.einsum("ij,ij->", xw, w)
+    ss_wwt = np.einsum("ij,ij->", wtw, wtw)
+    reconstruction_err = np.sqrt(max(0.0, ss_x - 2.0 * ss_xw + ss_wwt))
+    approx_norm = np.sqrt(ss_wwt)
+    return reconstruction_err, approx_norm
 
 
 def _is_nan_marker(missing_values: float | None) -> bool:
@@ -126,25 +86,25 @@ def _is_nan_marker(missing_values: float | None) -> bool:
     )
 
 
-def _get_missing_mask(x: np.ndarray, missing_values: float | None) -> np.ndarray:
-    """Boolean mask where True marks missing entries in x.
+def _get_observed_mask(x: np.ndarray, missing_values: float | None) -> np.ndarray:
+    """Boolean mask where True marks observed entries in x.
 
     Parameters
     ----------
     x : ndarray of shape (n, n)
-        Input matrix
+        Similarity matrix
     missing_values : float or None
         Sentinel value for missing data. If None or NaN, uses ``np.isnan``.
 
     Returns
     -------
     mask : ndarray of shape (n, n)
-        Boolean array, True where x has missing values
+        Boolean array, True where x is observed
     """
     if _is_nan_marker(missing_values) or missing_values is None:
-        return np.isnan(x)
+        return np.isfinite(x)
     else:
-        return x == missing_values
+        return np.not_equal(x, missing_values)
 
 
 def _initialize_w(
@@ -153,15 +113,14 @@ def _initialize_w(
     method: str = "random_sqrt",
     random_state: int | np.random.RandomState | None = None,
 ) -> np.ndarray:
-    """
-    Initialize factor matrix W for symmetric NMF.
+    """Initialize the embedding matrix W.
 
     Parameters
     ----------
     x : ndarray of shape (n_samples, n_samples)
-        Symmetric input matrix (used for scaling)
+        Symmetric similarity matrix (used for scaling)
     rank : int
-        Number of components (columns in W)
+        Number of dimensions
     method : {'random', 'random_sqrt'}, default='random_sqrt'
         Initialization strategy:
 
@@ -172,8 +131,8 @@ def _initialize_w(
 
     Returns
     -------
-    w : ndarray of shape (n_samples, n_components)
-        Initialized non-negative factor matrix
+    w : ndarray of shape (n_samples, rank)
+        Non-negative embedding matrix
     """
     rng = np.random.RandomState(random_state)
     n_samples = x.shape[0]
@@ -193,97 +152,18 @@ def _initialize_w(
 
 
 def _validate_bounds(val) -> None:
-    """Raise ValueError if val is not a valid (lower, upper) bounds tuple.
-
-    Parameters
-    ----------
-    val : tuple of (float, float) or None
-        Bounds to validate. None means no bounds.
-    """
+    """Raise ValueError if lower bound exceeds upper bound."""
     if val is None:
         return
-    if not (isinstance(val, tuple) and len(val) == 2):
-        raise ValueError("bounds must be a tuple (lower, upper) of floats or None")
-    lo, up = val
-    # allow None for either end
-    if lo is None or up is None:
-        return
-    try:
-        lo_f = float(lo)
-        up_f = float(up)
-    except (TypeError, ValueError):
-        raise ValueError("bounds must be numeric or None")
-    if lo_f > up_f:
-        raise ValueError("lower bound cannot be greater than upper bound")
+    lo, hi = val
+    if lo is not None and hi is not None and lo > hi:
+        raise ValueError("Lower bound cannot be greater than upper bound")
 
 
-def update_w(
-    m: np.ndarray,
-    w0: np.ndarray,
-    max_iter: int = 100,
-    tol: float = 1e-6,
-) -> np.ndarray:
-    """Block successive upper-bound minimization (BSUM) for SymNMF.
+def _get_w_solver() -> tuple[callable, str]:
+    """Return the best available solver for the W update step.
 
-    Solves the W-subproblem by minimizing ||M - WW'||^2_F element-wise
-    via quartic surrogate functions. See TABLE 1 in Shi et al. (2016),
-    "Inexact Block Coordinate Descent Methods For Symmetric Nonnegative
-    Matrix Factorization".
-
-    Parameters
-    ----------
-    m : ndarray of shape (n, n)
-        Target symmetric matrix to factorize
-    w0 : ndarray of shape (n, r)
-        Initial factor matrix
-    max_iter : int, default=100
-        Maximum number of iterations
-    tol : float, default=1e-6
-        Convergence tolerance
-
-    Returns
-    -------
-    w : ndarray of shape (n, r)
-        Optimized factor matrix
-    """
-    w = w0.copy()
-    n, r = w.shape
-    xtx = w.T @ w
-    diag = np.einsum("ij,ij->i", w, w)
-    a = 4.0
-
-    for it in range(max_iter):
-        max_delta = 0.0
-        for i in range(n):
-            for j in range(r):
-                old = w[i, j]
-                b = 12.0 * old
-                c = 4.0 * ((diag[i] - m[i, i]) + xtx[j, j] + old * old)
-                d = 4.0 * _dot(w[i], xtx[:, j]) - 4.0 * _dot(m[i], w[:, j])
-                new = _solve_quartic_minimization(a, b, c, d)
-
-                delta = new - old
-                if abs(delta) > max_delta:
-                    max_delta = abs(delta)
-
-                # steps 7 - 13 in TABLE 1
-                diag[i] += new * new - old * old
-                update_row = delta * w[i]
-                xtx[j, :] += update_row
-                xtx[:, j] += update_row
-                xtx[j, j] += delta * delta
-                w[i, j] = new
-
-        if max_delta < tol and tol > 0.0:
-            break
-
-    return w
-
-
-def _resolve_solver() -> tuple[callable, str]:
-    """Return the best available BSUM solver and its source label.
-
-    Tries the Cython BLAS-blocked implementation first; falls back to the
+    Tries the compiled Cython implementation first, falls back to the
     pure-Python solver with a warning.
 
     Returns
@@ -306,10 +186,12 @@ def _resolve_solver() -> tuple[callable, str]:
             RuntimeWarning,
             stacklevel=2,
         )
+        from ._bsum import update_w
+
         return update_w, "python"
 
 
-_update_w_impl, _update_w_source = _resolve_solver()
+_w_solver, _w_solver_backend = _get_w_solver()
 
 
 def update_v_(
@@ -322,28 +204,30 @@ def update_v_(
     bound_max: float,
     v: np.ndarray,
 ) -> None:
-    """Update auxiliary variable V in the ADMM algorithm.
+    """Update the auxiliary variable V for missing data handling.
 
-    For unobserved entries: v_ij = x_hat_ij - lambda_ij / rho.
-    For observed entries: v_ij = (x_ij + rho * x_hat_ij - lambda_ij) / (1 + rho).
-    The result is symmetrized and optionally clipped to [bound_min, bound_max].
+    V is an auxiliary variable that decouples the data-fitting term
+    from the factorization constraint.
+
+    For unobserved entries: v_ij = x_hat_ij - lam_ij / rho.
+    For observed entries: v_ij = (x_ij + rho * x_hat_ij - lam_ij) / (1 + rho).
 
     Parameters
     ----------
     observed_mask : ndarray of shape (n, n)
-        Binary observation mask
+        Binary mask, True where similarities are observed
     x : ndarray of shape (n, n)
-        Original similarity matrix
+        Similarity matrix
     x_hat : ndarray of shape (n, n)
-        Current estimate WW'
+        Current reconstruction WW'
     lam : ndarray of shape (n, n)
-        Lagrange multipliers
+        Dual variables enforcing agreement between V and WW'
     rho : float
-        Penalty parameter
+        Penalty weight for the constraint V = WW'
     bound_min : float or None
-        Lower bound constraint
+        Lower bound on V entries
     bound_max : float or None
-        Upper bound constraint
+        Upper bound on V entries
     v : ndarray of shape (n, n)
         Auxiliary variable, updated in place
     """
@@ -355,9 +239,10 @@ def update_v_(
         x[observed_mask] + rho * x_hat[observed_mask] - lam[observed_mask]
     ) / (1.0 + rho)
 
-    # since this optimization problem is linear we can do a projection step here to respect the bounds
     if bound_min is not None or bound_max is not None:
         np.clip(v, bound_min, bound_max, out=v)
+
+    # Enforce symmetry
     v += v.T
     v *= 0.5
 
@@ -365,27 +250,28 @@ def update_v_(
 def update_lambda_(
     lam: np.ndarray, v: np.ndarray, x_hat: np.ndarray, rho: float
 ) -> None:
-    """Update Lagrange multipliers via dual ascent: lam += rho * (V - WW').
+    """Update dual variables via dual ascent: lam += rho * (V - WW').
 
     Parameters
     ----------
     lam : ndarray of shape (n, n)
-        Current Lagrange multipliers
+        Dual variables, updated in place
     v : ndarray of shape (n, n)
         Auxiliary variable
     x_hat : ndarray of shape (n, n)
-        Current matrix estimate WW'
+        Current reconstruction WW'
     rho : float
-        Penalty parameter
+        Penalty weight for the constraint V = WW'
     """
     lam += rho * (v - x_hat)
 
 
 class SRF(TransformerMixin, BaseEstimator):
-    """Symmetric non-negative matrix factorization via ADMM.
+    """Similarity-based Representation Factorization.
 
     Factorizes a symmetric similarity matrix S into WW' where W >= 0.
-    Handles missing entries and optional bound constraints on V.
+    Handles missing entries and can enforce bounds on the reconstructed
+    similarities.
 
     The objective is:
         min_{W>=0, V} ||M * (S - V)||^2_F + rho/2 * ||V - WW'||^2_F
@@ -394,57 +280,54 @@ class SRF(TransformerMixin, BaseEstimator):
     Parameters
     ----------
     rank : int, default=10
-        Number of factors (dimensionality of the latent space)
+        Number of dimensions in the embedding
     rho : float, default=3.0
-        SRF penalty parameter controlling constraint enforcement
-    max_outer : int, default=10
-        Maximum number of SRF outer iterations
-    max_inner : int, default=30
-        Maximum iterations for w-subproblem per outer iteration
+        Penalty weight controlling how closely WW' must match V
+    max_outer : int, default=30
+        Maximum number of outer optimization iterations
+    max_inner : int, default=20
+        Maximum iterations for the W update per outer iteration
     tol : float, default=1e-4
-        Convergence tolerance for constraint violation
+        Convergence tolerance
     verbose : int, default=0
         Whether to print optimization progress
     init : str, default='random_sqrt'
-        Method for factor initialization ('random', 'random_sqrt')
+        Embedding initialization method ('random', 'random_sqrt')
     random_state : int or None, default=None
         Random seed for reproducible initialization
     missing_values : float or None, default=np.nan
-        Values to be treated as missing to mask the matrix
+        Sentinel value marking missing entries in the similarity matrix
     bounds : tuple of (float, float) or None, default=(None, None)
-        Tuple of (lower, upper) bounds for the auxiliary variable v.
-        If None, the bounds are inferred from the data.
-        In practice, one can also pass the expected bounds of the matrix
-        (e.g. (0, 1) for cosine similarity)
+        (lower, upper) bounds on the reconstructed similarities.
+        For example, (0, 1) for similarities normalized to [0, 1].
+    check_input : bool, default=True
+        Whether to verify that the input matrix and missing mask are
+        symmetric. Set to False for large matrices where the input is
+        known to be valid, to avoid allocating temporary arrays during
+        the symmetry check.
 
     Attributes
     ----------
-    w_ : np.ndarray of shape (n_samples, rank)
-        Learned factor matrix w
-    components_ : np.ndarray of shape (n_samples, rank)
+    w_ : ndarray of shape (n_samples, rank)
+        Learned embedding matrix
+    components_ : ndarray of shape (n_samples, rank)
         Alias for w_ (sklearn compatibility)
     n_iter_ : int
-        Number of SRF iterations performed
+        Number of outer iterations performed
     history_ : dict
-        Dictionary containing optimization metrics per iteration
+        Optimization metrics per iteration
 
     Examples
     --------
-    >>> # Basic usage with complete data
     >>> from pysrf import SRF
     >>> model = SRF(rank=10, random_state=42)
     >>> w = model.fit_transform(similarity_matrix)
     >>> reconstruction = w @ w.T
 
-    >>> # Usage with missing data (NaN values)
+    >>> # With missing data
     >>> similarity_matrix[mask] = np.nan
     >>> model = SRF(rank=10, missing_values=np.nan)
     >>> w = model.fit_transform(similarity_matrix)
-
-    References
-    ----------
-    .. [1] Shi et al. (2016). "Inexact Block Coordinate Descent Methods For
-           Symmetric Nonnegative Matrix Factorization"
     """
 
     _parameter_constraints = {
@@ -458,8 +341,9 @@ class SRF(TransformerMixin, BaseEstimator):
         "random_state": ["random_state"],  # sklearn's special validator
         "missing_values": [None, Real, np.nan],
         "bounds": [None, tuple],
+        "check_input": ["boolean"],
     }
-    _solver = staticmethod(_update_w_impl)
+    _solver = staticmethod(_w_solver)
 
     def __init__(
         self,
@@ -473,6 +357,7 @@ class SRF(TransformerMixin, BaseEstimator):
         random_state: int | None = None,
         missing_values: float | None = np.nan,
         bounds: tuple[float, float] | None = (None, None),
+        check_input: bool = True,
     ) -> None:
         self.rank = rank
         self.rho = rho
@@ -484,6 +369,11 @@ class SRF(TransformerMixin, BaseEstimator):
         self.random_state = random_state
         self.missing_values = missing_values
         self.bounds = bounds
+        self.check_input = check_input
+
+    def _tolerance(self, *norms):
+        """Adaptive convergence tolerance (Boyd et al., 2010, Sec. 3.3.1)."""
+        return self.n_features_in_ * self.tol + self.tol * max(norms)
 
     def _compute_metrics(
         self,
@@ -494,18 +384,21 @@ class SRF(TransformerMixin, BaseEstimator):
         primal_residual: np.ndarray,
         v_old: np.ndarray | None = None,
     ) -> dict[str, float]:
-        """Compute ADMM optimization metrics for monitoring and convergence.
+        """Compute optimization metrics for monitoring and convergence.
+
+        Convergence follows Boyd et al. (2010), Section 3.3.1, using
+        adaptive primal/dual tolerances that scale with the problem.
 
         Parameters
         ----------
         x : ndarray of shape (n, n)
-            Original similarity matrix
+            Similarity matrix
         v : ndarray of shape (n, n)
             Auxiliary variable
         x_hat : ndarray of shape (n, n)
-            Current estimate WW'
+            Current reconstruction WW'
         lam : ndarray of shape (n, n)
-            Lagrange multipliers
+            Dual variables
         primal_residual : ndarray of shape (n, n)
             V - WW'
         v_old : ndarray of shape (n, n) or None
@@ -515,21 +408,19 @@ class SRF(TransformerMixin, BaseEstimator):
         -------
         metrics : dict[str, float]
             Keys: total_objective, data_fit, penalty, lagrangian,
-            rec_error, evar, primal_residual, dual_residual
+            rec_error, evar, primal_residual, dual_residual, converged
         """
-        data_residual = x - v
+        observed_mask = self._observed_mask
 
-        observed_mask = self._observation_mask
-        data_fit = np.sum(data_residual[observed_mask] ** 2)
+        data_fit = np.sum((x[observed_mask] - v[observed_mask]) ** 2)
 
-        penalty_term = np.sum(primal_residual**2)
+        penalty_term = np.einsum("ij,ij->", primal_residual, primal_residual)
         penalty = (self.rho / 2.0) * penalty_term
 
-        lagrangian = np.sum(lam * primal_residual)
+        lagrangian = np.einsum("ij,ij->", lam, primal_residual)
         total_obj = data_fit + penalty + lagrangian
 
-        rec_residual_obs = (data_residual + primal_residual)[observed_mask]
-        rec_ss = np.sum(rec_residual_obs**2)
+        rec_ss = np.sum((x[observed_mask] - x_hat[observed_mask]) ** 2)
         rec_error = np.sqrt(rec_ss)
 
         if self._total_var > 0:
@@ -538,7 +429,14 @@ class SRF(TransformerMixin, BaseEstimator):
             evar = 0.0
 
         primal_res = np.sqrt(penalty_term)
-        dual_res = self.rho * np.linalg.norm(v - v_old) if v_old is not None else np.inf
+        if v_old is not None:
+            dual_res = self.rho * np.sqrt(np.einsum("ij,ij->", v - v_old, v - v_old))
+        else:
+            dual_res = np.inf
+
+        eps_pri = self._tolerance(np.linalg.norm(v), np.linalg.norm(x_hat))
+        eps_dual = self._tolerance(np.linalg.norm(lam))
+        converged = primal_res <= eps_pri and dual_res <= eps_dual
 
         return {
             "total_objective": total_obj,
@@ -549,51 +447,14 @@ class SRF(TransformerMixin, BaseEstimator):
             "evar": evar,
             "primal_residual": primal_res,
             "dual_residual": dual_res,
+            "converged": converged,
         }
 
-    def _check_convergence(
-        self,
-        primal_res: float,
-        dual_res: float,
-        v: np.ndarray,
-        x_hat: np.ndarray,
-        lam: np.ndarray,
-    ) -> bool:
-        """Check ADMM convergence using primal and dual residual norms.
-
-        Parameters
-        ----------
-        primal_res : float
-            Norm of the primal residual ||V - WW'||_F
-        dual_res : float
-            Norm of the dual residual rho * ||V - V_old||_F
-        v : ndarray of shape (n, n)
-            Current auxiliary variable
-        x_hat : ndarray of shape (n, n)
-            Current estimate WW'
-        lam : ndarray of shape (n, n)
-            Current Lagrange multipliers
-
-        Returns
-        -------
-        converged : bool
-            True if both primal and dual tolerances are satisfied
-        """
-        eps_abs = self.tol
-        eps_rel = 1e-4
-        n = v.size
-
-        eps_pri = np.sqrt(n) * eps_abs + eps_rel * max(
-            np.linalg.norm(v), np.linalg.norm(x_hat)
-        )
-        eps_dual = np.sqrt(n) * eps_abs + eps_rel * np.linalg.norm(lam)
-        return primal_res <= eps_pri and dual_res <= eps_dual
-
     def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        """Fit model with complete data (no missing values).
+        """Fit with complete data (no missing values).
 
-        Uses _frobenius_residual to compute ||X - WW'||_F without forming WW',
-        so memory stays at O(n^2).
+        When all similarities are observed, no auxiliary variables are
+        needed. Convergence is checked directly on ||X - WW'||_F.
         """
         w = _initialize_w(x, self.rank, self.init, self.random_state)
         history = defaultdict(list)
@@ -601,7 +462,6 @@ class SRF(TransformerMixin, BaseEstimator):
         n = x.shape[0]
         x_norm = np.linalg.norm(x, "fro")
         total_var = np.var(x)
-        eps_rel = 1e-4
 
         pbar = trange(
             1,
@@ -613,23 +473,21 @@ class SRF(TransformerMixin, BaseEstimator):
         for i in pbar:
             w = self._solver(x, w, max_iter=self.max_inner, tol=self.tol)
 
-            residual_norm, xhat_norm = _frobenius_residual(x, w)
+            reconstruction_err, approx_norm = _frobenius_residual(x, w)
 
-            rec_error = residual_norm
-            mse = residual_norm**2 / (n * n)
+            mse = reconstruction_err**2 / (n * n)
             evar = 1.0 - mse / total_var if total_var > 0 else 0.0
 
-            history["rec_error"].append(rec_error)
+            history["rec_error"].append(reconstruction_err)
             history["evar"].append(evar)
-            history["primal_residual"].append(residual_norm)
+            history["primal_residual"].append(reconstruction_err)
 
             pbar.set_postfix(
-                rec_error=f"{rec_error:.3f}",
+                rec_error=f"{reconstruction_err:.3f}",
                 evar=f"{evar:.3f}",
             )
 
-            eps_pri = n * self.tol + eps_rel * max(x_norm, xhat_norm)
-            if residual_norm <= eps_pri:
+            if reconstruction_err <= self._tolerance(x_norm, approx_norm):
                 logger.info("Converged at iteration %d", i)
                 break
 
@@ -638,7 +496,12 @@ class SRF(TransformerMixin, BaseEstimator):
         return self
 
     def _fit_missing_data(self, x: np.ndarray) -> SRF:
-        """Fit model with missing data using ADMM."""
+        """Fit with missing data.
+
+        Introduces auxiliary variable V and dual variables to decouple
+        the data-fitting term from the factorization, iterating between
+        updating W, V, and the dual variables until convergence.
+        """
         bound_min, bound_max = self.bounds
         history = defaultdict(list)
 
@@ -646,7 +509,8 @@ class SRF(TransformerMixin, BaseEstimator):
         lam = np.zeros_like(x)
 
         v = x.copy()
-        x_hat = w @ w.T
+        x_hat = np.empty_like(x)
+        np.dot(w, w.T, out=x_hat)
 
         v_old = np.empty_like(x)
         target = np.empty_like(x)
@@ -662,16 +526,21 @@ class SRF(TransformerMixin, BaseEstimator):
         for i in pbar:
             v_old[:] = v
 
-            np.divide(lam, self.rho, out=target)
-            np.add(v, target, out=target)
+            target[:] = lam
+            target /= self.rho
+            target += v
             w = self._solver(target, w, max_iter=self.max_inner, tol=self.tol)
-            x_hat[:] = w @ w.T
+            # Avoid temporary by writing directly into pre-allocated buffer
+            np.dot(w, w.T, out=x_hat)
 
             update_v_(
-                self._observation_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
+                self._observed_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
             )
-            np.subtract(v, x_hat, out=primal_residual)
-            lam += self.rho * primal_residual
+            primal_residual[:] = v
+            primal_residual -= x_hat
+            target[:] = primal_residual
+            target *= self.rho
+            lam += target
 
             metrics = self._compute_metrics(x, v, x_hat, lam, primal_residual, v_old)
             for key, value in metrics.items():
@@ -683,13 +552,7 @@ class SRF(TransformerMixin, BaseEstimator):
                 evar=f"{metrics['evar']:.3f}",
             )
 
-            if i > 1 and self._check_convergence(
-                metrics["primal_residual"],
-                metrics["dual_residual"],
-                v,
-                x_hat,
-                lam,
-            ):
+            if i > 1 and metrics["converged"]:
                 logger.info("Converged at iteration %d", i)
                 break
 
@@ -705,20 +568,19 @@ class SRF(TransformerMixin, BaseEstimator):
         self.history_ = history
 
     def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> SRF:
-        """
-        Fit the symmetric NMF model to the data.
+        """Fit the model to a similarity matrix.
 
         Parameters
         ----------
         x : array-like of shape (n_samples, n_samples)
-            Symmetric similarity matrix. Missing values are allowed and should
-            be marked according to the missing_values parameter.
+            Symmetric similarity matrix. Missing values should be marked
+            according to the ``missing_values`` parameter.
         y : Ignored
-            Not used, present here for API consistency by convention.
+            Not used, present for sklearn API compatibility.
 
         Returns
         -------
-        self : object
+        self : SRF
             Fitted estimator.
         """
         self._validate_params()
@@ -736,78 +598,73 @@ class SRF(TransformerMixin, BaseEstimator):
             copy=True,
         )
 
-        self._missing_mask = _get_missing_mask(x, self.missing_values)
-        if np.all(self._missing_mask):
+        self._observed_mask = _get_observed_mask(x, self.missing_values)
+        if not np.any(self._observed_mask):
             raise ValueError(
                 "No observed entries found in the data. All values are missing."
             )
 
-        check_symmetric(self._missing_mask, raise_exception=True)
-        self._observation_mask = ~self._missing_mask
-        x[self._missing_mask] = 0.0
-        x = check_symmetric(x, raise_exception=True, tol=1e-10)
+        if self.check_input:
+            check_symmetric(self._observed_mask, raise_exception=True)
+            x = check_symmetric(x, raise_exception=True, tol=1e-10)
+        x[~self._observed_mask] = 0.0
 
-        observed = self._observation_mask
-        observed_count = int(np.sum(observed))
-        if observed_count > 0:
-            observed_mean = np.sum(x[observed]) / observed_count
-            self._total_var = np.sum((x[observed] - observed_mean) ** 2)
+        n_observed = np.count_nonzero(self._observed_mask)
+        if n_observed > 0:
+            observed_mean = np.sum(x[self._observed_mask]) / n_observed
+            self._total_var = np.sum((x[self._observed_mask] - observed_mean) ** 2)
         else:
             self._total_var = 0.0
 
-        if np.all(self._observation_mask):
+        if n_observed == self._observed_mask.size:
             return self._fit_complete_data(x)
         else:
             return self._fit_missing_data(x)
 
     def transform(self, x: np.ndarray) -> np.ndarray:
-        """
-        Project data onto the learned factor space.
+        """Return the learned embedding matrix W.
 
         Parameters
         ----------
         x : array-like of shape (n_samples, n_samples)
-            Symmetric matrix to transform
+            Ignored, present for sklearn API compatibility.
 
         Returns
         -------
-        w : array-like of shape (n_samples, rank)
-            Transformed data
+        w : ndarray of shape (n_samples, rank)
+            Embedding matrix
         """
         check_is_fitted(self)
         return self.w_
 
     def fit_transform(self, x: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
-        """
-        Fit the model and return the learned factors.
+        """Fit the model and return the learned embedding matrix W.
 
         Parameters
         ----------
         x : array-like of shape (n_samples, n_samples)
             Symmetric similarity matrix
         y : Ignored
-            Not used, present here for API consistency by convention.
+            Not used, present for sklearn API compatibility.
 
         Returns
         -------
-        w : array-like of shape (n_samples, rank)
-            Learned factor matrix
+        w : ndarray of shape (n_samples, rank)
+            Embedding matrix
         """
         return self.fit(x, y).transform(x)
 
     def reconstruct(self, w: np.ndarray | None = None) -> np.ndarray:
-        """
-        Reconstruct the similarity matrix from factors.
+        """Reconstruct the similarity matrix as WW'.
 
         Parameters
         ----------
-        w : array-like of shape (n_samples, rank) or None
-            Factor matrix to use for reconstruction.
-            If None, uses the fitted factors.
+        w : ndarray of shape (n_samples, rank) or None
+            Embedding matrix. If None, uses the fitted embedding.
 
         Returns
         -------
-        s_hat : array-like of shape (n_samples, n_samples)
+        s_hat : ndarray of shape (n_samples, n_samples)
             Reconstructed similarity matrix
         """
         if w is None:
@@ -817,21 +674,20 @@ class SRF(TransformerMixin, BaseEstimator):
         return w @ w.T
 
     def score(self, x: np.ndarray, y: np.ndarray | None = None) -> float:
-        """
-        Score the model using reconstruction error on observed entries only.
+        """Negative MSE on observed entries (higher is better).
 
         Parameters
         ----------
         x : array-like of shape (n_samples, n_samples)
-            Symmetric similarity matrix. Missing values are allowed and should
-            be marked according to the missing_values parameter.
+            Symmetric similarity matrix. Missing values should be marked
+            according to the ``missing_values`` parameter.
         y : Ignored
-            Not used, present here for API consistency by convention.
+            Not used, present for sklearn API compatibility.
 
         Returns
         -------
-        mse : float
-            Mean squared error of the reconstruction on observed entries.
+        score : float
+            Negative mean squared reconstruction error on observed entries.
         """
         check_is_fitted(self)
 
@@ -843,7 +699,7 @@ class SRF(TransformerMixin, BaseEstimator):
             dtype=np.float64,
             ensure_all_finite="allow-nan" if self.missing_values is np.nan else True,
         )
-        observation_mask = ~_get_missing_mask(x, self.missing_values)
+        observation_mask = _get_observed_mask(x, self.missing_values)
         reconstruction = self.reconstruct()
         mse = np.mean((x[observation_mask] - reconstruction[observation_mask]) ** 2)
         return -mse
