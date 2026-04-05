@@ -7,33 +7,7 @@ import pytest
 
 from pysrf import SRF
 
-
-def generate_low_rank_matrix(
-    n: int, rank: int, noise_level: float = 0.01, seed: int = 42
-) -> np.ndarray:
-    """Generate a low-rank symmetric matrix with small noise."""
-    rng = np.random.default_rng(seed)
-    w_true = np.abs(rng.standard_normal((n, rank)))
-    s = w_true @ w_true.T
-    s += noise_level * rng.standard_normal((n, n))
-    s = (s + s.T) / 2
-    return s
-
-
-def add_missing_values(s: np.ndarray, fraction: float, seed: int = 42) -> np.ndarray:
-    """Add missing values to upper triangle (symmetric)."""
-    rng = np.random.default_rng(seed)
-    s_missing = s.copy()
-    n = s.shape[0]
-    triu_i, triu_j = np.triu_indices(n, k=1)
-    n_entries = len(triu_i)
-    n_missing = int(n_entries * fraction)
-    missing_idx = rng.choice(n_entries, size=n_missing, replace=False)
-    for idx in missing_idx:
-        i, j = triu_i[idx], triu_j[idx]
-        s_missing[i, j] = np.nan
-        s_missing[j, i] = np.nan
-    return s_missing
+from helpers import make_symmetric_matrix, make_missing_matrix
 
 
 class TestEarlyStopping:
@@ -41,7 +15,7 @@ class TestEarlyStopping:
 
     def test_early_stopping_triggers_before_max_iter(self):
         """Model should stop before max_outer when tolerance is met."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.001)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
         max_outer = 100
 
         # Use a tolerance that allows convergence (relative to typical residuals)
@@ -55,7 +29,7 @@ class TestEarlyStopping:
 
     def test_loose_tolerance_stops_earlier(self):
         """Looser tolerance should result in fewer iterations."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model_tight = SRF(rank=3, max_outer=100, tol=1e-6, random_state=42)
         model_tight.fit(s)
@@ -70,8 +44,8 @@ class TestEarlyStopping:
 
     def test_early_stopping_with_missing_data(self):
         """Early stopping should work with missing data."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.001)
-        s_missing = add_missing_values(s, fraction=0.2)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
+        s_missing = make_missing_matrix(s, fraction=0.2)
         max_outer = 100
 
         model = SRF(rank=3, max_outer=max_outer, tol=1e-4, random_state=42)
@@ -84,7 +58,7 @@ class TestEarlyStopping:
 
     def test_n_iter_matches_history_length(self):
         """n_iter_ should match the length of history arrays."""
-        s = generate_low_rank_matrix(n=20, rank=3)
+        s = make_symmetric_matrix(n=20, rank=3)
 
         model = SRF(rank=3, max_outer=50, random_state=42)
         model.fit(s)
@@ -94,7 +68,7 @@ class TestEarlyStopping:
 
     def test_convergence_residuals_decrease(self):
         """Primal residual should generally decrease over iterations."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s)
@@ -112,7 +86,7 @@ class TestMonotonicity:
 
     def test_rec_error_decreases_complete_data(self):
         """Reconstruction error should decrease monotonically for complete data."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s)
@@ -127,8 +101,8 @@ class TestMonotonicity:
 
     def test_rec_error_decreases_missing_data(self):
         """Reconstruction error should decrease monotonically with missing data."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
-        s_missing = add_missing_values(s, fraction=0.2)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
+        s_missing = make_missing_matrix(s, fraction=0.2)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s_missing)
@@ -143,7 +117,7 @@ class TestMonotonicity:
 
     def test_data_fit_decreases_complete_data(self):
         """Data fit term should decrease monotonically for complete data."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s)
@@ -158,7 +132,7 @@ class TestMonotonicity:
 
     def test_evar_increases_complete_data(self):
         """Explained variance should increase monotonically."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.01)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s)
@@ -174,7 +148,7 @@ class TestMonotonicity:
     @pytest.mark.parametrize("rank", [2, 5, 10])
     def test_monotonicity_different_ranks(self, rank):
         """Monotonicity should hold for different rank values."""
-        s = generate_low_rank_matrix(n=50, rank=rank, noise_level=0.01)
+        s = make_symmetric_matrix(n=50, rank=rank, noise_level=0.01)
 
         model = SRF(rank=rank, max_outer=15, tol=1e-8, random_state=42)
         model.fit(s)
@@ -192,7 +166,7 @@ class TestConvergenceQuality:
 
     def test_converged_solution_has_low_residual(self):
         """After convergence, primal residual should be small."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.001)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
 
         model = SRF(rank=3, max_outer=100, tol=1e-5, random_state=42)
         model.fit(s)
@@ -205,7 +179,7 @@ class TestConvergenceQuality:
 
     def test_low_rank_recovery(self):
         """Model should recover good approximation of low-rank matrix."""
-        s = generate_low_rank_matrix(n=30, rank=3, noise_level=0.001)
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
 
         model = SRF(rank=3, max_outer=100, tol=1e-6, random_state=42)
         model.fit(s)
@@ -217,7 +191,7 @@ class TestConvergenceQuality:
 
     def test_nonnegative_factors(self):
         """Converged factors should be non-negative."""
-        s = generate_low_rank_matrix(n=30, rank=3)
+        s = make_symmetric_matrix(n=30, rank=3)
 
         model = SRF(rank=3, max_outer=50, random_state=42)
         model.fit(s)
