@@ -1,10 +1,6 @@
+"""Shared test data generators."""
+
 import numpy as np
-import pytest
-
-
-@pytest.fixture
-def rng():
-    return np.random.default_rng(42)
 
 
 def make_symmetric_matrix(n=30, rank=5, noise_level=0.01, seed=42):
