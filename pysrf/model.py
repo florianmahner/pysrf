@@ -604,10 +604,10 @@ class SRF(TransformerMixin, BaseEstimator):
                 "No observed entries found in the data. All values are missing."
             )
 
+        x[~self._observed_mask] = 0.0
         if self.check_input:
             check_symmetric(self._observed_mask, raise_exception=True)
             x = check_symmetric(x, raise_exception=True, tol=1e-10)
-        x[~self._observed_mask] = 0.0
 
         n_observed = np.count_nonzero(self._observed_mask)
         if n_observed > 0:
