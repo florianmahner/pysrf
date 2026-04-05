@@ -9,18 +9,11 @@ from pysrf.bounds import (
 )
 from pysrf import SRF
 from pysrf import create_train_val_split
-
-
-def generate_test_matrix(n=30, rank=5, random_state=42):
-    rng = np.random.RandomState(random_state)
-    w = rng.rand(n, rank)
-    s = w @ w.T
-    s = (s + s.T) / 2
-    return s
+from helpers import make_symmetric_matrix
 
 
 def test_pmin_bound():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     pmin, _, _, _, _ = pmin_bound(s, random_state=42)
 
@@ -29,7 +22,7 @@ def test_pmin_bound():
 
 
 def test_pmin_bound_verbose():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     pmin, pmin_bern, pmin_lower, pmin_alt, mc_norms = pmin_bound(
         s,
@@ -44,7 +37,7 @@ def test_pmin_bound_verbose():
 
 
 def test_lambda_bulk_dyson_raw():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     p = 0.5
     edge = lambda_bulk_dyson_raw(s, p)
@@ -54,7 +47,7 @@ def test_lambda_bulk_dyson_raw():
 
 
 def test_lambda_bulk_dyson_raw_edge_cases():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     edge_low = lambda_bulk_dyson_raw(s, 0.0)
     assert edge_low == 0.0
@@ -64,7 +57,7 @@ def test_lambda_bulk_dyson_raw_edge_cases():
 
 
 def test_p_upper_only_k():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     k = 5
     pmax = p_upper_only_k(s, k=k, method="dyson", seed=42)
@@ -74,7 +67,7 @@ def test_p_upper_only_k():
 
 
 def test_p_upper_only_k_invalid_k():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     with pytest.raises(ValueError):
         p_upper_only_k(s, k=0)
@@ -84,7 +77,7 @@ def test_p_upper_only_k_invalid_k():
 
 
 def test_estimate_sampling_bounds():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     pmin, pmax, s_noise = estimate_sampling_bounds(s, random_state=42)
 
@@ -95,7 +88,7 @@ def test_estimate_sampling_bounds():
 
 
 def test_estimate_sampling_bounds_fast():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     pmin, pmax, s_noise = estimate_sampling_bounds_fast(s, random_state=42, n_jobs=1)
 
@@ -106,7 +99,7 @@ def test_estimate_sampling_bounds_fast():
 
 
 def test_estimate_sampling_bounds_parameters():
-    s = generate_test_matrix(n=30, rank=5)
+    s = make_symmetric_matrix(n=30, rank=5, noise_level=0.0)
 
     pmin, pmax, s_noise = estimate_sampling_bounds(
         s,
@@ -127,8 +120,8 @@ def test_sampling_bounds_scale_with_rank():
     n = 80
     seed = 42
 
-    s_low_rank = generate_test_matrix(n=n, rank=5, random_state=seed)
-    s_high_rank = generate_test_matrix(n=n, rank=20, random_state=seed)
+    s_low_rank = make_symmetric_matrix(n=n, rank=5, seed=seed, noise_level=0.0)
+    s_high_rank = make_symmetric_matrix(n=n, rank=20, seed=seed, noise_level=0.0)
 
     pmin_low, pmax_low, _ = estimate_sampling_bounds_fast(
         s_low_rank, random_state=seed, n_jobs=1
@@ -151,7 +144,7 @@ def test_reconstruction_quality_at_estimated_bounds():
     n = 60
     seed = 42
 
-    s = generate_test_matrix(n=n, rank=true_rank, random_state=seed)
+    s = make_symmetric_matrix(n=n, rank=true_rank, seed=seed, noise_level=0.0)
 
     pmin, pmax, _ = estimate_sampling_bounds_fast(s, random_state=seed, n_jobs=1)
 

@@ -6,19 +6,12 @@ from pysrf import (
     EntryMaskSplit,
     create_train_val_split,
 )
-
-
-def generate_test_matrix(n=30, rank=5, random_state=42):
-    rng = np.random.RandomState(random_state)
-    w = rng.rand(n, rank)
-    s = w @ w.T
-    s = (s + s.T) / 2
-    return s
+from helpers import make_symmetric_matrix
 
 
 def test_train_val_split_masks():
     np.random.seed(42)
-    s = generate_test_matrix(n=20)
+    s = make_symmetric_matrix(n=20, noise_level=0.0)
     rng = np.random.RandomState(42)
 
     train_mask, val_mask = create_train_val_split(
@@ -39,7 +32,7 @@ def test_train_val_split_masks():
 
 
 def test_entry_mask_split():
-    s = generate_test_matrix(n=20)
+    s = make_symmetric_matrix(n=20, noise_level=0.0)
 
     cv = EntryMaskSplit(n_repeats=3, sampling_fraction=0.8, random_state=42)
 
@@ -59,7 +52,7 @@ def test_entry_mask_split():
 
 
 def test_SRF_grid_search_cv():
-    s = generate_test_matrix(n=20, rank=5)
+    s = make_symmetric_matrix(n=20, rank=5, noise_level=0.0)
 
     param_grid = {"rank": [3, 5, 7], "rho": [2.0, 3.0]}
     cv = EntryMaskSplit(n_repeats=2, sampling_fraction=0.8, random_state=42)
@@ -82,7 +75,7 @@ def test_SRF_grid_search_cv():
 
 
 def test_cross_val_score():
-    s = generate_test_matrix(n=20, rank=5)
+    s = make_symmetric_matrix(n=20, rank=5, noise_level=0.0)
 
     param_grid = {"rank": [3, 5]}
 
@@ -102,7 +95,7 @@ def test_cross_val_score():
 
 
 def test_cross_val_score_with_missing_data():
-    s = generate_test_matrix(n=20, rank=5)
+    s = make_symmetric_matrix(n=20, rank=5, noise_level=0.0)
 
     mask = np.random.rand(*s.shape) < 0.1
     mask = mask | mask.T
@@ -126,7 +119,7 @@ def test_cross_val_score_with_missing_data():
 
 
 def test_cross_val_score_fit_final():
-    s = generate_test_matrix(n=20, rank=5)
+    s = make_symmetric_matrix(n=20, rank=5, noise_level=0.0)
 
     result = cross_val_score(
         s,
@@ -144,7 +137,7 @@ def test_cross_val_score_fit_final():
 
 
 def test_rank_recovery():
-    s = generate_test_matrix(n=100, rank=5)
+    s = make_symmetric_matrix(n=100, rank=5, noise_level=0.0)
 
     result = cross_val_score(
         s,
