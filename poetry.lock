@@ -2442,19 +2442,6 @@ files = [
 ]
 
 [[package]]
-name = "vale"
-version = "3.13.0.0"
-description = "Install and use Vale (grammar & style check tool) in python environments."
-optional = true
-python-versions = ">=3.7"
-groups = ["main"]
-markers = "extra == \"dev\""
-files = [
-    {file = "vale-3.13.0.0-py3-none-any.whl", hash = "sha256:b565197a5f6e430af7ccc59204e75c6067bbd091a0073d700efdd0fba21873ed"},
-    {file = "vale-3.13.0.0.tar.gz", hash = "sha256:9c2482ecab515e58aa8d7e1a09f3d44ed674a07502786e22ff60c9d4fdc8493b"},
-]
-
-[[package]]
 name = "virtualenv"
 version = "20.36.1"
 description = "Virtual Python Environment builder"
@@ -2568,9 +2555,9 @@ pyyaml = ">=6.0.2"
 tomli = {version = ">=2.0", markers = "python_full_version < \"3.11.0\""}
 
 [extras]
-dev = ["black", "cython", "griffe", "ipykernel", "meson", "meson-python", "mkdocstrings", "mkdocstrings-python", "ninja", "pre-commit", "pytest", "pytest-cov", "ruff", "vale", "zensical"]
+dev = ["black", "cython", "griffe", "ipykernel", "meson", "meson-python", "mkdocstrings", "mkdocstrings-python", "ninja", "pre-commit", "pytest", "pytest-cov", "ruff", "zensical"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "35844fc427a39ce4e01048a80066547cf158afd04bbf7d61dfd3d205c779462a"
+content-hash = "1185f1e1cb6d19507dd6afdbc7aacadfcce0738d2da270b3a6fd674e33a506a3"
