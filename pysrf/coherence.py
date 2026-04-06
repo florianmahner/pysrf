@@ -137,3 +137,172 @@ def _sign_normalize(q: np.ndarray) -> np.ndarray:
         if q[i, j] < 0.0:
             q[:, j] *= -1.0
     return q
+
+
+# ---------------------------------------------------------------------------
+# Layer 3: Bootstrap coherence engine
+# ---------------------------------------------------------------------------
+
+
+def _bootstrap_sample(
+    s_filled: np.ndarray,
+    mask: np.ndarray,
+    p: float,
+    rng: np.random.Generator,
+    iu: tuple[np.ndarray, np.ndarray],
+    eps: float = 1e-12,
+) -> np.ndarray:
+    """One symmetric Bernoulli-masked bootstrap replicate.
+
+    Off-diagonal entries sampled with probability p, rescaled by 1/p.
+    Missing entries suppressed through the observation mask.
+    Diagonal is preserved.
+    """
+    n = s_filled.shape[0]
+    p = float(p)
+    scale = 1.0 / max(p, eps)
+
+    bern = (rng.random(iu[0].size) < p).astype(float)
+    vals = bern * mask[iu] * s_filled[iu] * scale
+
+    a = np.zeros((n, n), dtype=float)
+    a[iu] = vals
+    a[(iu[1], iu[0])] = vals
+    np.fill_diagonal(a, np.diag(s_filled))
+    a = 0.5 * (a + a.T)
+    return a
+
+
+def _eigenspace_overlap(
+    u_boot: np.ndarray,
+    u_ref: np.ndarray,
+) -> np.ndarray:
+    """Incremental projection overlap between bootstrap and reference eigenvectors.
+
+    Computes Iproj[k] = sum_{j<=k} (u_boot_j . u_ref_j)^2 for each k.
+    """
+    g = u_boot.T @ u_ref
+    g2 = g * g
+    k_max = g2.shape[0]
+    iproj = np.cumsum(g2, axis=0)[np.arange(k_max), np.arange(k_max)]
+    return np.clip(iproj, 0.0, 1.0)
+
+
+def _top_eigenvectors(a: np.ndarray, k: int) -> np.ndarray:
+    """Top-k eigenvectors of a symmetric matrix.
+
+    Tries scipy.sparse.linalg.eigsh for efficiency; falls back to dense eigh.
+    """
+    n = a.shape[0]
+    eigsh = _try_eigsh()
+    if eigsh is not None and k < n:
+        try:
+            vals, vecs = eigsh(a, k=k, which="LA", tol=1e-6)
+            idx = np.argsort(vals)[::-1]
+            return vecs[:, idx]
+        except Exception:
+            pass
+
+    vals, vecs = la.eigh(a)
+    idx = np.argsort(vals)[::-1][:k]
+    return vecs[:, idx]
+
+
+def _try_eigsh():
+    """Return scipy.sparse.linalg.eigsh if available, else None."""
+    try:
+        from scipy.sparse.linalg import eigsh
+
+        return eigsh
+    except Exception:
+        return None
+
+
+def _worker_one_p(args: tuple) -> tuple[int, np.ndarray]:
+    """Bootstrap coherence for one masking rate p.
+
+    Returns (i, iproj_p) where iproj_p has shape (k_max, n_boot).
+    """
+    (i, p, s_filled, mask, u_ref, k_max, n_boot, seed_base) = args
+
+    n = s_filled.shape[0]
+    iu = np.triu_indices(n, k=1)
+    iproj_p = np.zeros((k_max, n_boot), dtype=float)
+
+    for b in range(n_boot):
+        seed = (seed_base + 1000003 * i + 9176 * b) & 0xFFFFFFFF
+        rng = np.random.default_rng(seed)
+
+        a = _bootstrap_sample(s_filled, mask, p, rng, iu)
+        u_boot = _top_eigenvectors(a, k_max)
+        iproj_p[:, b] = _eigenspace_overlap(u_boot, u_ref)
+
+    return i, iproj_p
+
+
+def _bootstrap_coherence(
+    s: np.ndarray,
+    k_max: int,
+    p_list: np.ndarray,
+    n_boot: int = 20,
+    random_state: int = 0,
+    n_jobs: int | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute bootstrap eigenspace coherence across masking rates.
+
+    Parameters
+    ----------
+    s : (n, n) array
+        Symmetric similarity matrix (may contain NaN).
+    k_max : int
+        Maximum number of dimensions to test.
+    p_list : (n_p,) array
+        Masking probabilities in (0, 1].
+    n_boot : int
+        Number of bootstrap replicates per masking rate.
+    random_state : int
+        Seed for reproducibility.
+    n_jobs : int or None
+        Parallel workers (None = cpu_count - 1).
+
+    Returns
+    -------
+    iproj_boot : (k_max, n_p, n_boot) array
+        Bootstrap overlap values.
+    evals_ref : (k_max,) array
+        Reference eigenvalues.
+    """
+    import os
+    from joblib import Parallel, delayed
+
+    s_sym = _symmetrize(s)
+    s_filled, mask, _ = _observation_mask(s_sym)
+    evals_ref, u_ref = _reference_eigenpairs(s_filled, k_max)
+
+    p_list = np.asarray(p_list, dtype=float)
+    n_p = len(p_list)
+
+    cpu = os.cpu_count() or 2
+    if n_jobs is None:
+        n_jobs_eff = max(1, cpu - 1)
+    else:
+        n_jobs_eff = max(1, min(int(n_jobs), cpu - 1))
+
+    tasks = [
+        (i, float(p_list[i]), s_filled, mask, u_ref, k_max, n_boot, random_state)
+        for i in range(n_p)
+    ]
+
+    if n_jobs_eff == 1:
+        results = [_worker_one_p(t) for t in tasks]
+    else:
+        results = Parallel(n_jobs=n_jobs_eff, backend="loky")(
+            delayed(_worker_one_p)(t) for t in tasks
+        )
+
+    results.sort(key=lambda x: x[0])
+    iproj_boot = np.zeros((k_max, n_p, n_boot), dtype=float)
+    for i, iproj_p in results:
+        iproj_boot[:, i, :] = iproj_p
+
+    return iproj_boot, evals_ref
