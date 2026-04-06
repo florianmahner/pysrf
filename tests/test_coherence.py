@@ -246,10 +246,13 @@ class TestEstimateRank:
             n_jobs=1,
         )
         assert "k_star" in result
+        assert "p_star" in result
         assert "kappa" in result
         assert "iproj_median" in result
         assert "evals_ref" in result
         assert "k_list" in result
+        assert "signal_curve" in result
+        assert "noise_curve" in result
         assert "p_list" in result
 
     def test_kappa_matches_reference(self, test_matrix, reference):

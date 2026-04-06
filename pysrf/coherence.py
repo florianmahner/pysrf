@@ -407,6 +407,86 @@ def _largest_jump(
 
 
 # ---------------------------------------------------------------------------
+# Layer 5: Operating point (p*) via signal-noise lift-off
+# ---------------------------------------------------------------------------
+
+
+def _estimate_p_star(
+    iproj_boot: np.ndarray,
+    k_star: int,
+    p_list: np.ndarray,
+    ci_level: float = 0.90,
+    noise_quantile: float = 0.90,
+    require_consecutive: int = 3,
+) -> tuple[float, np.ndarray, np.ndarray]:
+    """Find the smallest masking rate where signal lifts off from noise.
+
+    Compares the median Iproj for the boundary dimension k* against
+    the upper envelope of noise dimensions (k > k*). The operating
+    point p* is the first p where the signal clears the noise for
+    ``require_consecutive`` grid points.
+
+    Parameters
+    ----------
+    iproj_boot : (k_max, n_p, n_boot) array
+        Bootstrap overlap values.
+    k_star : int
+        Boundary dimension (1-indexed).
+    p_list : (n_p,) array
+        Masking probabilities.
+    ci_level : float
+        Confidence level for signal/noise envelopes (default 0.90).
+    noise_quantile : float
+        Quantile across noise dimensions for the reference curve.
+    require_consecutive : int
+        Number of consecutive p-grid points where the gap must hold.
+
+    Returns
+    -------
+    p_star : float
+        Smallest masking rate where signal lifts off from noise.
+    signal_curve : (n_p,) array
+        Median Iproj for the boundary dimension.
+    noise_curve : (n_p,) array
+        Upper envelope of noise dimensions.
+    """
+    k_max, n_p, _ = iproj_boot.shape
+    alpha = (1.0 - ci_level) / 2.0
+
+    # Signal: median of boundary dimension k*
+    signal_curve = np.median(iproj_boot[k_star - 1], axis=1)
+
+    # Noise: upper CI of dimensions k > k*, aggregated at noise_quantile
+    if k_star < k_max:
+        noise_hi = np.quantile(iproj_boot[k_star:], 1.0 - alpha, axis=2)
+        noise_curve = np.quantile(noise_hi, noise_quantile, axis=0)
+    else:
+        noise_curve = np.zeros(n_p, dtype=float)
+
+    # Lift-off: first p where signal > noise for consecutive points
+    gap = signal_curve - noise_curve
+    p_star = _first_consecutive_above(p_list, gap, 0.0, require_consecutive)
+
+    return p_star, signal_curve, noise_curve
+
+
+def _first_consecutive_above(
+    p_list: np.ndarray,
+    curve: np.ndarray,
+    threshold: float,
+    run: int,
+) -> float:
+    """First p where curve >= threshold for ``run`` consecutive grid points."""
+    above = curve >= threshold
+    streak = 0
+    for i, ok in enumerate(above):
+        streak = streak + 1 if ok else 0
+        if streak >= run:
+            return float(p_list[i - run + 1])
+    return float(p_list[-1])
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -420,12 +500,16 @@ def estimate_rank(
     n_jobs: int | None = None,
     hi_quantile: float = 0.85,
     smooth_window: int = 5,
+    ci_level: float = 0.90,
+    noise_quantile: float = 0.90,
+    require_consecutive: int = 3,
 ) -> dict:
-    """Estimate the number of signal dimensions via kappa changepoint.
+    """Estimate the number of signal dimensions and operating point.
 
     Computes bootstrap eigenspace coherence, estimates scaled leakage
-    (kappa) per dimension, and finds the changepoint where kappa jumps
-    from signal to noise levels.
+    (kappa) per dimension, finds the changepoint where kappa jumps
+    from signal to noise (k*), and determines the minimum masking rate
+    where the boundary dimension lifts off from the noise floor (p*).
 
     Parameters
     ----------
@@ -445,12 +529,21 @@ def estimate_rank(
         Quantile of p_list defining the high-p band for kappa estimation.
     smooth_window : int
         Window for median smoothing in changepoint detection.
+    ci_level : float
+        Confidence level for signal/noise envelopes in p* estimation.
+    noise_quantile : float
+        Quantile across noise dimensions for the noise reference curve.
+    require_consecutive : int
+        Number of consecutive p-grid points for lift-off detection.
 
     Returns
     -------
     result : dict
         k_star : int
             Estimated number of signal dimensions.
+        p_star : float
+            Operating point: smallest masking rate where the boundary
+            dimension's lower CI lifts off above the noise envelope.
         kappa : (k_max,) array
             Scaled leakage per dimension.
         iproj_median : (k_max, n_p) array
@@ -463,6 +556,10 @@ def estimate_rank(
             Dimension indices 1..k_max.
         p_list : (n_p,) array
             Masking probabilities used.
+        signal_curve : (n_p,) array
+            Median Iproj for boundary dimension k*.
+        noise_curve : (n_p,) array
+            Upper envelope of noise dimensions.
     """
     if p_list is None:
         p_list = np.linspace(0.1, 0.95, 20)
@@ -482,13 +579,24 @@ def estimate_rank(
     iproj_median = np.median(iproj_boot, axis=2)
     kappa = _scaled_leakage(iproj_median, p_list, hi_quantile=hi_quantile)
     k_star = _largest_jump(kappa, k_list, smooth_window=smooth_window)
+    p_star, signal_curve, noise_curve = _estimate_p_star(
+        iproj_boot,
+        k_star,
+        p_list,
+        ci_level=ci_level,
+        noise_quantile=noise_quantile,
+        require_consecutive=require_consecutive,
+    )
 
     return {
         "k_star": k_star,
+        "p_star": p_star,
         "kappa": kappa,
         "iproj_median": iproj_median,
         "iproj_boot": iproj_boot,
         "evals_ref": evals_ref,
         "k_list": k_list,
         "p_list": p_list,
+        "signal_curve": signal_curve,
+        "noise_curve": noise_curve,
     }
