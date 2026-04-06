@@ -17,8 +17,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from scipy.optimize import linear_sum_assignment, nnls
-from scipy.stats import median_abs_deviation
+from scipy.optimize import linear_sum_assignment
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
@@ -382,28 +381,14 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
 
     Symmetric NMF produces the same dimensions across runs but in
     different order (permutation ambiguity, no rotation). This class
-    aligns dimensions via the Hungarian algorithm, then selects the
-    most central run or aggregates across runs.
+    aligns dimensions via the Hungarian algorithm and returns the
+    most central run — the one closest to the element-wise median
+    across all aligned runs.
 
     Parameters
     ----------
     rank : int
         Number of dimensions in each embedding
-    aggregation : str, default="select"
-        How to produce the final embedding:
-        - "select": return the most central run (preserves WW' ~ S)
-        - "refine": median consensus + NNLS refinement
-        - "median": element-wise median (breaks factorization)
-        - "mean": element-wise mean (breaks factorization)
-    outlier_threshold : float or None, default=None
-        MAD threshold for per-dimension outlier detection.
-        None disables outlier detection.
-    reference : str, default="first"
-        Which run to align others to: "first" or "median_recon"
-    random_state : int, default=0
-        Random seed for reproducibility
-    refine_iterations : int, default=20
-        Number of NNLS refinement iterations (only for aggregation="refine")
 
     Attributes
     ----------
@@ -431,24 +416,11 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
     >>> embedding = pipeline.fit_transform(similarity_matrix)
     """
 
-    def __init__(
-        self,
-        rank: int,
-        aggregation: str = "select",
-        outlier_threshold: float | None = None,
-        reference: str = "first",
-        random_state: int = 0,
-        refine_iterations: int = 20,
-    ):
+    def __init__(self, rank: int):
         self.rank = rank
-        self.aggregation = aggregation
-        self.outlier_threshold = outlier_threshold
-        self.reference = reference
-        self.random_state = random_state
-        self.refine_iterations = refine_iterations
 
     def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> AlignedConsensus:
-        """Align embeddings and compute consensus statistics.
+        """Align embeddings and select the most central run.
 
         Parameters
         ----------
@@ -472,12 +444,7 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
         # (n_samples, n_runs, rank) -> (n_runs, n_samples, rank)
         embeddings = x.reshape(n_samples, n_runs, self.rank).transpose(1, 0, 2)
 
-        # Select reference and align
-        norms = np.array([l2_norm_columns(e) for e in embeddings])
-        ref_idx = self._select_reference(norms)
-        self.aligned_embeddings_ = align_embeddings(embeddings, ref_idx)
-
-        # Consensus statistics
+        self.aligned_embeddings_ = align_embeddings(embeddings, reference_idx=0)
         self.consensus_median_ = np.median(self.aligned_embeddings_, axis=0)
 
         diffs = self.aligned_embeddings_ - self.consensus_median_[np.newaxis]
@@ -486,26 +453,10 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
         self.agreement_scores_ = pairwise_agreement(self.aligned_embeddings_)
         self.selected_run_idx_ = int(np.argmin(self.centrality_scores_))
 
-        # Outlier detection
-        if self.outlier_threshold is not None:
-            self.outlier_mask_ = self._detect_outliers()
-            self.n_outliers_per_dim_ = self.outlier_mask_.sum(axis=0)
-        else:
-            self.outlier_mask_ = np.zeros((n_runs, self.rank), dtype=bool)
-            self.n_outliers_per_dim_ = np.zeros(self.rank, dtype=int)
-
-        # Precompute target similarity for refine mode
-        if self.aggregation == "refine":
-            target = np.zeros((n_samples, n_samples))
-            for e in self.aligned_embeddings_:
-                target += e @ e.T
-            target /= n_runs
-            self._target_similarity_ = target
-
         return self
 
     def transform(self, x: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
-        """Return the consensus embedding.
+        """Return the most central run.
 
         Parameters
         ----------
@@ -514,71 +465,10 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        consensus : ndarray of shape (n_samples, rank)
+        w : ndarray of shape (n_samples, rank)
         """
         check_is_fitted(self, "aligned_embeddings_")
-
-        if self.aggregation == "select":
-            return self.aligned_embeddings_[self.selected_run_idx_]
-
-        if self.aggregation == "refine":
-            return _nnls_refine(
-                self.consensus_median_,
-                self._target_similarity_,
-                n_iter=self.refine_iterations,
-            )
-
-        # median or mean aggregation with outlier filtering
-        agg = np.median if self.aggregation == "median" else np.mean
-        n_runs, n_samples, rank = self.aligned_embeddings_.shape
-        consensus = np.zeros((n_samples, rank))
-
-        for j in range(rank):
-            estimates = self.aligned_embeddings_[:, :, j]
-            good = ~self.outlier_mask_[:, j]
-            if np.any(good):
-                consensus[:, j] = agg(estimates[good], axis=0)
-            else:
-                consensus[:, j] = agg(estimates, axis=0)
-
-        return consensus
-
-    def _select_reference(self, embeddings_norm: np.ndarray) -> int:
-        """Select reference run index for alignment."""
-        if self.reference == "first":
-            return 0
-        if self.reference == "median_recon":
-            n_runs = embeddings_norm.shape[0]
-            wtw = np.array([e.T @ e for e in embeddings_norm])
-            mean_wtw = wtw.mean(axis=0)
-            errors = np.array(
-                [np.linalg.norm(wtw[i] - mean_wtw, "fro") for i in range(n_runs)]
-            )
-            return int(np.argsort(errors)[n_runs // 2])
-        raise ValueError(f"Unknown reference='{self.reference}'")
-
-    def _detect_outliers(self) -> np.ndarray:
-        """Detect outlier runs per dimension using MAD on cosine distance."""
-        n_runs, _, rank = self.aligned_embeddings_.shape
-        outlier_mask = np.zeros((n_runs, rank), dtype=bool)
-
-        for j in range(rank):
-            col = self.aligned_embeddings_[:, :, j]
-            median_col = np.median(col, axis=0)
-
-            norms = np.linalg.norm(col, axis=1)
-            median_norm = np.linalg.norm(median_col)
-            if median_norm == 0:
-                continue
-            cos_sim = (col @ median_col) / (norms * median_norm + 1e-15)
-            distances = 1.0 - cos_sim
-
-            mad = median_abs_deviation(distances)
-            if mad > 0:
-                deviation = np.abs(distances - np.median(distances)) / mad
-                outlier_mask[:, j] = deviation > self.outlier_threshold
-
-        return outlier_mask
+        return self.aligned_embeddings_[self.selected_run_idx_]
 
 
 # ---------------------------------------------------------------------------
@@ -594,34 +484,3 @@ def _validate_2d(x: np.ndarray) -> np.ndarray:
     if not np.all(np.isfinite(x)):
         raise ValueError("Input contains NaN or Inf")
     return x
-
-
-def _nnls_refine(
-    w_init: np.ndarray, s_target: np.ndarray, n_iter: int = 20
-) -> np.ndarray:
-    """Project an averaged embedding back to a valid factorization via NNLS.
-
-    Averaging embeddings breaks WW' ~ S. This iteratively solves
-    min ||W @ w_i - s_i||^2 s.t. w_i >= 0 for each row.
-
-    Parameters
-    ----------
-    w_init : ndarray of shape (n_samples, rank)
-        Initial embedding (typically median consensus)
-    s_target : ndarray of shape (n_samples, n_samples)
-        Target similarity (typically mean of WW' across runs)
-    n_iter : int
-        Number of refinement passes
-
-    Returns
-    -------
-    w : ndarray of shape (n_samples, rank)
-    """
-    w = np.maximum(w_init.copy(), 0)
-    n = w.shape[0]
-
-    for _ in range(n_iter):
-        for i in range(n):
-            w[i], _ = nnls(w, s_target[i])
-
-    return w
