@@ -24,6 +24,7 @@ from .consensus import (
     ClusterConsensus,
     AlignedConsensus,
 )
+from .coherence import estimate_rank
 
 # Version is managed in pyproject.toml
 try:
@@ -45,4 +46,5 @@ __all__: list[str] = [
     "EnsembleFit",
     "ClusterConsensus",
     "AlignedConsensus",
+    "estimate_rank",
 ]
