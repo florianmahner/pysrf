@@ -306,3 +306,189 @@ def _bootstrap_coherence(
         iproj_boot[:, i, :] = iproj_p
 
     return iproj_boot, evals_ref
+
+
+# ---------------------------------------------------------------------------
+# Layer 4: Kappa estimation
+# ---------------------------------------------------------------------------
+
+
+def _scaled_leakage(
+    iproj_median: np.ndarray,
+    p_list: np.ndarray,
+    hi_quantile: float = 0.85,
+) -> np.ndarray:
+    """Estimate kappa per dimension from the high-p band.
+
+    For each dimension k, the scaled leakage is:
+        ell_k(p) = (1 - Iproj_median[k, p]) * p / (1 - p)
+
+    Kappa is the median of ell_k over masking rates in the high-p band.
+    Signal dimensions have low kappa; noise dimensions leak and have high kappa.
+
+    Parameters
+    ----------
+    iproj_median : (k_max, n_p) array
+        Median Iproj across bootstrap replicates.
+    p_list : (n_p,) array
+        Masking probabilities.
+    hi_quantile : float
+        Quantile of p_list defining the high-p band (default 0.85).
+
+    Returns
+    -------
+    kappa : (k_max,) array
+        Scaled leakage per dimension.
+    """
+    p_list = np.asarray(p_list, dtype=float)
+    p_hi = float(np.quantile(p_list, hi_quantile))
+    hi_idx = np.where(p_list >= p_hi)[0]
+    if hi_idx.size == 0:
+        hi_idx = np.array([len(p_list) - 1], dtype=int)
+
+    scale = p_list[hi_idx] / np.maximum(1.0 - p_list[hi_idx], 1e-12)
+    ell = (1.0 - iproj_median[:, hi_idx]) * scale[np.newaxis, :]
+    return np.median(ell, axis=1).astype(float)
+
+
+def _smooth_median(x: np.ndarray, w: int) -> np.ndarray:
+    """Running median smoother."""
+    if w <= 1:
+        return x.copy()
+    n = x.size
+    out = np.empty(n, dtype=float)
+    half = w // 2
+    for i in range(n):
+        out[i] = np.median(x[max(0, i - half) : min(n, i + half + 1)])
+    return out
+
+
+def _largest_jump(
+    kappa: np.ndarray,
+    k_list: np.ndarray,
+    smooth_window: int = 5,
+    min_k: int = 2,
+) -> int:
+    """Find the changepoint where kappa jumps from signal to noise.
+
+    Returns k_cut: dimensions {k <= k_cut} are signal.
+
+    Parameters
+    ----------
+    kappa : (K,) array
+        Scaled leakage per dimension.
+    k_list : (K,) array
+        Dimension indices.
+    smooth_window : int
+        Window for median smoothing before differentiation.
+    min_k : int
+        Minimum k to consider for the changepoint.
+
+    Returns
+    -------
+    k_cut : int
+        Last signal dimension.
+    """
+    kappa = np.asarray(kappa, dtype=float)
+    k_list = np.asarray(k_list, dtype=int)
+
+    if kappa.size < 3:
+        return int(k_list[-1])
+
+    sm = _smooth_median(kappa, max(1, smooth_window))
+    d = sm[1:] - sm[:-1]
+
+    valid = np.where(k_list[:-1] >= min_k)[0]
+    if valid.size == 0:
+        valid = np.arange(kappa.size - 1)
+
+    i_star = int(valid[np.argmax(d[valid])])
+    return int(k_list[i_star])
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def estimate_rank(
+    s: np.ndarray,
+    k_max: int,
+    p_list: np.ndarray | None = None,
+    n_boot: int = 20,
+    random_state: int = 0,
+    n_jobs: int | None = None,
+    hi_quantile: float = 0.85,
+    smooth_window: int = 5,
+) -> dict:
+    """Estimate the number of signal dimensions via kappa changepoint.
+
+    Computes bootstrap eigenspace coherence, estimates scaled leakage
+    (kappa) per dimension, and finds the changepoint where kappa jumps
+    from signal to noise levels.
+
+    Parameters
+    ----------
+    s : (n, n) array
+        Symmetric similarity matrix (may contain NaN for missing entries).
+    k_max : int
+        Maximum number of dimensions to test.
+    p_list : (n_p,) array or None
+        Masking probabilities in (0, 1]. If None, uses linspace(0.1, 0.95, 20).
+    n_boot : int
+        Number of bootstrap replicates per masking rate.
+    random_state : int
+        Seed for reproducibility.
+    n_jobs : int or None
+        Parallel workers (None = cpu_count - 1).
+    hi_quantile : float
+        Quantile of p_list defining the high-p band for kappa estimation.
+    smooth_window : int
+        Window for median smoothing in changepoint detection.
+
+    Returns
+    -------
+    result : dict
+        k_star : int
+            Estimated number of signal dimensions.
+        kappa : (k_max,) array
+            Scaled leakage per dimension.
+        iproj_median : (k_max, n_p) array
+            Median bootstrap overlap per dimension and masking rate.
+        iproj_boot : (k_max, n_p, n_boot) array
+            Raw bootstrap overlap values.
+        evals_ref : (k_max,) array
+            Reference eigenvalues.
+        k_list : (k_max,) array
+            Dimension indices 1..k_max.
+        p_list : (n_p,) array
+            Masking probabilities used.
+    """
+    if p_list is None:
+        p_list = np.linspace(0.1, 0.95, 20)
+    p_list = np.asarray(p_list, dtype=float)
+
+    k_list = np.arange(1, k_max + 1)
+
+    iproj_boot, evals_ref = _bootstrap_coherence(
+        s,
+        k_max=k_max,
+        p_list=p_list,
+        n_boot=n_boot,
+        random_state=random_state,
+        n_jobs=n_jobs,
+    )
+
+    iproj_median = np.median(iproj_boot, axis=2)
+    kappa = _scaled_leakage(iproj_median, p_list, hi_quantile=hi_quantile)
+    k_star = _largest_jump(kappa, k_list, smooth_window=smooth_window)
+
+    return {
+        "k_star": k_star,
+        "kappa": kappa,
+        "iproj_median": iproj_median,
+        "iproj_boot": iproj_boot,
+        "evals_ref": evals_ref,
+        "k_list": k_list,
+        "p_list": p_list,
+    }
