@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import numpy.linalg as la
 
 logger = logging.getLogger(__name__)
 
@@ -93,3 +94,46 @@ def _observation_mask(
     obs_rate = float(np.clip(obs_rate, eps, 1.0))
 
     return s_filled, mask, obs_rate
+
+
+# ---------------------------------------------------------------------------
+# Layer 2: Reference eigenspace
+# ---------------------------------------------------------------------------
+
+
+def _reference_eigenpairs(
+    s: np.ndarray,
+    k: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Top-k eigenpairs of a symmetric matrix in descending order.
+
+    Parameters
+    ----------
+    s : (n, n) array
+        Symmetric similarity matrix (fully observed, no NaN).
+    k : int
+        Number of top eigenpairs to return.
+
+    Returns
+    -------
+    evals : (k,) array
+        Top-k eigenvalues, descending.
+    evecs : (n, k) array
+        Corresponding eigenvectors with deterministic sign convention.
+    """
+    s = 0.5 * (s + s.T)
+    evals_all, evecs_all = la.eigh(s)
+    idx = np.argsort(evals_all)[::-1][:k]
+    evals = evals_all[idx]
+    evecs = evecs_all[:, idx]
+    evecs = _sign_normalize(evecs)
+    return evals, evecs
+
+
+def _sign_normalize(q: np.ndarray) -> np.ndarray:
+    """Fix sign ambiguity: largest-magnitude entry in each column is positive."""
+    for j in range(q.shape[1]):
+        i = int(np.argmax(np.abs(q[:, j])))
+        if q[i, j] < 0.0:
+            q[:, j] *= -1.0
+    return q
