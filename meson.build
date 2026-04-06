@@ -38,6 +38,7 @@ py.install_sources(
     'pysrf/__init__.py',
     'pysrf/_bsum.py',
     'pysrf/bounds.py',
+    'pysrf/coherence.py',
     'pysrf/consensus.py',
     'pysrf/cross_validation.py',
     'pysrf/model.py',
