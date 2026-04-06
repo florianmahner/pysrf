@@ -21,6 +21,7 @@ from sparse representational similarities. In preparation.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from collections import defaultdict
 
@@ -615,6 +616,15 @@ class SRF(TransformerMixin, BaseEstimator):
             self._total_var = np.sum((x[self._observed_mask] - observed_mean) ** 2)
         else:
             self._total_var = 0.0
+
+        if self.verbose:
+            n_threads = os.environ.get("OMP_NUM_THREADS", "1")
+            logger.info(
+                "Using %s BLAS thread(s). For faster fitting, set "
+                "OMP_NUM_THREADS before importing pysrf "
+                "(e.g. export OMP_NUM_THREADS=4)",
+                n_threads,
+            )
 
         if n_observed == self._observed_mask.size:
             return self._fit_complete_data(x)
