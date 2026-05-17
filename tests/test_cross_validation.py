@@ -17,8 +17,8 @@ def test_returns_long_dataframe(s):
     curve = cross_val_score(s, ranks=[3, 5, 7], sampling_fraction=0.7,
                              n_folds=3, n_jobs=1)
     assert isinstance(curve, pd.DataFrame)
-    assert set(curve.columns) == {"rank", "fold", "val_mse"}
-    assert len(curve) == 3 * 3  # n_ranks * n_folds
+    assert set(curve.columns) == {"rep", "fold", "rank", "val_mse"}
+    assert len(curve) == 3 * 3  # n_ranks * n_folds * n_repeats (default 1)
 
 
 def test_argmin_near_true_rank(s):
