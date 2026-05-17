@@ -1,15 +1,9 @@
 """Recovery curve and sampling-fraction calibration."""
 
-# Author: Florian P. Mahner
-# License: MIT
-
 from __future__ import annotations
 
 import numpy as np
-
-
-_CV_CAP_FLOOR = 0.95
-_CV_HOLDOUT_BUDGET = 2000
+from scipy.optimize import isotonic_regression
 
 
 def _recovery_curve(
@@ -18,41 +12,16 @@ def _recovery_curve(
     projected_median: np.ndarray,
     rank: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Fraction of top-``rank`` spectral mass missed under masking.
-
-    ``projected_median[rank-1, p]`` is the median trace of ``S``
-    projected onto the top-``rank`` bootstrap subspace at sampling
-    probability ``p``. The raw deficit is
-
-        deficit(p) = 1 - projected_median[rank-1, p] / sum(eigenvalues[:rank])
-
-    Larger ``p`` (less masking) → smaller deficit. We sort by ``p``
-    and apply :func:`_monotone_decreasing` to enforce that
-    monotonicity against bootstrap noise.
-
-    Returns
-    -------
-    p_sorted : ndarray of shape (P,)
-    raw : ndarray of shape (P,)
-        Empirical deficit, not necessarily monotone.
-    monotone : ndarray of shape (P,)
-        Non-increasing projection of ``raw``.
-    """
-    reference_mass = float(eigenvalues[:rank].sum())
-    raw = 1.0 - projected_median[rank - 1, :] / max(reference_mass, 1e-12)
+    """Fraction of top-``rank`` spectral mass missed under masking, sorted by p."""
+    reference_mass = max(float(eigenvalues[:rank].sum()), 1e-12)
     order = np.argsort(sampling_grid)
     p_sorted = sampling_grid[order]
-    raw_sorted = raw[order]
-    return p_sorted, raw_sorted, _monotone_decreasing(raw_sorted)
+    raw = 1.0 - projected_median[rank - 1, order] / reference_mass
+    return p_sorted, raw, isotonic_regression(raw, increasing=False).x
 
 
 def _invert_recovery(p_sorted: np.ndarray, monotone: np.ndarray, tolerance: float) -> float:
-    """Smallest ``p`` where the recovery deficit is at or below ``tolerance``.
-
-    Linear interpolation between adjacent grid points. Falls back to
-    the boundary of the grid if ``tolerance`` lies outside the
-    observed deficit range.
-    """
+    """Smallest ``p`` where the recovery deficit is at or below ``tolerance``."""
     if monotone[-1] >= tolerance:
         return float(p_sorted[-1])
     if monotone[0] <= tolerance:
@@ -69,17 +38,7 @@ def _invert_recovery(p_sorted: np.ndarray, monotone: np.ndarray, tolerance: floa
 
 
 def _detectability_floor(eigenvalues: np.ndarray, rank: int) -> float:
-    """Random-matrix lower bound on the calibrated sampling fraction.
-
-    Below this sampling probability the rank-th signal eigenvalue
-    would fall below the bulk noise threshold and could not be
-    reliably detected, regardless of how clean the recovery curve
-    looks. The floor is set by the first spectral gap at the
-    signal/noise boundary:
-
-        gap_squared = (eigenvalues[rank] / eigenvalues[rank - 1]) ** 2
-        floor       = gap_squared / (1 + gap_squared)
-    """
+    """Random-matrix lower bound on the calibrated sampling fraction."""
     lam_k = float(eigenvalues[rank - 1]) if rank >= 1 else float(eigenvalues[0])
     lam_kp1 = float(eigenvalues[min(rank, len(eigenvalues) - 1)])
     if lam_k <= 1e-12:
@@ -88,39 +47,9 @@ def _detectability_floor(eigenvalues: np.ndarray, rank: int) -> float:
     return float(np.clip(gap_squared / (1.0 + gap_squared), 0.0, 1.0))
 
 
-def _adaptive_cap(n: int) -> float:
-    """Outer-mask cap that keeps at least ~2000 off-diagonal pairs for validation.
-
-    ``max(0.95, 1 - 2000 / N_pairs)``. Independent of any specific
-    estimator: callers in CV use this cap when inflating
-    ``sampling_fraction`` to the outer-mask probability.
-    """
+def _adaptive_cap(n: int, floor: float = 0.95, holdout_budget: int = 2000) -> float:
+    """Outer-mask cap reserving at least ``holdout_budget`` off-diagonal pairs."""
     n_pairs = n * (n - 1) / 2
     if n_pairs <= 0:
-        return _CV_CAP_FLOOR
-    return float(max(_CV_CAP_FLOOR, 1.0 - _CV_HOLDOUT_BUDGET / n_pairs))
-
-
-def _monotone_decreasing(y: np.ndarray) -> np.ndarray:
-    """Closest non-increasing sequence to ``y`` in the least-squares sense.
-
-    Pool-adjacent-violators algorithm: walk left to right, merging
-    adjacent blocks whenever the running mean would increase, until
-    every adjacent pair is non-increasing.
-    """
-    y = np.asarray(y, dtype=np.float64)
-    block_sums: list[float] = []
-    block_sizes: list[int] = []
-    for value in y:
-        s, n = float(value), 1
-        while block_sums and block_sums[-1] / block_sizes[-1] < s / n:
-            s += block_sums.pop()
-            n += block_sizes.pop()
-        block_sums.append(s)
-        block_sizes.append(n)
-    out = np.empty(len(y), dtype=np.float64)
-    pos = 0
-    for s, n in zip(block_sums, block_sizes):
-        out[pos : pos + n] = s / n
-        pos += n
-    return out
+        return floor
+    return float(max(floor, 1.0 - holdout_budget / n_pairs))
