@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def leakage_profile(
+def _leakage_profile(
     overlap_median: np.ndarray,
     sampling_grid: np.ndarray,
     high_band_quantile: float,
@@ -35,7 +35,7 @@ def leakage_profile(
     return np.median(deviation, axis=1).astype(np.float64)
 
 
-def changepoint(leakage: np.ndarray, min_rank: int = 2, min_segment: int = 2) -> int:
+def _changepoint(leakage: np.ndarray, min_rank: int = 2, min_segment: int = 2) -> int:
     """Rank at the two-segment F-statistic maximum.
 
     Sweeps every valid split of the leakage profile into a low-flat

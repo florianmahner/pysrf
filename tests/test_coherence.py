@@ -46,8 +46,9 @@ def test_deterministic(s):
     a = estimate_rank(s, n_bootstrap=5, random_state=7)
     b = estimate_rank(s, n_bootstrap=5, random_state=7)
     assert a.rank == b.rank
-    assert a.sampling_fraction == pytest.approx(b.sampling_fraction, rel=1e-6)
-    np.testing.assert_allclose(a.eigenvalues, b.eigenvalues, rtol=1e-5)
+    assert a.sampling_fraction == b.sampling_fraction
+    np.testing.assert_array_equal(a.eigenvalues, b.eigenvalues)
+    np.testing.assert_array_equal(a.recovery_monotone, b.recovery_monotone)
 
 
 def test_handles_missing_entries(s):

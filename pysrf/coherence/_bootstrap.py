@@ -11,7 +11,7 @@ from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh
 
 
-def symmetrize(s: np.ndarray) -> np.ndarray:
+def _symmetrize(s: np.ndarray) -> np.ndarray:
     """Symmetrize a matrix while preserving NaN semantics.
 
     For each pair (i, j): average if both finite, copy the finite value
@@ -37,7 +37,7 @@ def symmetrize(s: np.ndarray) -> np.ndarray:
     return out
 
 
-def observation_mask(s_sym: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+def _observation_mask(s_sym: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """Build (s_filled, mask, observed_rate) from a symmetrized matrix.
 
     ``s_filled`` is ``s_sym`` with NaN replaced by zero. ``mask`` is a
@@ -56,7 +56,7 @@ def observation_mask(s_sym: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     return s_filled, mask, float(np.clip(observed_rate, 1e-12, 1.0))
 
 
-def reference_eigenpairs(
+def _reference_eigenpairs(
     s_filled: np.ndarray,
     mask: np.ndarray,
     observed_rate: float,
@@ -80,7 +80,7 @@ def reference_eigenpairs(
     )
 
 
-def bootstrap_coherence(
+def _bootstrap_coherence(
     s_filled: np.ndarray,
     mask: np.ndarray,
     u_ref: np.ndarray,
@@ -128,15 +128,20 @@ def _dense_top_eigenpairs(a: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray
     return values[order], vectors[:, order]
 
 
-def _top_eigenpairs(a: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+def _top_eigenpairs(
+    a: np.ndarray, k: int, v0: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """Top-k eigenpairs of a symmetric matrix, descending eigenvalue order.
 
-    Tries ``scipy.sparse.linalg.eigsh`` for efficiency, falls back to dense ``eigh``.
+    Tries ``scipy.sparse.linalg.eigsh`` for efficiency, falls back to
+    dense ``eigh``. Passing ``v0`` makes the eigsh path deterministic;
+    without it, ARPACK draws the starting vector from NumPy's global
+    state.
     """
     n = a.shape[0]
     if k < n:
         try:
-            values, vectors = eigsh(a, k=k, which="LA", tol=1e-6)
+            values, vectors = eigsh(a, k=k, which="LA", tol=1e-6, v0=v0)
             order = np.argsort(values)[::-1]
             return values[order], vectors[:, order]
         except Exception:
@@ -215,7 +220,8 @@ def _bootstrap_one_grid_point(args: tuple) -> tuple[int, np.ndarray, np.ndarray]
         seed = (seed_base + 1_000_003 * i + 9176 * b) & 0xFFFFFFFF
         rng = np.random.default_rng(seed)
         a = _bernoulli_replicate(s_filled, mask, p, rng, upper)
-        _, u_boot = _top_eigenpairs(a, k_max)
+        v0 = rng.standard_normal(n)
+        _, u_boot = _top_eigenpairs(a, k_max, v0=v0)
         overlap[:, b] = _cumulative_overlap(u_boot, u_ref)
         projected[:, b] = _cumulative_projected_trace(s_filled, u_boot)
     return i, overlap, projected

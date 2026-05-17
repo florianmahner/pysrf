@@ -13,7 +13,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.utils import check_random_state
 
-from .coherence._sampling_fraction import adaptive_cap
+from .coherence._sampling_fraction import _adaptive_cap
 from .model import SRF
 
 
@@ -98,13 +98,13 @@ def _kfold_entry_splits(
     """Yield ``(train_mask, val_mask)`` for ``n_folds``-fold partition CV.
 
     Pre-masks at the inflated outer probability (capped via
-    :func:`adaptive_cap`), then partitions the kept upper-triangle
+    :func:`_adaptive_cap`), then partitions the kept upper-triangle
     entries into disjoint folds. Diagonals are always in training and
     never in validation.
     """
     rng = check_random_state(random_state)
     n = s.shape[0]
-    cap = adaptive_cap(n)
+    cap = _adaptive_cap(n)
     unclipped = sampling_fraction * n_folds / (n_folds - 1)
     if unclipped > cap:
         effective = cap * (n_folds - 1) / n_folds

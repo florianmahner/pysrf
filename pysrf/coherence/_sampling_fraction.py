@@ -12,7 +12,7 @@ _CV_CAP_FLOOR = 0.95
 _CV_HOLDOUT_BUDGET = 2000
 
 
-def recovery_curve(
+def _recovery_curve(
     sampling_grid: np.ndarray,
     eigenvalues: np.ndarray,
     projected_median: np.ndarray,
@@ -46,7 +46,7 @@ def recovery_curve(
     return p_sorted, raw_sorted, _monotone_decreasing(raw_sorted)
 
 
-def invert_recovery(p_sorted: np.ndarray, monotone: np.ndarray, tolerance: float) -> float:
+def _invert_recovery(p_sorted: np.ndarray, monotone: np.ndarray, tolerance: float) -> float:
     """Smallest ``p`` where the recovery deficit is at or below ``tolerance``.
 
     Linear interpolation between adjacent grid points. Falls back to
@@ -68,7 +68,7 @@ def invert_recovery(p_sorted: np.ndarray, monotone: np.ndarray, tolerance: float
     return float(p_lo + fraction * (p_hi - p_lo))
 
 
-def detectability_floor(eigenvalues: np.ndarray, rank: int) -> float:
+def _detectability_floor(eigenvalues: np.ndarray, rank: int) -> float:
     """Random-matrix lower bound on the calibrated sampling fraction.
 
     Below this sampling probability the rank-th signal eigenvalue
@@ -88,7 +88,7 @@ def detectability_floor(eigenvalues: np.ndarray, rank: int) -> float:
     return float(np.clip(gap_squared / (1.0 + gap_squared), 0.0, 1.0))
 
 
-def adaptive_cap(n: int) -> float:
+def _adaptive_cap(n: int) -> float:
     """Outer-mask cap that keeps at least ~2000 off-diagonal pairs for validation.
 
     ``max(0.95, 1 - 2000 / N_pairs)``. Independent of any specific

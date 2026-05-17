@@ -11,13 +11,13 @@ from dataclasses import dataclass
 import numpy as np
 
 from ._bootstrap import (
-    bootstrap_coherence,
-    observation_mask,
-    reference_eigenpairs,
-    symmetrize,
+    _bootstrap_coherence,
+    _observation_mask,
+    _reference_eigenpairs,
+    _symmetrize,
 )
-from ._rank_selection import changepoint, leakage_profile
-from ._sampling_fraction import detectability_floor, invert_recovery, recovery_curve
+from ._rank_selection import _changepoint, _leakage_profile
+from ._sampling_fraction import _detectability_floor, _invert_recovery, _recovery_curve
 
 
 @dataclass(frozen=True)
@@ -108,7 +108,7 @@ def estimate_rank(
     -------
     estimate : RankEstimate
     """
-    s_sym = symmetrize(np.asarray(s, dtype=np.float64))
+    s_sym = _symmetrize(np.asarray(s, dtype=np.float64))
     n = s_sym.shape[0]
 
     k_max = _resolve_max_rank(n, max_rank)
@@ -116,24 +116,24 @@ def estimate_rank(
     jobs = _resolve_n_jobs(n_jobs)
     seed = int(random_state)
 
-    s_filled, mask, observed_rate = observation_mask(s_sym)
-    eigenvalues, u_ref = reference_eigenpairs(s_filled, mask, observed_rate, k_max, seed)
+    s_filled, mask, observed_rate = _observation_mask(s_sym)
+    eigenvalues, u_ref = _reference_eigenpairs(s_filled, mask, observed_rate, k_max, seed)
 
-    overlap, projected = bootstrap_coherence(
+    overlap, projected = _bootstrap_coherence(
         s_filled, mask, u_ref, k_max, grid,
         n_bootstrap=n_bootstrap, random_state=seed, n_jobs=jobs,
     )
     overlap_median = np.median(overlap, axis=2)
     projected_median = np.median(projected, axis=2)
 
-    leakage = leakage_profile(overlap_median, grid, high_band_quantile)
-    rank = changepoint(leakage)
+    leakage = _leakage_profile(overlap_median, grid, high_band_quantile)
+    rank = _changepoint(leakage)
 
-    p_sorted, recovery_raw, recovery_monotone = recovery_curve(
+    p_sorted, recovery_raw, recovery_monotone = _recovery_curve(
         grid, eigenvalues, projected_median, rank
     )
-    raw_fraction = invert_recovery(p_sorted, recovery_monotone, recovery_tolerance)
-    floor = detectability_floor(eigenvalues, rank)
+    raw_fraction = _invert_recovery(p_sorted, recovery_monotone, recovery_tolerance)
+    floor = _detectability_floor(eigenvalues, rank)
     sampling_fraction = float(max(raw_fraction, floor))
 
     return RankEstimate(
