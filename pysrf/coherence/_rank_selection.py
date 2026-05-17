@@ -1,11 +1,11 @@
 """Per-dimension leakage and F-statistic changepoint."""
 
-# Author: Florian P. Mahner
-# License: MIT
-
 from __future__ import annotations
 
 import numpy as np
+
+
+# ------- Leakage profile ------- #
 
 
 def _leakage_profile(
@@ -13,18 +13,7 @@ def _leakage_profile(
     sampling_grid: np.ndarray,
     high_band_quantile: float,
 ) -> np.ndarray:
-    """Per-dimension leakage aggregated over the high-p band.
-
-    For each rank ``r`` and sampling probability ``p``, the scaled
-    deviation from a perfectly recovered subspace is
-
-        deviation[r, p] = (1 - overlap_median[r, p]) * p / (1 - p)
-
-    Signal ranks have a bounded constant deviation; noise ranks have
-    a deviation that grows with ``p``. The leakage profile takes the
-    median deviation across the top ``high_band_quantile`` of
-    ``sampling_grid``, where the signal/noise contrast is sharpest.
-    """
+    """Per-dimension leakage aggregated over the high-p band of the sampling grid."""
     threshold = np.quantile(sampling_grid, high_band_quantile)
     band = np.where(sampling_grid >= threshold)[0]
     if band.size == 0:
@@ -35,39 +24,26 @@ def _leakage_profile(
     return np.median(deviation, axis=1).astype(np.float64)
 
 
-def _changepoint(leakage: np.ndarray, min_rank: int = 2, min_segment: int = 2) -> int:
-    """Rank at the two-segment F-statistic maximum.
+# ------- F-statistic changepoint ------- #
 
-    Sweeps every valid split of the leakage profile into a low-flat
-    "signal" segment followed by a high "noise" segment, and returns
-    the rank at which the F-statistic of the two-mean comparison is
-    largest. ``min_rank`` rules out splits that would put the
-    boundary at trivially small ranks; ``min_segment`` enforces at
-    least that many points per segment.
-    """
+
+def _changepoint(leakage: np.ndarray, min_rank: int = 2, min_segment: int = 2) -> int:
+    """Rank at the two-segment F-statistic maximum of the leakage profile."""
     n = len(leakage)
     if n < 2 * min_segment:
         return n
     scores = np.full(n - 1, -np.inf)
     for split in range(min_segment - 1, n - min_segment):
         scores[split] = _f_statistic(leakage[: split + 1], leakage[split + 1 :])
-    valid = np.arange(n - 1)
-    valid = valid[valid + 1 >= min_rank]
-    if valid.size == 0:
-        valid = np.arange(n - 1)
-    best = int(valid[np.nanargmax(scores[valid])])
-    return best + 1
-
-
-def _segment_sse(values: np.ndarray) -> float:
-    """Sum of squared deviations from the segment mean."""
-    return float(((values - values.mean()) ** 2).sum())
+    lo = max(min_rank - 1, 0) if min_rank <= n - 1 else 0
+    return int(lo + np.nanargmax(scores[lo:])) + 1
 
 
 def _f_statistic(left: np.ndarray, right: np.ndarray) -> float:
     """F-statistic for a two-mean comparison between two segments."""
     n_left, n_right = len(left), len(right)
-    pooled_var = (_segment_sse(left) + _segment_sse(right)) / max(n_left + n_right - 2, 1)
+    sse = ((left - left.mean()) ** 2).sum() + ((right - right.mean()) ** 2).sum()
+    pooled_var = sse / max(n_left + n_right - 2, 1)
     if pooled_var <= 1e-12:
         return np.inf
     harmonic = n_left * n_right / (n_left + n_right)
