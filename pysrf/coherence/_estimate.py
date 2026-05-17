@@ -21,7 +21,7 @@ from ._sampling_fraction import _detectability_floor, _invert_recovery, _recover
 
 
 @dataclass(frozen=True)
-class RankEstimate:
+class CoherenceProfile:
     """Output of :func:`estimate_rank`.
 
     Attributes
@@ -73,7 +73,7 @@ def estimate_rank(
     high_band_quantile: float = 0.85,
     random_state: int = 0,
     n_jobs: int | None = None,
-) -> RankEstimate:
+) -> CoherenceProfile:
     """Estimate the number of signal dimensions of a symmetric similarity matrix.
 
     The method bootstraps the top eigenspace under random off-diagonal
@@ -106,7 +106,7 @@ def estimate_rank(
 
     Returns
     -------
-    estimate : RankEstimate
+    estimate : CoherenceProfile
     """
     s_sym = _symmetrize(np.asarray(s, dtype=np.float64))
     n = s_sym.shape[0]
@@ -136,7 +136,7 @@ def estimate_rank(
     floor = _detectability_floor(eigenvalues, rank)
     sampling_fraction = float(max(raw_fraction, floor))
 
-    return RankEstimate(
+    return CoherenceProfile(
         rank=int(rank),
         sampling_fraction=sampling_fraction,
         eigenvalues=eigenvalues,
