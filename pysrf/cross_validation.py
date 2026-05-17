@@ -22,6 +22,7 @@ def cross_val_score(
     ranks: list[int],
     sampling_fraction: float,
     n_folds: int = 5,
+    n_repeats: int = 1,
     random_state: int = 0,
     n_jobs: int = -1,
     missing_values: float | None = np.nan,
@@ -34,8 +35,9 @@ def cross_val_score(
     ``max(0.95, 1 - 2000 / N_pairs)``), partitions the kept entries
     into ``n_folds`` disjoint symmetric folds, and for every (fold,
     rank) pair fits an :class:`SRF` on training entries and scores
-    reconstruction MSE on the held-out entries. Diagonal entries are
-    kept in training and never validated.
+    reconstruction MSE on the held-out entries. With ``n_repeats > 1``
+    the whole procedure repeats with a different outer mask realisation
+    each rep. Diagonal entries are kept in training and never validated.
 
     Parameters
     ----------
@@ -47,6 +49,10 @@ def cross_val_score(
         Per-fold training density, typically from
         ``estimate_rank(s).sampling_fraction``.
     n_folds : int, default=5
+    n_repeats : int, default=1
+        Number of independent outer-mask realisations. Total cells per
+        (rank, fold) value is ``n_repeats``; per-rank averaging happens
+        over ``n_repeats * n_folds`` cells.
     random_state : int, default=0
     n_jobs : int, default=-1
     missing_values : float or None, default=np.nan
@@ -59,14 +65,16 @@ def cross_val_score(
     Returns
     -------
     curve : DataFrame
-        Long-format with columns ``rank``, ``fold``, ``val_mse``.
-        Aggregate with ``curve.groupby("rank")["val_mse"].mean()``
-        for the CV curve.
+        Long-format with columns ``rep``, ``fold``, ``rank``,
+        ``val_mse``. Aggregate with
+        ``curve.groupby("rank")["val_mse"].mean()`` for the CV curve.
     """
     if not (0.0 < sampling_fraction < 1.0):
         raise ValueError("sampling_fraction must be in (0, 1)")
     if n_folds < 2:
         raise ValueError(f"n_folds must be at least 2, got {n_folds}")
+    if n_repeats < 1:
+        raise ValueError(f"n_repeats must be at least 1, got {n_repeats}")
     srf_kwargs = dict(srf_kwargs) if srf_kwargs else {}
     reserved = {"rank", "bounds", "missing_values", "random_state"} & srf_kwargs.keys()
     if reserved:
@@ -76,26 +84,24 @@ def cross_val_score(
 
     s = np.asarray(similarity_matrix)
     bounds = (float(np.nanmin(s)), float(np.nanmax(s)))
-    splits = list(_kfold_entry_splits(
-        s, sampling_fraction, n_folds, random_state, missing_values,
-    ))
 
-    jobs = [
-        (rank, fold_idx, train_mask, val_mask)
-        for fold_idx, (train_mask, val_mask) in enumerate(splits)
-        for rank in ranks
-    ]
+    jobs = []  # (rep, fold_idx, rank, train_mask, val_mask, fit_seed)
+    for rep in range(n_repeats):
+        rep_seed = random_state + rep * 100_003
+        for fold_idx, (train_mask, val_mask) in enumerate(_kfold_entry_splits(
+            s, sampling_fraction, n_folds, rep_seed, missing_values,
+        )):
+            for rank in ranks:
+                fit_seed = rep_seed + 7919 * fold_idx + 13 * int(rank)
+                jobs.append((rep, fold_idx, int(rank), train_mask, val_mask, fit_seed))
+
     scores = Parallel(n_jobs=n_jobs)(
-        delayed(_fit_score)(
-            s, train_mask, val_mask, int(rank), bounds,
-            random_state + 7919 * fold_idx + 13 * int(rank),
-            srf_kwargs,
-        )
-        for (rank, fold_idx, train_mask, val_mask) in jobs
+        delayed(_fit_score)(s, tm, vm, rank, bounds, seed, srf_kwargs)
+        for (_, _, rank, tm, vm, seed) in jobs
     )
     return pd.DataFrame([
-        {"rank": int(rank), "fold": fold_idx, "val_mse": score}
-        for (rank, fold_idx, _, _), score in zip(jobs, scores)
+        {"rep": rep, "fold": fold_idx, "rank": rank, "val_mse": score}
+        for (rep, fold_idx, rank, _, _, _), score in zip(jobs, scores)
     ])
 
 
