@@ -25,32 +25,36 @@ def cross_val_score(
     random_state: int = 0,
     n_jobs: int = -1,
     missing_values: float | None = np.nan,
+    srf_kwargs: dict | None = None,
 ) -> pd.DataFrame:
     """K-fold cross-validation of SRF rank.
 
-    Pre-masks the observed entries of ``similarity_matrix`` at an
-    outer probability inflated to ``sampling_fraction * k/(k-1)``
-    (capped at ``max(0.95, 1 - 2000 / N_pairs)``), partitions the kept
-    entries into ``n_folds`` disjoint symmetric folds, and for every
-    (fold, rank) pair fits an :class:`SRF` on training entries and
-    scores reconstruction MSE on the held-out entries. Diagonal entries
-    are kept in training and never validated.
+    Pre-masks observed entries at an outer probability inflated to
+    ``sampling_fraction * k/(k-1)`` (capped at
+    ``max(0.95, 1 - 2000 / N_pairs)``), partitions the kept entries
+    into ``n_folds`` disjoint symmetric folds, and for every (fold,
+    rank) pair fits an :class:`SRF` on training entries and scores
+    reconstruction MSE on the held-out entries. Diagonal entries are
+    kept in training and never validated.
 
     Parameters
     ----------
     similarity_matrix : ndarray of shape (n, n)
-        Symmetric similarity matrix. Missing entries marked according
-        to ``missing_values``.
+        Symmetric similarity matrix.
     ranks : list of int
         Candidate ranks to evaluate.
     sampling_fraction : float
-        Per-fold training density. Typically
-        ``estimate_rank(s).sampling_fraction`` from
-        :func:`pysrf.estimate_rank`.
+        Per-fold training density, typically from
+        ``estimate_rank(s).sampling_fraction``.
     n_folds : int, default=5
     random_state : int, default=0
     n_jobs : int, default=-1
     missing_values : float or None, default=np.nan
+    srf_kwargs : dict or None, default=None
+        Extra keyword arguments forwarded to :class:`SRF` (e.g.
+        ``max_outer``, ``rho``, ``tol``, ``max_inner``). Must not
+        contain ``rank``, ``bounds``, ``missing_values``, or
+        ``random_state`` — those are set per fit.
 
     Returns
     -------
@@ -63,6 +67,12 @@ def cross_val_score(
         raise ValueError("sampling_fraction must be in (0, 1)")
     if n_folds < 2:
         raise ValueError(f"n_folds must be at least 2, got {n_folds}")
+    srf_kwargs = dict(srf_kwargs) if srf_kwargs else {}
+    reserved = {"rank", "bounds", "missing_values", "random_state"} & srf_kwargs.keys()
+    if reserved:
+        raise ValueError(
+            f"srf_kwargs must not contain {sorted(reserved)}; these are set per fit"
+        )
 
     s = np.asarray(similarity_matrix)
     bounds = (float(np.nanmin(s)), float(np.nanmax(s)))
@@ -79,6 +89,7 @@ def cross_val_score(
         delayed(_fit_score)(
             s, train_mask, val_mask, int(rank), bounds,
             random_state + 7919 * fold_idx + 13 * int(rank),
+            srf_kwargs,
         )
         for (rank, fold_idx, train_mask, val_mask) in jobs
     )
@@ -142,11 +153,13 @@ def _fit_score(
     rank: int,
     bounds: tuple[float, float],
     seed: int,
+    srf_kwargs: dict,
 ) -> float:
     """Fit SRF at ``rank`` on training entries, score V-MSE on validation."""
     x_train = np.full_like(s, np.nan)
     x_train[train_mask] = s[train_mask]
-    est = SRF(rank=rank, bounds=bounds, missing_values=np.nan, random_state=seed)
+    est = SRF(rank=rank, bounds=bounds, missing_values=np.nan,
+              random_state=seed, **srf_kwargs)
     est.fit(x_train)
     rec = est.reconstruct()
     if not val_mask.any():
