@@ -3,7 +3,8 @@
 import numpy as np
 import pytest
 
-from pysrf import RankEstimate, estimate_rank
+from pysrf import estimate_rank
+from pysrf.coherence import CoherenceProfile
 from helpers import make_missing_matrix, make_symmetric_matrix
 
 
@@ -14,7 +15,7 @@ def s():
 
 def test_returns_rank_estimate(s):
     est = estimate_rank(s, n_bootstrap=5)
-    assert isinstance(est, RankEstimate)
+    assert isinstance(est, CoherenceProfile)
 
 
 def test_recovers_true_rank(s):
@@ -54,7 +55,7 @@ def test_deterministic(s):
 def test_handles_missing_entries(s):
     s_missing = make_missing_matrix(s, fraction=0.2, seed=1)
     est = estimate_rank(s_missing, n_bootstrap=5)
-    assert isinstance(est, RankEstimate)
+    assert isinstance(est, CoherenceProfile)
     assert est.rank >= 1
 
 
