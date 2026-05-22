@@ -5,6 +5,8 @@ import pandas as pd
 import pytest
 
 from pysrf import cross_val_score, estimate_rank
+from pysrf._common import observation_mask
+from pysrf.cross_validation import _cv_pool_fraction, _entry_splits
 from helpers import make_symmetric_matrix
 
 
@@ -48,6 +50,35 @@ def test_deterministic(s):
     b = cross_val_score(s, ranks=[3, 5], sampling_fraction=0.7,
                          n_folds=3, random_state=11, n_jobs=1)
     pd.testing.assert_frame_equal(a, b)
+
+
+def test_splits_hide_only_observed_entries(s):
+    s_missing = s.copy()
+    s_missing[0, 1] = s_missing[1, 0] = np.nan
+    observed = observation_mask(s_missing)
+    splits = _entry_splits(
+        observed,
+        pool_fraction=_cv_pool_fraction(0.6, n_folds=3, n=s.shape[0]),
+        n_folds=3,
+        split_seeds=np.array([11], dtype=np.uint32),
+    )
+    for _, _, train_mask, validation_mask in splits:
+        assert np.all(train_mask == train_mask.T)
+        assert np.all(validation_mask == validation_mask.T)
+        assert not np.any(train_mask & validation_mask)
+        assert np.all(train_mask <= observed)
+        assert np.all(validation_mask <= observed)
+
+
+def test_custom_missing_value(s):
+    s_missing = s.copy()
+    s_missing[0, 1] = s_missing[1, 0] = -1.0
+    curve = cross_val_score(
+        s_missing, ranks=[3], sampling_fraction=0.7,
+        n_folds=3, n_jobs=1, missing_values=-1.0,
+        srf_kwargs={"max_outer": 2, "max_inner": 2},
+    )
+    assert len(curve) == 3
 
 
 def test_cap_warning_when_inflation_exceeds_cap(s):

@@ -35,8 +35,9 @@ py.extension_module(
 
 py.install_sources(
   [
-    'pysrf/__init__.py',
+	    'pysrf/__init__.py',
     'pysrf/_bsum.py',
+    'pysrf/_common.py',
     'pysrf/consensus.py',
     'pysrf/cross_validation.py',
     'pysrf/model.py',
