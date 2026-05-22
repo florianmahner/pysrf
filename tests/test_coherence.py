@@ -3,8 +3,7 @@
 import numpy as np
 import pytest
 
-from pysrf import estimate_rank
-from pysrf.coherence import CoherenceProfile
+from pysrf import RankEstimate, estimate_rank
 from helpers import make_missing_matrix, make_symmetric_matrix
 
 
@@ -15,7 +14,7 @@ def s():
 
 def test_returns_rank_estimate(s):
     est = estimate_rank(s, n_bootstrap=5)
-    assert isinstance(est, CoherenceProfile)
+    assert isinstance(est, RankEstimate)
 
 
 def test_recovers_true_rank(s):
@@ -33,14 +32,14 @@ def test_diagnostic_shapes(s):
     est = estimate_rank(s, max_rank=15, n_bootstrap=5)
     assert est.eigenvalues.shape == (15,)
     assert est.leakage.shape == (15,)
-    assert est.sampling_grid.shape == est.recovery_raw.shape
-    assert est.sampling_grid.shape == est.recovery_monotone.shape
+    assert est.sampling_grid.shape == est.recovery_loss_raw.shape
+    assert est.sampling_grid.shape == est.recovery_loss_monotone.shape
     assert est.n_features_in == s.shape[0]
 
 
-def test_recovery_monotone_non_increasing(s):
+def test_recovery_loss_monotone_non_increasing(s):
     est = estimate_rank(s, n_bootstrap=5)
-    assert np.all(np.diff(est.recovery_monotone) <= 1e-12)
+    assert np.all(np.diff(est.recovery_loss_monotone) <= 1e-12)
 
 
 def test_deterministic(s):
@@ -49,13 +48,13 @@ def test_deterministic(s):
     assert a.rank == b.rank
     assert a.sampling_fraction == b.sampling_fraction
     np.testing.assert_array_equal(a.eigenvalues, b.eigenvalues)
-    np.testing.assert_array_equal(a.recovery_monotone, b.recovery_monotone)
+    np.testing.assert_array_equal(a.recovery_loss_monotone, b.recovery_loss_monotone)
 
 
 def test_handles_missing_entries(s):
     s_missing = make_missing_matrix(s, fraction=0.2, seed=1)
     est = estimate_rank(s_missing, n_bootstrap=5)
-    assert isinstance(est, CoherenceProfile)
+    assert isinstance(est, RankEstimate)
     assert est.rank >= 1
 
 

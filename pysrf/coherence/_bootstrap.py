@@ -1,191 +1,158 @@
-"""Masked-bootstrap engine for eigenspace coherence."""
-
 from __future__ import annotations
-
-import warnings
 
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh
+from threadpoolctl import threadpool_limits
 
-Array = np.ndarray
-
-
-# ------- Public helpers (used by _estimate.py) ------- #
+from .._common import RandomStateLike, as_seed_sequence
 
 
-def _symmetrize(s: Array) -> Array:
-    """Symmetrize a matrix, averaging finite pairs and preserving NaN-only pairs."""
-    s = np.asarray(s, dtype=np.float64)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        out = np.nanmean(np.stack([s, s.T]), axis=0)
-    diag = np.diag(out).copy()
-    diag[~np.isfinite(diag)] = 0.0
-    np.fill_diagonal(out, diag)
-    return out
+def _replicate_seed(parent: int, p_index: int, replicate_index: int) -> int:
+    """Deterministic per-(p_index, replicate_index) bootstrap seed.
 
-
-def _observation_mask(s_sym: Array) -> tuple[Array, Array, float]:
-    """Return (filled_matrix, symmetric 0/1 observation mask, off-diagonal rate)."""
-    obs = np.isfinite(s_sym)
-    mask = (obs | obs.T).astype(np.float64)
-    np.fill_diagonal(mask, 1.0)
-    s_filled = np.nan_to_num(s_sym, nan=0.0)
-
-    iu = np.triu_indices(s_sym.shape[0], k=1)
-    rate = float(mask[iu].mean()) if iu[0].size else 1.0
-    return s_filled, mask, float(np.clip(rate, 1e-12, 1.0))
-
-
-def _reference_eigenpairs(
-    s_filled: Array,
-    mask: Array,
-    observed_rate: float,
-    k_max: int,
-    random_state: int,
-) -> tuple[Array, Array]:
-    """Top-``k_max`` eigenpairs of the reference (dense if fully observed, else randomized)."""
-    if observed_rate >= 1.0 - 1e-15:
-        a = 0.5 * (s_filled + s_filled.T)
-        return _topk_desc(*eigh(a), k=k_max)
-
-    proxy = mask * s_filled
-    np.fill_diagonal(proxy, np.diag(s_filled))
-    return _randomized_top_eigenpairs(0.5 * (proxy + proxy.T), k_max, random_state=random_state)
-
-
-def _bootstrap_coherence(
-    s_filled: Array,
-    mask: Array,
-    u_ref: Array,
-    k_max: int,
-    sampling_grid: Array,
-    n_bootstrap: int,
-    random_state: int,
-    n_jobs: int,
-) -> tuple[Array, Array]:
-    """Bootstrap eigenspace coherence across ``sampling_grid``.
-
-    Returns ``(overlap, projected_trace)``, each of shape ``(k_max, P, B)``:
-    cumulative squared overlap with ``u_ref`` and cumulative ``tr(P_r S)`` for
-    the top-``r`` bootstrap subspace at each (rank, sampling probability, replicate).
+    A plain linear hash on the three integers, masked to 32 bits. Matches
+    the seeding used by the reference implementation in update_pysrf, so
+    coherence and leakage profiles are numerically identical (this is
+    what reproduces the published k_cut values on borderline matrices
+    like THINGS). The multipliers 1_000_003 and 9176 are arbitrary
+    co-prime mixers chosen to spread bits across the index space; no
+    significance beyond that.
     """
-    args = [
-        (i, float(p), s_filled, mask, u_ref, k_max, n_bootstrap, random_state)
-        for i, p in enumerate(sampling_grid)
+    return (int(parent) + 1_000_003 * int(p_index) + 9176 * int(replicate_index)) & 0xFFFFFFFF
+
+
+def _bootstrap_parent_seed(random_state: RandomStateLike) -> int:
+    """Reduce a user-supplied random_state to a 32-bit parent seed."""
+    if random_state is None or isinstance(random_state, (int, np.integer)):
+        return int(random_state or 0) & 0xFFFFFFFF
+    return int(as_seed_sequence(random_state).generate_state(1)[0]) & 0xFFFFFFFF
+
+
+def _bootstrap_subspace_stability(
+    similarity: np.ndarray,
+    observation_mask: np.ndarray,
+    top_eigenvectors: np.ndarray,
+    sampling_grid: np.ndarray,
+    n_bootstrap: int,
+    random_state: RandomStateLike,
+    n_jobs: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    parent_seed = _bootstrap_parent_seed(random_state)
+
+    args_list = [
+        (index, float(fraction), similarity, observation_mask, top_eigenvectors,
+         n_bootstrap, parent_seed)
+        for index, fraction in enumerate(sampling_grid)
     ]
+
+    # Loky backend: each replicate runs in its own process, so ARPACK calls
+    # escape the GIL and the matrix is shared via joblib's memmap for free.
+    # BLAS is pinned to 1 thread per worker inside `_bootstrap_at_fraction`.
     if n_jobs == 1:
-        results = [_bootstrap_one_grid_point(*a) for a in args]
+        slices = [_bootstrap_at_fraction(*args) for args in args_list]
     else:
-        results = Parallel(n_jobs=n_jobs, backend="loky")(
-            delayed(_bootstrap_one_grid_point)(*a) for a in args
+        slices = Parallel(n_jobs=n_jobs, backend="loky")(
+            delayed(_bootstrap_at_fraction)(*args) for args in args_list
         )
 
-    overlap = np.stack([r[0] for r in results], axis=1)
-    projected = np.stack([r[1] for r in results], axis=1)
-    return overlap, projected
+    coherence = np.stack([s[0] for s in slices], axis=1)
+    recovered_mass = np.stack([s[1] for s in slices], axis=1)
+    return coherence, recovered_mass
 
 
-# ------- Eigensolvers ------- #
+def _bootstrap_at_fraction(
+    p_index: int,
+    sampling_fraction: float,
+    similarity: np.ndarray,
+    observation_mask: np.ndarray,
+    top_eigenvectors: np.ndarray,
+    n_bootstrap: int,
+    parent_seed: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    n = similarity.shape[0]
+    max_rank = top_eigenvectors.shape[1]
+    triu = np.triu_indices(n, k=1)
+
+    coherence = np.empty((max_rank, n_bootstrap), dtype=np.float64)
+    recovered_mass = np.empty_like(coherence)
+    # Pin BLAS to one thread inside the loky worker so n_jobs maps to
+    # actual core usage instead of BLAS_threads * n_jobs.
+    with threadpool_limits(limits=1):
+        for replicate_index in range(n_bootstrap):
+            seed = _replicate_seed(parent_seed, p_index, replicate_index)
+            rng = np.random.default_rng(seed)
+            replicate = _subsampled_replicate(
+                similarity, observation_mask, sampling_fraction, rng, triu,
+            )
+            # `eigsh` is called without v0 on purpose: the bootstrap rng is
+            # for the subsample, not for ARPACK's starting vector. Coupling
+            # them lets the bootstrap rng influence the basis ARPACK lands
+            # on inside close-eigenvalue subspaces, which inflates the
+            # per-dim leakage at the changepoint on borderline matrices.
+            _, replicate_eigenvectors = _top_eigenpairs(replicate, max_rank)
+            coherence[:, replicate_index] = _cumulative_subspace_overlap(
+                replicate_eigenvectors, top_eigenvectors,
+            )
+            recovered_mass[:, replicate_index] = _cumulative_recovered_mass(
+                similarity, replicate_eigenvectors,
+            )
+    return coherence, recovered_mass
 
 
-def _topk_desc(values: Array, vectors: Array, k: int) -> tuple[Array, Array]:
-    """Sort eigh output by descending eigenvalue and keep the top ``k``."""
-    order = np.argsort(values)[::-1][:k]
-    return values[order], vectors[:, order]
-
-
-def _top_eigenpairs(a: Array, k: int, v0: Array | None = None) -> tuple[Array, Array]:
-    """Top-k eigenpairs of a symmetric matrix; ARPACK with dense ``eigh`` fallback."""
-    if k < a.shape[0]:
-        try:
-            values, vectors = eigsh(a, k=k, which="LA", tol=1e-6, v0=v0)
-            return _topk_desc(values, vectors, k)
-        except Exception:
-            pass
-    return _topk_desc(*eigh(a), k=k)
-
-
-def _randomized_top_eigenpairs(
-    a: Array,
-    k: int,
-    oversample: int = 10,
-    n_iter: int = 2,
-    random_state: int = 0,
-) -> tuple[Array, Array]:
-    """Top-k eigenpairs via randomized subspace iteration."""
-    n = a.shape[0]
-    width = min(n, k + oversample)
-    rng = np.random.default_rng(int(random_state) & 0xFFFFFFFF)
-    y = a @ rng.standard_normal((n, width))
-    for _ in range(n_iter):
-        y = a @ (a @ y)
-    q, _ = np.linalg.qr(y, mode="reduced")
-    small = q.T @ a @ q
-    values, vectors_small = eigh(0.5 * (small + small.T))
-    top_values, top_small = _topk_desc(values, vectors_small, k)
-    return top_values, q @ top_small
-
-
-# ------- Bootstrap kernel ------- #
-
-
-def _bernoulli_replicate(
-    s_filled: Array,
-    mask: Array,
-    p: float,
+def _subsampled_replicate(
+    similarity: np.ndarray,
+    observation_mask: np.ndarray,
+    sampling_fraction: float,
     rng: np.random.Generator,
-    iu: tuple[Array, Array],
-) -> Array:
-    """One symmetric Bernoulli-masked, 1/p-rescaled replicate of ``s_filled``."""
-    n = s_filled.shape[0]
-    keep = (rng.random(iu[0].size) < p).astype(np.float64)
-    values = keep * mask[iu] * s_filled[iu] / max(p, 1e-12)
+    triu: tuple[np.ndarray, np.ndarray],
+) -> np.ndarray:
+    n = similarity.shape[0]
+    triu_i, triu_j = triu
+    sampled = rng.random(triu_i.size) < sampling_fraction
+    sampled &= observation_mask[triu_i, triu_j]
 
-    a = np.zeros((n, n), dtype=np.float64)
-    a[iu] = values
-    a[(iu[1], iu[0])] = values
-    np.fill_diagonal(a, np.diag(s_filled))
-    return 0.5 * (a + a.T)
+    replicate = np.zeros((n, n), dtype=np.float64)
+    values = similarity[triu_i[sampled], triu_j[sampled]] / sampling_fraction
+    replicate[triu_i[sampled], triu_j[sampled]] = values
+    replicate[triu_j[sampled], triu_i[sampled]] = values
+    np.fill_diagonal(replicate, np.diag(similarity))
+    return replicate
 
 
-def _cumulative_overlap(u_boot: Array, u_ref: Array) -> Array:
-    """Cumulative squared projection of ``u_ref[:, r]`` onto span(``u_boot[:, :r+1]``)."""
-    g = u_boot.T @ u_ref
-    k = g.shape[0]
-    cumulative = np.cumsum(g * g, axis=0)[np.arange(k), np.arange(k)]
+def _cumulative_subspace_overlap(
+    replicate_eigenvectors: np.ndarray, top_eigenvectors: np.ndarray,
+) -> np.ndarray:
+    squared_overlap = (replicate_eigenvectors.T @ top_eigenvectors) ** 2
+    ranks = np.arange(squared_overlap.shape[0])
+    cumulative = np.cumsum(squared_overlap, axis=0)[ranks, ranks]
     return np.clip(cumulative, 0.0, 1.0)
 
 
-def _cumulative_projected_trace(s: Array, u_boot: Array) -> Array:
-    """Cumulative ``tr(P_r S)`` per rank."""
-    per_column = np.einsum("ij,ij->j", u_boot, s @ u_boot)
-    return np.cumsum(per_column)
+def _cumulative_recovered_mass(
+    similarity: np.ndarray, replicate_eigenvectors: np.ndarray,
+) -> np.ndarray:
+    mass_by_dimension = np.einsum(
+        "ij,ij->j", replicate_eigenvectors, similarity @ replicate_eigenvectors,
+    )
+    return np.cumsum(mass_by_dimension)
 
 
-def _bootstrap_one_grid_point(
-    i: int,
-    p: float,
-    s_filled: Array,
-    mask: Array,
-    u_ref: Array,
-    k_max: int,
-    n_bootstrap: int,
-    seed_base: int,
-) -> tuple[Array, Array]:
-    """Collect ``n_bootstrap`` replicate statistics at one sampling rate."""
-    n = s_filled.shape[0]
-    iu = np.triu_indices(n, k=1)
+def _top_eigenpairs(
+    a: np.ndarray, k: int, v0: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    if k < a.shape[0]:
+        try:
+            values, vectors = eigsh(a, k=k, which="LA", tol=1e-6, v0=v0)
+            return _keep_top_k_descending(values, vectors, k)
+        except Exception:
+            pass
+    return _keep_top_k_descending(*eigh(a), k=k)
 
-    overlap = np.empty((k_max, n_bootstrap), dtype=np.float64)
-    projected = np.empty((k_max, n_bootstrap), dtype=np.float64)
-    for b in range(n_bootstrap):
-        seed = (seed_base + 1_000_003 * i + 9176 * b) & 0xFFFFFFFF
-        rng = np.random.default_rng(seed)
-        a = _bernoulli_replicate(s_filled, mask, p, rng, iu)
-        _, u_boot = _top_eigenpairs(a, k_max, v0=rng.standard_normal(n))
-        overlap[:, b] = _cumulative_overlap(u_boot, u_ref)
-        projected[:, b] = _cumulative_projected_trace(s_filled, u_boot)
-    return overlap, projected
+
+def _keep_top_k_descending(
+    values: np.ndarray, vectors: np.ndarray, k: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    order = np.argsort(values)[::-1][:k]
+    return values[order], vectors[:, order]
