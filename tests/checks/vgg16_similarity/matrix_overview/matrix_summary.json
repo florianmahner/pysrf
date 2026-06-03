@@ -1,0 +1,26 @@
+{
+  "data_path": "/data/labshare/_stachelschwein/LOCAL/fmahner/pysrf/tests/vgg16_similarity.npy",
+  "shape": [
+    1854,
+    1854
+  ],
+  "dtype": "float64",
+  "finite_count": 3437316,
+  "symmetry_max_abs": 0.0,
+  "diag_min": 364.96453857421875,
+  "diag_median": 1597.6795654296875,
+  "diag_mean": 1866.3978659455959,
+  "diag_max": 12124.3623046875,
+  "offdiag_min": 12.287626266479492,
+  "offdiag_median": 191.4306182861328,
+  "offdiag_mean": 222.1024604070733,
+  "offdiag_std": 131.3044643794694,
+  "offdiag_max": 5005.00634765625,
+  "diag_to_offdiag_mean_ratio": 8.403319182168577,
+  "diag_to_offdiag_median_ratio": 8.345998042181652,
+  "diag_row_offdiag_mean_corr": 0.7639244438602592,
+  "min_eigenvalue": 9.881665020863494,
+  "max_eigenvalue": 434594.98215358553,
+  "positive_eigenvalue_count_1e_8": 1854,
+  "eigendecomposition_seconds": 0.43481633719056845
+}

@@ -1,8 +1,16 @@
 # Cross-Validation API
 
-`cross_val_score` confirms the rank suggested by `estimate_rank` by holding out individual entries of the similarity matrix and measuring how well the model predicts them. Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears (transposed) in the held-out rows, so PySRF uses a restricted entry-wise hold-out instead. It returns a tidy `pandas` DataFrame with columns `[rep, fold, rank, val_mse]`; read it with a `groupby("rank")["val_mse"].mean().idxmin()` to pick the best rank. See [quickstart](../quickstart.md) for a full example.
+`cross_val_score` is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and sampling fraction from eigenspace stability, then evaluates SRF model ranks around that cutoff with restricted entry-wise cross-validation. The returned `CVResult` exposes the selected model rank as `cv.model_rank`, the fold-level validation scores as `cv.fold_scores`, and the per-rank averages as `cv.rank_scores`.
+
+Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears in many held-out pairs. PySRF therefore holds out symmetric off-diagonal entries and treats them as missing during fitting.
 
 ::: pysrf.cross_val_score
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+::: pysrf.CVResult
     options:
       show_root_heading: true
       show_source: true

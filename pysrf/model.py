@@ -1,14 +1,5 @@
 """Similarity-based Representation Factorization (SRF).
 
-Decomposes symmetric similarity matrices into sparse, non-negative
-dimensions. Given a similarity matrix S, SRF finds a non-negative
-embedding W such that S ~ WW'. Each row of W gives the loadings of
-an item on the recovered dimensions, where small or near-zero loadings
-indicate that a dimension is largely irrelevant to that item.
-
-SRF handles missing entries in the similarity matrix without imputation
-and supports cross-validated estimation of the number of dimensions.
-
 Reference
 ---------
 Mahner, F.P.*, Lam, K.C.*, Pereira, F. & Hebart, M.N. (2026). Revealing the

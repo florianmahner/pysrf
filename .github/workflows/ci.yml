@@ -30,7 +30,7 @@ jobs:
         run: poetry run ruff check pysrf/ tests/
 
       - name: Check formatting
-        run: poetry run ruff format --check pysrf/ tests/
+        run: poetry run black --check pysrf/ tests/
 
   test:
     if: github.event_name == 'pull_request'

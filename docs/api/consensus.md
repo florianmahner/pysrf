@@ -13,9 +13,3 @@ SRF is a non-convex method, so different random initializations can land on slig
       show_root_heading: true
       show_source: true
       heading_level: 3
-
-::: pysrf.ClusterConsensus
-    options:
-      show_root_heading: true
-      show_source: true
-      heading_level: 3

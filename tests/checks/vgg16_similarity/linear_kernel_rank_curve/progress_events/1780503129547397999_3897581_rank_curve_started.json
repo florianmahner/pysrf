@@ -1,0 +1,23 @@
+{
+  "timestamp_unix": 1780503129.5473883,
+  "pid": 3897581,
+  "event": "rank_curve_started",
+  "n_jobs_total": 25,
+  "n_worker_jobs": 5,
+  "ranks": [
+    50,
+    100,
+    200,
+    300,
+    400
+  ],
+  "n_folds": 5,
+  "n_repeats": 1,
+  "sampling_fraction": 0.697305802923129,
+  "fit_kwargs": {
+    "max_outer": 100,
+    "max_inner": 5,
+    "tol": 1e-05,
+    "check_input": false
+  }
+}

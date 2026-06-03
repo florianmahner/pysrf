@@ -156,9 +156,9 @@ class TestMonotonicity:
         rec_error = np.array(model.history_["rec_error"])
         diffs = np.diff(rec_error)
 
-        assert np.all(diffs <= 1e-10), (
-            f"Monotonicity failed for rank={rank}. Max increase: {np.max(diffs):.2e}"
-        )
+        assert np.all(
+            diffs <= 1e-10
+        ), f"Monotonicity failed for rank={rank}. Max increase: {np.max(diffs):.2e}"
 
 
 class TestConvergenceQuality:
@@ -173,9 +173,9 @@ class TestConvergenceQuality:
 
         final_primal_res = model.history_["primal_residual"][-1]
         # Primal residual should be reasonably small after convergence
-        assert final_primal_res < 1.0, (
-            f"Final primal residual too large: {final_primal_res:.2e}"
-        )
+        assert (
+            final_primal_res < 1.0
+        ), f"Final primal residual too large: {final_primal_res:.2e}"
 
     def test_low_rank_recovery(self):
         """Model should recover good approximation of low-rank matrix."""
@@ -185,9 +185,9 @@ class TestConvergenceQuality:
         model.fit(s)
 
         final_evar = model.history_["evar"][-1]
-        assert final_evar > 0.9, (
-            f"Explained variance too low for low-rank matrix: {final_evar:.3f}"
-        )
+        assert (
+            final_evar > 0.9
+        ), f"Explained variance too low for low-rank matrix: {final_evar:.3f}"
 
     def test_nonnegative_factors(self):
         """Converged factors should be non-negative."""
