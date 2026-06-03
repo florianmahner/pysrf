@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, effective_n_jobs
 from sklearn.utils import check_random_state
 from threadpoolctl import threadpool_limits
 
@@ -45,7 +45,8 @@ def cross_val_score(
     splits = _entry_splits(observed_mask, pool_fraction, n_folds, split_seeds)
     jobs = list(_fit_jobs(splits, ranks, fit_seeds))
 
-    scores = Parallel(n_jobs=n_jobs)(
+    workers = _resolve_workers(n_jobs, len(jobs))
+    scores = Parallel(n_jobs=workers)(
         delayed(_fit_score)(
             s, train_mask, validation_mask, rank, bounds, seed, srf_kwargs
         )
@@ -83,6 +84,20 @@ def _validate_args(
             f"srf_kwargs must not contain {sorted(reserved)}; these are set per fit"
         )
     return ranks, srf_kwargs
+
+
+def _resolve_workers(n_jobs: int, n_tasks: int) -> int:
+    """Cap worker processes at the number of fits to dispatch.
+
+    Parallelism here is one process per (repeat, fold, rank) fit, and each
+    fit pins BLAS to a single thread (a lone fit gains nothing from more --
+    the BSUM solver is serial). So asking for more workers than tasks only
+    pays extra process-startup cost for idle workers; on a 128-core box the
+    default ``n_jobs=-1`` would spawn 128 processes for a 25-fit grid and
+    run ~2x slower than ``min(n_jobs, n_tasks)``.
+    """
+    requested = effective_n_jobs(n_jobs)
+    return max(1, min(requested, n_tasks))
 
 
 def _observed_bounds(s: np.ndarray, observed_mask: np.ndarray) -> tuple[float, float]:
