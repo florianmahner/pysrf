@@ -7,7 +7,6 @@ import numpy as np
 
 from .._common import (
     RandomStateLike,
-    as_seed_sequence,
     observation_mask,
     symmetrize_observations,
 )
