@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from contextlib import nullcontext
@@ -55,6 +56,18 @@ def _json_default(value):
 def _write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=_json_default) + "\n")
+
+
+def _write_progress_event(out_dir: Path, payload: dict) -> None:
+    progress_dir = out_dir / "progress_events"
+    progress_dir.mkdir(parents=True, exist_ok=True)
+    event = {
+        "timestamp_unix": time.time(),
+        "pid": os.getpid(),
+        **payload,
+    }
+    stem = f"{time.time_ns()}_{os.getpid()}_{payload.get('event', 'event')}"
+    _write_json(progress_dir / f"{stem}.json", event)
 
 
 def _read_json(path: Path) -> dict:
@@ -240,12 +253,32 @@ def run_sampling_calibration(
     out_dir.mkdir(parents=True, exist_ok=True)
     s = _load_similarity()
 
+    _write_progress_event(
+        out_dir,
+        {
+            "event": "primary_calibration_started",
+            "seed": int(seed),
+            "n_bootstrap": int(primary_bootstrap),
+            "max_eigenpairs": max_eigenpairs,
+        },
+    )
     primary, primary_seconds = _run_calibration(
         s,
         seed=seed,
         n_bootstrap=primary_bootstrap,
         n_jobs=n_jobs,
         max_eigenpairs=max_eigenpairs,
+    )
+    _write_progress_event(
+        out_dir,
+        {
+            "event": "primary_calibration_finished",
+            "seed": int(seed),
+            "n_bootstrap": int(primary_bootstrap),
+            "spectral_cutoff": int(primary.spectral_cutoff),
+            "sampling_fraction": float(primary.sampling_fraction),
+            "seconds": float(primary_seconds),
+        },
     )
     _save_calibration_arrays(primary, out_dir, "primary")
     primary_payload = {
@@ -259,12 +292,31 @@ def run_sampling_calibration(
     estimate_rows = []
     curve_rows = []
     for estimate_seed in estimate_seeds:
+        _write_progress_event(
+            out_dir,
+            {
+                "event": "estimate_calibration_started",
+                "seed": int(estimate_seed),
+                "n_bootstrap": int(estimate_bootstrap),
+            },
+        )
         calibration, seconds = _run_calibration(
             s,
             seed=estimate_seed,
             n_bootstrap=estimate_bootstrap,
             n_jobs=n_jobs,
             max_eigenpairs=max_eigenpairs,
+        )
+        _write_progress_event(
+            out_dir,
+            {
+                "event": "estimate_calibration_finished",
+                "seed": int(estimate_seed),
+                "n_bootstrap": int(estimate_bootstrap),
+                "spectral_cutoff": int(calibration.spectral_cutoff),
+                "sampling_fraction": float(calibration.sampling_fraction),
+                "seconds": float(seconds),
+            },
         )
         estimate_rows.append(
             {
@@ -412,47 +464,62 @@ def _fit_rank_curve_job(
     fit_kwargs: dict,
     embeddings_dir: Path,
     histories_dir: Path,
+    partial_results_dir: Path,
+    progress_out_dir: Path,
     pin_threads: bool,
 ) -> dict:
+    job_id = f"rank_{rank}_repeat_{split.repeat}_fold_{split.fold}"
+    _write_progress_event(
+        progress_out_dir,
+        {
+            "event": "rank_curve_fit_started",
+            "job_id": job_id,
+            "candidate_rank": int(rank),
+            "repeat": int(split.repeat),
+            "fold": int(split.fold),
+            "fit_seed": int(seed),
+        },
+    )
     limit = threadpool_limits(limits=1) if pin_threads else nullcontext()
-    with limit:
-        train = np.full(s.shape, np.nan, dtype=np.float64)
-        train[split.train_mask] = s[split.train_mask]
+    try:
+        with limit:
+            train = np.full(s.shape, np.nan, dtype=np.float64)
+            train[split.train_mask] = s[split.train_mask]
 
-        t0 = time.perf_counter()
-        est = SRF(
-            rank=rank,
-            missing_values=np.nan,
-            random_state=seed,
-            **fit_kwargs,
-        ).fit(train)
-        seconds = time.perf_counter() - t0
+            t0 = time.perf_counter()
+            est = SRF(
+                rank=rank,
+                missing_values=np.nan,
+                random_state=seed,
+                **fit_kwargs,
+            ).fit(train)
+            seconds = time.perf_counter() - t0
 
-        s_hat = est.reconstruct()
-        val_mse = _validation_mse(s, s_hat, split.validation_mask)
-        train_mse = _masked_offdiag_mse(s, s_hat, split.train_mask)
-        all_offdiag_mse = _masked_offdiag_mse(s, s_hat, observation_mask(s))
+            s_hat = est.reconstruct()
+            val_mse = _validation_mse(s, s_hat, split.validation_mask)
+            train_mse = _masked_offdiag_mse(s, s_hat, split.train_mask)
+            all_offdiag_mse = _masked_offdiag_mse(s, s_hat, observation_mask(s))
 
-        stem = f"rank_{rank}_repeat_{split.repeat}_fold_{split.fold}"
-        embedding_path = embeddings_dir / f"{stem}.npy"
-        history_path = histories_dir / f"{stem}_history.csv"
-        np.save(embedding_path, est.w_)
-        _history_frame(est.history_, split.repeat, split.fold, rank).to_csv(
-            history_path,
-            index=False,
-        )
+            stem = f"rank_{rank}_repeat_{split.repeat}_fold_{split.fold}"
+            embedding_path = embeddings_dir / f"{stem}.npy"
+            history_path = histories_dir / f"{stem}_history.csv"
+            np.save(embedding_path, est.w_)
+            _history_frame(est.history_, split.repeat, split.fold, rank).to_csv(
+                history_path,
+                index=False,
+            )
 
-        history = est.history_
-        evar = np.asarray(history.get("evar", []), dtype=float)
-        rec_error = np.asarray(history.get("rec_error", []), dtype=float)
-        converged = np.asarray(history.get("converged", [False]), dtype=bool)
-        tail = min(10, evar.size)
-        evar_gain_last_tail = float(evar[-1] - evar[-tail]) if tail else float("nan")
-        rec_error_drop_last_tail = (
-            float(rec_error[-tail] - rec_error[-1]) if tail else float("nan")
-        )
+            history = est.history_
+            evar = np.asarray(history.get("evar", []), dtype=float)
+            rec_error = np.asarray(history.get("rec_error", []), dtype=float)
+            converged = np.asarray(history.get("converged", [False]), dtype=bool)
+            tail = min(10, evar.size)
+            evar_gain_last_tail = float(evar[-1] - evar[-tail]) if tail else float("nan")
+            rec_error_drop_last_tail = (
+                float(rec_error[-tail] - rec_error[-1]) if tail else float("nan")
+            )
 
-        return {
+        result = {
             "repeat": int(split.repeat),
             "fold": int(split.fold),
             "candidate_rank": int(rank),
@@ -470,6 +537,36 @@ def _fit_rank_curve_job(
             "embedding_path": str(embedding_path.relative_to(OUT_ROOT)),
             "history_path": str(history_path.relative_to(OUT_ROOT)),
         }
+        partial_results_dir.mkdir(parents=True, exist_ok=True)
+        _write_json(partial_results_dir / f"{stem}_result.json", result)
+        _write_progress_event(
+            progress_out_dir,
+            {
+                "event": "rank_curve_fit_finished",
+                "job_id": job_id,
+                "candidate_rank": int(rank),
+                "repeat": int(split.repeat),
+                "fold": int(split.fold),
+                "val_mse": float(val_mse),
+                "fit_seconds": float(seconds),
+                "last_evar": result["last_evar"],
+                "converged": result["converged"],
+            },
+        )
+        return result
+    except Exception as exc:
+        _write_progress_event(
+            progress_out_dir,
+            {
+                "event": "rank_curve_fit_failed",
+                "job_id": job_id,
+                "candidate_rank": int(rank),
+                "repeat": int(split.repeat),
+                "fold": int(split.fold),
+                "error": repr(exc),
+            },
+        )
+        raise
 
 
 def _load_primary_sampling_fraction() -> float:
@@ -495,8 +592,10 @@ def run_linear_rank_curve(
     out_dir = OUT_ROOT / "linear_kernel_rank_curve"
     embeddings_dir = out_dir / "embeddings"
     histories_dir = out_dir / "fit_histories"
+    partial_results_dir = out_dir / "partial_results"
     embeddings_dir.mkdir(parents=True, exist_ok=True)
     histories_dir.mkdir(parents=True, exist_ok=True)
+    partial_results_dir.mkdir(parents=True, exist_ok=True)
 
     s = _load_similarity()
     n = s.shape[0]
@@ -523,6 +622,19 @@ def run_linear_rank_curve(
     ]
     worker_count = min(max(1, int(n_jobs)), len(jobs))
     pin_threads = worker_count > 1
+    _write_progress_event(
+        out_dir,
+        {
+            "event": "rank_curve_started",
+            "n_jobs_total": len(jobs),
+            "n_worker_jobs": int(worker_count),
+            "ranks": ranks,
+            "n_folds": int(n_folds),
+            "n_repeats": int(n_repeats),
+            "sampling_fraction": float(sampling_fraction),
+            "fit_kwargs": fit_kwargs,
+        },
+    )
     t0 = time.perf_counter()
     if worker_count == 1:
         rows = [
@@ -534,6 +646,8 @@ def run_linear_rank_curve(
                 fit_kwargs,
                 embeddings_dir,
                 histories_dir,
+                partial_results_dir,
+                out_dir,
                 pin_threads,
             )
             for split, rank, fit_seed in jobs
@@ -548,11 +662,21 @@ def run_linear_rank_curve(
                 fit_kwargs,
                 embeddings_dir,
                 histories_dir,
+                partial_results_dir,
+                out_dir,
                 pin_threads,
             )
             for split, rank, fit_seed in jobs
         )
     total_seconds = time.perf_counter() - t0
+    _write_progress_event(
+        out_dir,
+        {
+            "event": "rank_curve_finished",
+            "n_jobs_total": len(jobs),
+            "total_seconds": float(total_seconds),
+        },
+    )
 
     fold_scores = pd.DataFrame(rows).sort_values(
         ["repeat", "fold", "candidate_rank"], kind="stable"
@@ -754,6 +878,7 @@ def _embedding_info(path: Path) -> tuple[int, int, int]:
 def run_item_specificity() -> None:
     out_dir = OUT_ROOT / "psd_raw_item_specificity"
     out_dir.mkdir(parents=True, exist_ok=True)
+    _write_progress_event(out_dir, {"event": "item_specificity_started"})
     embeddings_dir = OUT_ROOT / "linear_kernel_rank_curve" / "embeddings"
     if not embeddings_dir.exists():
         raise FileNotFoundError("Run the rank curve first, or use --section all.")
@@ -892,6 +1017,7 @@ def run_item_specificity() -> None:
         stability_summary.to_csv(out_dir / "factor_stability_by_rank.csv", index=False)
 
     _plot_item_specificity(out_dir, factor_metrics, model_metrics, matched)
+    _write_progress_event(out_dir, {"event": "item_specificity_finished"})
     print(f"item-specificity diagnostics saved: {out_dir}")
 
 

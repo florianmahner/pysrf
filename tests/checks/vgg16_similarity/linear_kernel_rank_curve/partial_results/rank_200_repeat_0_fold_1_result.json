@@ -1,0 +1,18 @@
+{
+  "repeat": 0,
+  "fold": 1,
+  "candidate_rank": 200,
+  "fit_seed": 3031610183,
+  "val_mse": 1250.2410761184894,
+  "train_mse": 555.6846756424765,
+  "all_offdiag_mse": 768.0700203679955,
+  "fit_seconds": 93.78568116016686,
+  "n_iter": 100,
+  "last_evar": 0.9592038895751536,
+  "last_rec_error": 44421.72131737346,
+  "evar_gain_last_10": 0.0004090838655470552,
+  "rec_error_drop_last_10": 222.1643278102565,
+  "converged": false,
+  "embedding_path": "linear_kernel_rank_curve/embeddings/rank_200_repeat_0_fold_1.npy",
+  "history_path": "linear_kernel_rank_curve/fit_histories/rank_200_repeat_0_fold_1_history.csv"
+}

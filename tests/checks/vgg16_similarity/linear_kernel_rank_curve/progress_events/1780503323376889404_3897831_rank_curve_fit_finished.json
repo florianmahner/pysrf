@@ -1,0 +1,13 @@
+{
+  "timestamp_unix": 1780503323.3768744,
+  "pid": 3897831,
+  "event": "rank_curve_fit_finished",
+  "job_id": "rank_50_repeat_0_fold_2",
+  "candidate_rank": 50,
+  "repeat": 0,
+  "fold": 2,
+  "val_mse": 2570.8076198823346,
+  "fit_seconds": 38.17533019371331,
+  "last_evar": 0.8439016994943911,
+  "converged": false
+}
