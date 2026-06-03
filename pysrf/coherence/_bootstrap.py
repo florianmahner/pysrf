@@ -99,11 +99,13 @@ def _bootstrap_at_fraction(
                 rng,
                 triu,
             )
-            # `eigsh` is called without v0 on purpose: the bootstrap rng is
-            # for the subsample, not for ARPACK's starting vector. Coupling
-            # them lets the bootstrap rng influence the basis ARPACK lands
-            # on inside close-eigenvalue subspaces, which inflates the
-            # per-dim leakage at the changepoint on borderline matrices.
+            # `eigsh` uses a fixed starting vector (see `_top_eigenpairs`),
+            # not one derived from the bootstrap rng: the rng is for the
+            # subsample only. Coupling them lets the subsample pick the
+            # basis ARPACK lands on inside close-eigenvalue subspaces, which
+            # inflates the per-dim leakage at the changepoint on borderline
+            # matrices. A constant start keeps that decoupling while making
+            # the decomposition reproducible.
             _, replicate_eigenvectors = _top_eigenpairs(replicate, max_rank)
             coherence[:, replicate_index] = _cumulative_subspace_overlap(
                 replicate_eigenvectors,
@@ -165,11 +167,28 @@ def _top_eigenpairs(
 ) -> tuple[np.ndarray, np.ndarray]:
     if k < a.shape[0]:
         try:
-            values, vectors = eigsh(a, k=k, which="LA", tol=1e-6, v0=v0)
+            values, vectors = eigsh(
+                a, k=k, which="LA", tol=1e-6, v0=_arpack_v0(a.shape[0], v0)
+            )
             return _keep_top_k_descending(values, vectors, k)
         except Exception:
             pass
     return _keep_top_k_descending(*eigh(a), k=k)
+
+
+def _arpack_v0(n: int, v0: np.ndarray | None) -> np.ndarray:
+    """Deterministic ARPACK starting vector.
+
+    With ``v0=None``, ``eigsh`` draws a fresh random residual on every call,
+    so the eigenvectors -- and everything derived from them (leakage,
+    recovered mass, sampling_fraction, detectability_floor) -- drift between
+    otherwise identical runs. A fixed start makes the decomposition
+    reproducible. The constant seed is independent of the bootstrap
+    subsample rng on purpose; see the call site in `_bootstrap_at_fraction`.
+    """
+    if v0 is not None:
+        return v0
+    return np.random.default_rng(0).standard_normal(n)
 
 
 def _keep_top_k_descending(
