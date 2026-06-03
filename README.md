@@ -33,8 +33,3 @@ w = model.fit_transform(s)
 
 See **[florianmahner.github.io/pysrf](https://florianmahner.github.io/pysrf/)**
 for installation details, walkthroughs, examples, and the API reference.
-
-## Reference
-
-Mahner, F. P.\*, Lam, K. C.\*, & Hebart, M. N. (2025). Interpretable
-dimensions from sparse representational similarities. *In preparation*.
