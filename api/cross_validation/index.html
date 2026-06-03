@@ -18,7 +18,7 @@
         <link rel="prev" href="../rank_estimation/">
       
       
-        <link rel="next" href="../../development/">
+        <link rel="next" href="../consensus/">
       
       
         
@@ -684,6 +684,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../consensus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consensus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -823,6 +851,7 @@
 
 
 <h1 id="cross-validation-api">Cross-Validation API<a class="headerlink" href="#cross-validation-api" title="Permanent link">&para;</a></h1>
+<p><code>cross_val_score</code> confirms the rank suggested by <code>estimate_rank</code> by holding out individual entries of the similarity matrix and measuring how well the model predicts them. Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears (transposed) in the held-out rows, so PySRF uses a restricted entry-wise hold-out instead. It returns a tidy <code>pandas</code> DataFrame with columns <code>[rep, fold, rank, val_mse]</code>; read it with a <code>groupby("rank")["val_mse"].mean().idxmin()</code> to pick the best rank. See <a href="../../quickstart/">quickstart</a> for a full example.</p>
 
 
 <div class="doc doc-object doc-function">
@@ -989,13 +1018,13 @@
         
         
           
-          <a href="../../development/" class="md-footer__link md-footer__link--next" aria-label="Next: Development">
+          <a href="../consensus/" class="md-footer__link md-footer__link--next" aria-label="Next: Consensus">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Development
+                Consensus
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -27,7 +27,7 @@
     
     
       
-        <title>pysrf - pysrf</title>
+        <title>PySRF - pysrf</title>
       
     
     
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pysrf
+              PySRF
             
           </span>
         </div>
@@ -385,7 +385,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use pysrf
+        When to use PySRF
       
     </span>
   </a>
@@ -723,6 +723,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./api/consensus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consensus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -790,7 +818,7 @@
   <a href="#when-to-use-pysrf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When to use pysrf
+        When to use PySRF
       
     </span>
   </a>
@@ -869,49 +897,52 @@
   
 
 
-<h1 id="pysrf">pysrf<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
-<p><strong>Discover interpretable dimensions from representational similarities.</strong></p>
-<p>Representational similarity is a widely used tool in cognitive science and machine learning. pysrf decomposes similarity matrices into sparse, non-negative dimensions that reveal the latent structure underlying similarities.</p>
-<p>Given a similarity matrix <span class="arithmatex">\(S\)</span>, pysrf finds a non-negative embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each column of <span class="arithmatex">\(W\)</span> is a dimension, and each row gives for an item a numeric weight alongside each dimension. Because dimensions are non-negative and sparse (for example, many entries drive toward zero), the embedding is an additive, compositional representation where dimensions contribute positively without canceling each other out.</p>
-<h2 id="when-to-use-pysrf">When to use pysrf<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
-<p>pysrf works broadly on any symmetric similarity matrix. These can come from different domains, for example:</p>
+<h1 id="pysrf">PySRF<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
+<p><strong>Discover interpretable dimensions from (sparse) representational similarities.</strong></p>
+<p>Across neuroscience, psychology, and machine learning, a common goal is comparing how different systems represent the same set of items. A standard way to do this is through a similarity matrix <code>S</code>, which records how similar every pair of items is to one another. But knowing that a dog is more similar to a cow than to a car does not tell you <em>why</em> — whether the similarity is driven by animacy, size, shape, or some other property.</p>
+<p>PySRF answers that question. It implements SRF (Similarity-Based Representation Factorization), a method that decomposes a similarity matrix into a small number of sparse, non-negative dimensions: <code>S ≈ WW^T</code>. Each row of <code>W</code> gives the loadings for one item, one value per dimension. A similarity matrix can also be viewed as a weighted graph, and in that view SRF's dimensions are <strong>soft community memberships</strong> — each item gets a non-negative loading on every dimension, and a near-zero loading means that dimension simply doesn't apply to that item. For example, <em>lion</em> loads strongly on the animate dimension, while <em>ball</em> loads on both round and natural. Because loadings are non-negative, dimensions add up rather than cancel out, which makes the result easy to read.</p>
+<h2 id="when-to-use-pysrf">When to use PySRF<a class="headerlink" href="#when-to-use-pysrf" title="Permanent link">&para;</a></h2>
+<p>PySRF works on any symmetric, non-negative similarity matrix, however it was produced:</p>
 <ul>
 <li><strong>Behavioral data</strong>: any task that yields a measure of similarity between items.</li>
-<li><strong>Neural data</strong>: representational similarity matrices derived from fMRI, electrophysiology, or other neural recordings.</li>
-<li><strong>Machine learning</strong>: similarity matrices from deep neural network activations</li>
+<li><strong>Neural data</strong>: similarity matrices from fMRI, electrophysiology, or other neural recordings.</li>
+<li><strong>Machine learning</strong>: kernels built from deep neural network activations.</li>
+<li><strong>Graph representations</strong>: any data you can convert to an adjacency graph, such as word-association networks.</li>
 </ul>
 <h2 id="key-capabilities">Key capabilities<a class="headerlink" href="#key-capabilities" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Missing data</strong>: real-world similarity matrices are sometimes incomplete and some entries <span class="arithmatex">\(i,j\)</span> in a similarity matrix not observed. pysrf can handle missing entries naturally.</li>
-<li><strong>Dimensionality estimation</strong>: <code>estimate_rank</code> estimates rank and <code>cross_val_score</code> confirms nearby ranks</li>
-<li><strong>Fast solver</strong>: a Cython-accelerated solver provides 10-50x
-  speedup over pure Python.</li>
+<li><strong>Missing data</strong>: real similarity matrices are often incomplete. PySRF learns directly from the observed entries, with no imputation — and can then predict the entries you never measured.</li>
+<li><strong>Dimensionality estimation</strong>: you usually don't know how many dimensions to use. <code>estimate_rank</code> estimates that number for you, and <code>cross_val_score</code> lets you confirm it by comparing nearby ranks.</li>
+<li><strong>Fast solver</strong>: the core fit is Cython-accelerated, giving a 10–50× speedup over pure Python.</li>
 </ul>
 <h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">estimate_rank</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Your similarity matrix (e.g., from behavioral judgments or neural data)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Your similarity matrix (e.g. from behavioral judgments or neural data)</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">estimate</span> <span class="o">=</span> <span class="n">estimate_rank</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">max_outer</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Reconstruct the similarity matrix from the dimensions</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">s_reconstructed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Estimate how many dimensions the data supports, then fit</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">estimate</span> <span class="o">=</span> <span class="n">estimate_rank</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Reconstruct the similarity matrix from the learned dimensions</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">s_reconstructed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
-<p>Mahner, F. P.*, Lam, K. C.*, &amp; Hebart, M. N. (2025). Interpretable
-dimensions from sparse representational similarities. <em>In preparation</em>.</p>
+<p>Mahner, F. P.*, Lam, K. C.*, Pereira, F., &amp; Hebart, M. N. (2026).
+<em>Revealing the core dimensions underlying representations in brains, behavior and AI.</em>
+arXiv:2605.26921. (* equal contribution).
+<a href="https://arxiv.org/abs/2605.26921">https://arxiv.org/abs/2605.26921</a></p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="installation/">Installation</a>: set up pysrf and compile Cython extensions.</li>
+<li><a href="installation/">Installation</a>: set up PySRF and compile the Cython extensions.</li>
 <li><a href="quickstart/">Quick start</a>: walk through the core workflow step by step.</li>
 <li><a href="examples/">Examples</a>: explore advanced features and full pipelines.</li>
 <li><a href="api/model/">API reference</a>: browse the complete API.</li>
-<li><a href="development/">Development</a>: contribute to pysrf.</li>
+<li><a href="development/">Development</a>: contribute to PySRF.</li>
 </ul>
 
   

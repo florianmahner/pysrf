@@ -695,6 +695,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../consensus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consensus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -845,6 +873,7 @@
 
 
 <h1 id="rank-estimation-api">Rank Estimation API<a class="headerlink" href="#rank-estimation-api" title="Permanent link">&para;</a></h1>
+<p><code>estimate_rank</code> is the first step in a typical PySRF workflow: it inspects a similarity matrix and estimates how many signal dimensions it contains, before you fit an <code>SRF</code>. It works by bootstrapping the eigenspace of <code>S</code> and measuring how stable the top dimensions stay under resampling, returning a <code>RankEstimate</code> whose <code>.rank</code> is the recommended number of dimensions and whose <code>.sampling_fraction</code> feeds straight into <code>cross_val_score</code>. See the "Choose the number of dimensions" section of <a href="../../quickstart/">quickstart</a> for how to use it in practice.</p>
 
 
 <div class="doc doc-object doc-function">
