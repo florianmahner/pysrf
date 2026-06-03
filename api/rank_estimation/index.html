@@ -15,10 +15,6 @@
         <link rel="canonical" href="https://florianmahner.github.io/pysrf/api/rank_estimation/">
       
       
-        <link rel="prev" href="../model/">
-      
-      
-        <link rel="next" href="../cross_validation/">
       
       
         
@@ -29,7 +25,7 @@
     
     
       
-        <title>Rank Estimation API - pysrf</title>
+        <title>Cross-Validation Calibration API - pysrf</title>
       
     
     
@@ -87,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rank-estimation-api" class="md-skip">
+        <a href="#cross-validation-calibration-api" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Rank Estimation API
+              Cross-Validation Calibration API
             
           </span>
         </div>
@@ -237,12 +233,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../model/" class="md-tabs__link">
           
   
@@ -488,31 +482,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -530,7 +519,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -564,104 +553,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rank estimation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rank estimation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pysrf.estimate_rank" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        estimate_rank
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pysrf.RankEstimate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RankEstimate
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -785,10 +676,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pysrf.estimate_rank" class="md-nav__link">
+  <a href="#pysrf.coherence.calibrate_cross_validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        estimate_rank
+        calibrate_cross_validation
       
     </span>
   </a>
@@ -796,10 +687,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pysrf.RankEstimate" class="md-nav__link">
+  <a href="#pysrf.coherence.CVCalibration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RankEstimate
+        CVCalibration
       
     </span>
   </a>
@@ -824,46 +715,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../model/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    API reference
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -872,392 +723,141 @@
   
 
 
-<h1 id="rank-estimation-api">Rank Estimation API<a class="headerlink" href="#rank-estimation-api" title="Permanent link">&para;</a></h1>
-<p><code>estimate_rank</code> is the first step in a typical PySRF workflow: it inspects a similarity matrix and estimates how many signal dimensions it contains, before you fit an <code>SRF</code>. It works by bootstrapping the eigenspace of <code>S</code> and measuring how stable the top dimensions stay under resampling, returning a <code>RankEstimate</code> whose <code>.rank</code> is the recommended number of dimensions and whose <code>.sampling_fraction</code> feeds straight into <code>cross_val_score</code>. See the "Choose the number of dimensions" section of <a href="../../quickstart/">quickstart</a> for how to use it in practice.</p>
+<h1 id="cross-validation-calibration-api">Cross-Validation Calibration API<a class="headerlink" href="#cross-validation-calibration-api" title="Permanent link">&para;</a></h1>
+<p>This lower-level API calibrates the cross-validation protocol. It returns a model-independent <code>spectral_cutoff</code> and a <code>sampling_fraction</code>; the final SRF model rank is still selected by <code>cross_val_score</code>.</p>
+<p>Most users should call <code>cross_val_score</code> directly.</p>
 
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="pysrf.estimate_rank" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">estimate_rank</span>
+<h3 id="pysrf.coherence.calibrate_cross_validation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">calibrate_cross_validation</span>
 
 
-<a href="#pysrf.estimate_rank" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">estimate_rank</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">s</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">recovery_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">max_rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a href="#pysrf.coherence.calibrate_cross_validation" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">calibrate_cross_validation</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">max_eigenpairs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">sampling_grid</span><span class="p">:</span> <span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">n_bootstrap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">high_band_quantile</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RankEstimate</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">signal_loss_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">leakage_min_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">n_bootstrap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CVCalibration</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>Estimate (rank, sampling_fraction) for a symmetric similarity matrix.</p>
-<p>Bootstraps the top eigenspace under random off-diagonal subsampling.
-Picks the rank from the F-statistic changepoint of the per-dimension
-leakage profile. Inverts the recovery curve at recovery_tolerance
-(floored by a random-matrix detectability bound) to pick the
-calibrated sampling fraction.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>s</code>
-            </td>
-            <td>
-                  <code>array of shape (n, n)</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Symmetric similarity matrix; NaN marks missing entries.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>recovery_tolerance</code>
-            </td>
-            <td>
-                  <code>default=0.10</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>How much of the top-rank spectral mass we tolerate losing at
-the calibrated sampling fraction.</p>
-              </div>
-            </td>
-            <td>
-                  <code>0.1</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>max_rank</code>
-            </td>
-            <td>
-                  <code>default None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Largest candidate rank. Defaults to max(min(n // 4, 100), 2).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>sampling_grid</code>
-            </td>
-            <td>
-                  <code>default None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Sampling probabilities tried by the bootstrap. Defaults to
-np.linspace(0.05, 0.95, 20).</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>n_bootstrap</code>
-            </td>
-            <td>
-                  <code>default=20</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-            <td>
-                  <code>50</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>high_band_quantile</code>
-            </td>
-            <td>
-                  <code>default=0.85</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Quantile of sampling_grid defining the high-p band used to
-aggregate the per-rank leakage score.</p>
-              </div>
-            </td>
-            <td>
-                  <code>0.85</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>random_state</code>
-            </td>
-            <td>
-                  <code>default=0</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Anything as_seed_sequence accepts: int, None, SeedSequence,
-Generator, or RandomState.</p>
-              </div>
-            </td>
-            <td>
-                  <code>0</code>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>n_jobs</code>
-            </td>
-            <td>
-                  <code>default None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Parallel workers. None means cpu_count - 1.</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="&lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;RankEstimate&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="./#pysrf.RankEstimate">RankEstimate</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pysrf/coherence/_estimate.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-51"> 51</a></span>
-<span class="normal"><a href="#__codelineno-0-52"> 52</a></span>
-<span class="normal"><a href="#__codelineno-0-53"> 53</a></span>
-<span class="normal"><a href="#__codelineno-0-54"> 54</a></span>
-<span class="normal"><a href="#__codelineno-0-55"> 55</a></span>
-<span class="normal"><a href="#__codelineno-0-56"> 56</a></span>
-<span class="normal"><a href="#__codelineno-0-57"> 57</a></span>
-<span class="normal"><a href="#__codelineno-0-58"> 58</a></span>
-<span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
-<span class="normal"><a href="#__codelineno-0-60"> 60</a></span>
-<span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
-<span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
-<span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
-<span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
-<span class="normal"><a href="#__codelineno-0-65"> 65</a></span>
-<span class="normal"><a href="#__codelineno-0-66"> 66</a></span>
-<span class="normal"><a href="#__codelineno-0-67"> 67</a></span>
-<span class="normal"><a href="#__codelineno-0-68"> 68</a></span>
-<span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
-<span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
-<span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
-<span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
-<span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
-<span class="normal"><a href="#__codelineno-0-74"> 74</a></span>
-<span class="normal"><a href="#__codelineno-0-75"> 75</a></span>
-<span class="normal"><a href="#__codelineno-0-76"> 76</a></span>
-<span class="normal"><a href="#__codelineno-0-77"> 77</a></span>
-<span class="normal"><a href="#__codelineno-0-78"> 78</a></span>
-<span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
-<span class="normal"><a href="#__codelineno-0-80"> 80</a></span>
-<span class="normal"><a href="#__codelineno-0-81"> 81</a></span>
-<span class="normal"><a href="#__codelineno-0-82"> 82</a></span>
-<span class="normal"><a href="#__codelineno-0-83"> 83</a></span>
-<span class="normal"><a href="#__codelineno-0-84"> 84</a></span>
-<span class="normal"><a href="#__codelineno-0-85"> 85</a></span>
-<span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
-<span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
-<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
-<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
-<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
-<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
-<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
-<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
-<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
-<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
-<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
-<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
-<span class="normal"><a href="#__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#__codelineno-0-103">103</a></span>
-<span class="normal"><a href="#__codelineno-0-104">104</a></span>
-<span class="normal"><a href="#__codelineno-0-105">105</a></span>
-<span class="normal"><a href="#__codelineno-0-106">106</a></span>
-<span class="normal"><a href="#__codelineno-0-107">107</a></span>
-<span class="normal"><a href="#__codelineno-0-108">108</a></span>
-<span class="normal"><a href="#__codelineno-0-109">109</a></span>
-<span class="normal"><a href="#__codelineno-0-110">110</a></span>
-<span class="normal"><a href="#__codelineno-0-111">111</a></span>
-<span class="normal"><a href="#__codelineno-0-112">112</a></span>
-<span class="normal"><a href="#__codelineno-0-113">113</a></span>
-<span class="normal"><a href="#__codelineno-0-114">114</a></span>
-<span class="normal"><a href="#__codelineno-0-115">115</a></span>
-<span class="normal"><a href="#__codelineno-0-116">116</a></span>
-<span class="normal"><a href="#__codelineno-0-117">117</a></span>
-<span class="normal"><a href="#__codelineno-0-118">118</a></span>
-<span class="normal"><a href="#__codelineno-0-119">119</a></span>
-<span class="normal"><a href="#__codelineno-0-120">120</a></span>
-<span class="normal"><a href="#__codelineno-0-121">121</a></span>
-<span class="normal"><a href="#__codelineno-0-122">122</a></span>
-<span class="normal"><a href="#__codelineno-0-123">123</a></span>
-<span class="normal"><a href="#__codelineno-0-124">124</a></span>
-<span class="normal"><a href="#__codelineno-0-125">125</a></span>
-<span class="normal"><a href="#__codelineno-0-126">126</a></span>
-<span class="normal"><a href="#__codelineno-0-127">127</a></span>
-<span class="normal"><a href="#__codelineno-0-128">128</a></span>
-<span class="normal"><a href="#__codelineno-0-129">129</a></span>
-<span class="normal"><a href="#__codelineno-0-130">130</a></span>
-<span class="normal"><a href="#__codelineno-0-131">131</a></span>
-<span class="normal"><a href="#__codelineno-0-132">132</a></span>
-<span class="normal"><a href="#__codelineno-0-133">133</a></span>
-<span class="normal"><a href="#__codelineno-0-134">134</a></span>
-<span class="normal"><a href="#__codelineno-0-135">135</a></span>
-<span class="normal"><a href="#__codelineno-0-136">136</a></span>
-<span class="normal"><a href="#__codelineno-0-137">137</a></span>
-<span class="normal"><a href="#__codelineno-0-138">138</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="k">def</span><span class="w"> </span><span class="nf">estimate_rank</span><span class="p">(</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="n">s</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="n">recovery_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span><span class="p">,</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">max_rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="n">sampling_grid</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="n">n_bootstrap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="n">high_band_quantile</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RankEstimate</span><span class="p">:</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate (rank, sampling_fraction) for a symmetric similarity matrix.</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Bootstraps the top eigenspace under random off-diagonal subsampling.</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Picks the rank from the F-statistic changepoint of the per-dimension</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    leakage profile. Inverts the recovery curve at recovery_tolerance</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">    (floored by a random-matrix detectability bound) to pick the</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    calibrated sampling fraction.</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    s : array of shape (n, n)</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        Symmetric similarity matrix; NaN marks missing entries.</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">    recovery_tolerance : default=0.10</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">        How much of the top-rank spectral mass we tolerate losing at</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">        the calibrated sampling fraction.</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    max_rank : default None</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">        Largest candidate rank. Defaults to max(min(n // 4, 100), 2).</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    sampling_grid : default None</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        Sampling probabilities tried by the bootstrap. Defaults to</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">        np.linspace(0.05, 0.95, 20).</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">    n_bootstrap : default=20</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">    high_band_quantile : default=0.85</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        Quantile of sampling_grid defining the high-p band used to</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        aggregate the per-rank leakage score.</span>
-<a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    random_state : default=0</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        Anything as_seed_sequence accepts: int, None, SeedSequence,</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">        Generator, or RandomState.</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    n_jobs : default None</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">        Parallel workers. None means cpu_count - 1.</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    RankEstimate</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">s</span><span class="p">,</span> <span class="n">observed_mask</span> <span class="o">=</span> <span class="n">_prepare_input</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="n">n</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="k">if</span> <span class="n">max_rank</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a>        <span class="n">max_rank</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">n</span> <span class="o">//</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="k">if</span> <span class="n">sampling_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a>        <span class="n">sampling_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a>        <span class="n">sampling_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sampling_grid</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="n">max_workers</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">max_workers</span> <span class="k">if</span> <span class="n">n_jobs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_jobs</span><span class="p">),</span> <span class="n">max_workers</span><span class="p">))</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="n">top_eigenvalues</span><span class="p">,</span> <span class="n">top_eigenvectors</span> <span class="o">=</span> <span class="n">_top_eigenpairs</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">max_rank</span><span class="p">)</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="n">coherence</span><span class="p">,</span> <span class="n">recovered_spectral_mass</span> <span class="o">=</span> <span class="n">_bootstrap_subspace_stability</span><span class="p">(</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>        <span class="n">s</span><span class="p">,</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="n">observed_mask</span><span class="p">,</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="n">top_eigenvectors</span><span class="p">,</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="n">n_bootstrap</span><span class="o">=</span><span class="n">n_bootstrap</span><span class="p">,</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="p">)</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">rank</span><span class="p">,</span> <span class="n">leakage</span> <span class="o">=</span> <span class="n">_select_rank</span><span class="p">(</span><span class="n">coherence</span><span class="p">,</span> <span class="n">sampling_grid</span><span class="p">,</span> <span class="n">high_band_quantile</span><span class="p">)</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a>    <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">loss_curve</span> <span class="o">=</span> <span class="n">_calibrate_sampling_fraction</span><span class="p">(</span>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a>        <span class="n">recovered_spectral_mass</span><span class="p">,</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="n">top_eigenvalues</span><span class="p">,</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">rank</span><span class="p">,</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">recovery_tolerance</span><span class="p">,</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="p">)</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="k">return</span> <span class="n">RankEstimate</span><span class="p">(</span>
-<a id="__codelineno-0-129" name="__codelineno-0-129"></a>        <span class="n">rank</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rank</span><span class="p">),</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">),</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a>        <span class="n">eigenvalues</span><span class="o">=</span><span class="n">top_eigenvalues</span><span class="p">,</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a>        <span class="n">leakage</span><span class="o">=</span><span class="n">leakage</span><span class="p">,</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133"></a>        <span class="n">sampling_grid</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">sampling_grid</span><span class="p">,</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>        <span class="n">recovery_loss_raw</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span>
-<a id="__codelineno-0-135" name="__codelineno-0-135"></a>        <span class="n">recovery_loss_monotone</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">monotone</span><span class="p">,</span>
-<a id="__codelineno-0-136" name="__codelineno-0-136"></a>        <span class="n">detectability_floor</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">floor</span><span class="p">,</span>
-<a id="__codelineno-0-137" name="__codelineno-0-137"></a>        <span class="n">n_features_in</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="p">)</span>
+              <summary>Source code in <code>pysrf/coherence/_calibration.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span>
+<span class="normal"><a href="#__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#__codelineno-0-43">43</a></span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span>
+<span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#__codelineno-0-81">81</a></span>
+<span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="k">def</span><span class="w"> </span><span class="nf">calibrate_cross_validation</span><span class="p">(</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>    <span class="n">max_eigenpairs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="n">sampling_grid</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="n">signal_loss_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span><span class="p">,</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>    <span class="n">leakage_min_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">n_bootstrap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CVCalibration</span><span class="p">:</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="p">(</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="n">signal_loss_tolerance</span><span class="p">,</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>        <span class="n">leakage_min_fraction</span><span class="p">,</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>        <span class="n">n_bootstrap</span><span class="p">,</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="p">)</span> <span class="o">=</span> <span class="n">_validate_args</span><span class="p">(</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>        <span class="n">signal_loss_tolerance</span><span class="p">,</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="n">leakage_min_fraction</span><span class="p">,</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="n">n_bootstrap</span><span class="p">,</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="p">)</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="n">similarity</span><span class="p">,</span> <span class="n">observed_entries</span> <span class="o">=</span> <span class="n">_observed_similarity</span><span class="p">(</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="n">similarity_matrix</span><span class="p">,</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>        <span class="n">missing_values</span><span class="p">,</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="p">)</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="n">eigvals</span><span class="p">,</span> <span class="n">eigvecs</span> <span class="o">=</span> <span class="n">_top_eigenpairs_for_calibration</span><span class="p">(</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="n">similarity</span><span class="p">,</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>        <span class="n">max_eigenpairs</span><span class="p">,</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="p">)</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">coherence</span><span class="p">,</span> <span class="n">retained_mass</span> <span class="o">=</span> <span class="n">_estimate_coherence</span><span class="p">(</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="n">similarity</span><span class="p">,</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="n">observed_entries</span><span class="p">,</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>        <span class="n">eigvecs</span><span class="p">,</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>        <span class="n">n_bootstrap</span><span class="p">,</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>        <span class="n">random_state</span><span class="p">,</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>        <span class="n">n_jobs</span><span class="p">,</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="p">)</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="k">return</span> <span class="n">_calibration_from_stability_estimate</span><span class="p">(</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>        <span class="n">eigvals</span><span class="p">,</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>        <span class="n">coherence</span><span class="p">,</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="n">retained_mass</span><span class="p">,</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a>        <span class="n">signal_loss_tolerance</span><span class="p">,</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>        <span class="n">leakage_min_fraction</span><span class="p">,</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>        <span class="nb">len</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">),</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -1268,23 +868,23 @@ Generator, or RandomState.</p>
 
 
 
-<h3 id="pysrf.RankEstimate" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RankEstimate</span>
+<h3 id="pysrf.coherence.CVCalibration" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">CVCalibration</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#pysrf.RankEstimate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RankEstimate</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<a href="#pysrf.coherence.CVCalibration" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CVCalibration</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">spectral_cutoff</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">eigenvalues</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">eigvals</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">leakage</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">sampling_grid</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">recovery_loss_raw</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">recovery_loss_monotone</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">signal_loss_raw</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">signal_loss_monotone</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">detectability_floor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">n_features_in</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
@@ -1293,121 +893,6 @@ Generator, or RandomState.</p>
     <div class="doc doc-contents first">
 
 
-
-        <p>Output of estimate_rank.</p>
-
-
-<p><span class="doc-section-title">Attributes:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.rank">rank</span></code></td>
-            <td>
-                  <code>the estimated number of signal dimensions in S.</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.sampling_fraction">sampling_fraction</span></code></td>
-            <td>
-                  <code>per-fold training density to pass to</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>pysrf.cross_val_score.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.eigenvalues">eigenvalues</span></code></td>
-            <td>
-                  <code>the top eigenvalues of S, sorted descending.</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.leakage">leakage</span></code></td>
-            <td>
-                  <code>per-dimension instability score; small for signal,</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>large for noise.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.sampling_grid">sampling_grid</span></code></td>
-            <td>
-                  <code>sampling probabilities used by the bootstrap,</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>sorted ascending.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.recovery_loss_raw">recovery_loss_raw</span></code></td>
-            <td>
-                  <code>per sampling probability, the fraction of</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>top-rank spectral mass that the bootstrap fails to recover.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.recovery_loss_monotone">recovery_loss_monotone</span></code></td>
-            <td>
-                  <code>the same curve forced to be non-increasing</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>in p; this is the curve we invert at recovery_tolerance.</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.detectability_floor">detectability_floor</span></code></td>
-            <td>
-                  <code>a random-matrix lower bound on sampling_fraction.</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td><code><span title="pysrf.RankEstimate.n_features_in">n_features_in</span></code></td>
-            <td>
-                  <code>size of the input matrix.</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
 
 
 
@@ -1469,44 +954,6 @@ Generator, or RandomState.</p>
       
         <footer class="md-footer">
   
-    
-      
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
-        
-          
-          <a href="../model/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Model (SRF)">
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
-            </div>
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              <div class="md-ellipsis">
-                Model (SRF)
-              </div>
-            </div>
-          </a>
-        
-        
-          
-          <a href="../cross_validation/" class="md-footer__link md-footer__link--next" aria-label="Next: Cross-validation">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Cross-validation
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </a>
-        
-      </nav>
     
   
   <div class="md-footer-meta md-typeset">

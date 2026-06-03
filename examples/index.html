@@ -544,10 +544,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rank-estimation-and-cross-validation" class="md-nav__link">
+  <a href="#cross-validated-rank-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rank estimation and cross-validation
+        Cross-validated rank selection
       
     </span>
   </a>
@@ -701,34 +701,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/rank_estimation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rank estimation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/cross_validation/" class="md-nav__link">
         
   
@@ -862,10 +834,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rank-estimation-and-cross-validation" class="md-nav__link">
+  <a href="#cross-validated-rank-selection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rank estimation and cross-validation
+        Cross-validated rank selection
       
     </span>
   </a>
@@ -1037,39 +1009,26 @@ in <code>reconstruct()</code>. This beats imputing the gaps first: the paper (§
 shows that k-nearest-neighbor or median imputation distorts the pairwise
 similarity structure and biases the recovered dimensions, whereas leaving
 entries unobserved does not.</p>
-<h2 id="rank-estimation-and-cross-validation">Rank estimation and cross-validation<a class="headerlink" href="#rank-estimation-and-cross-validation" title="Permanent link">&para;</a></h2>
-<p>The number of dimensions is usually unknown. PySRF first proposes a rank
-with <code>estimate_rank</code>, then <code>cross_val_score</code> checks whether nearby ranks
-give a lower held-out error using a hold-out scheme designed for
-similarity data. We search a small window around the estimate with 5
-repeats.</p>
+<h2 id="cross-validated-rank-selection">Cross-validated rank selection<a class="headerlink" href="#cross-validated-rank-selection" title="Permanent link">&para;</a></h2>
+<p>The number of dimensions is usually unknown. <code>cross_val_score</code> selects the
+SRF model rank by first calibrating the CV protocol from eigenspace
+stability, then evaluating held-out error for candidate ranks around that
+spectral cutoff.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_rank</span><span class="p">,</span> <span class="n">cross_val_score</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">n</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">10</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">w_true</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">s</span> <span class="o">=</span> <span class="n">w_true</span> <span class="o">@</span> <span class="n">w_true</span><span class="o">.</span><span class="n">T</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">estimate</span> <span class="o">=</span> <span class="n">estimate_rank</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">21</span><span class="p">),</span> <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">ranks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">estimate</span><span class="o">.</span><span class="n">rank</span> <span class="o">-</span> <span class="mi">3</span><span class="p">),</span> <span class="n">estimate</span><span class="o">.</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">curve</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">s</span><span class="p">,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">ranks</span><span class="o">=</span><span class="n">ranks</span><span class="p">,</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">sampling_fraction</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">sampling_fraction</span><span class="p">,</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="p">)</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">cv_rank</span> <span class="o">=</span> <span class="n">curve</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;rank&quot;</span><span class="p">)[</span><span class="s2">&quot;val_mse&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated rank: </span><span class="si">{</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cross-validation minimum: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">cv_rank</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spectral cutoff: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">spectral_cutoff</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected model rank: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p><code>cross_val_score</code> returns a tidy DataFrame with one row per
-<code>(rep, fold, rank, val_mse)</code>; averaging <code>val_mse</code> per rank and taking the
-minimum gives the cross-validated rank.</p>
+<p><code>cv.fold_scores</code> holds the fold-level validation errors. <code>cv.rank_scores</code>
+holds the mean validation error per rank.</p>
 <h2 id="constructing-similarity-matrices-from-features">Constructing similarity matrices from features<a class="headerlink" href="#constructing-similarity-matrices-from-features" title="Permanent link">&para;</a></h2>
 <p>SRF needs a symmetric, non-negative (ideally positive semi-definite)
 similarity matrix. When you start from feature vectors rather than direct
@@ -1126,23 +1085,26 @@ starts and stacks the embeddings; <code>AlignedConsensus</code> aligns the runs 
 the Hungarian algorithm and returns the most central one.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">EnsembleFit</span><span class="p">,</span> <span class="n">AlignedConsensus</span><span class="p">,</span> <span class="n">estimate_rank</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">EnsembleFit</span><span class="p">,</span> <span class="n">AlignedConsensus</span><span class="p">,</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">n</span><span class="p">,</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">10</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">w_true</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">s</span> <span class="o">=</span> <span class="n">w_true</span> <span class="o">@</span> <span class="n">w_true</span><span class="o">.</span><span class="n">T</span>
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">estimate</span> <span class="o">=</span> <span class="n">estimate_rank</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">21</span><span class="p">),</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
 <a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="p">[</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="p">(</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="n">EnsembleFit</span><span class="p">(</span><span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span> <span class="n">n_runs</span><span class="o">=</span><span class="mi">50</span><span class="p">)),</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="p">(</span><span class="s2">&quot;consensus&quot;</span><span class="p">,</span> <span class="n">AlignedConsensus</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="p">)),</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="p">]</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">)</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="n">consensus_embedding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="p">(</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>            <span class="s2">&quot;ensemble&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>            <span class="n">EnsembleFit</span><span class="p">(</span><span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">),</span> <span class="n">n_runs</span><span class="o">=</span><span class="mi">50</span><span class="p">),</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>        <span class="p">),</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="p">(</span><span class="s2">&quot;consensus&quot;</span><span class="p">,</span> <span class="n">AlignedConsensus</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="p">)),</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="p">]</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="p">)</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="n">consensus_embedding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 </code></pre></div>
 <p>PySRF reports this representative run rather than averaging the runs,
 because an averaged embedding need not be a valid SRF solution and can
@@ -1174,7 +1136,7 @@ similarity matrix, estimate the rank, confirm it with cross-validation,
 fit the final model, reconstruct the missing entries, and report the
 reconstruction error.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">estimate_rank</span><span class="p">,</span> <span class="n">cross_val_score</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># 1. Build a noisy, incomplete similarity matrix</span>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -1186,29 +1148,23 @@ reconstruction error.</p>
 <a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">mask</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.2</span>
 <a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">s</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>           <span class="c1"># ~20% missing</span>
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="c1"># 2. Estimate the rank</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">estimate</span> <span class="o">=</span> <span class="n">estimate_rank</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="c1"># 3. Confirm with cross-validation over nearby ranks</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="n">ranks</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">estimate</span><span class="o">.</span><span class="n">rank</span> <span class="o">-</span> <span class="mi">3</span><span class="p">),</span> <span class="n">estimate</span><span class="o">.</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="n">curve</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="n">s</span><span class="p">,</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="n">ranks</span><span class="o">=</span><span class="n">ranks</span><span class="p">,</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>    <span class="n">sampling_fraction</span><span class="o">=</span><span class="n">estimate</span><span class="o">.</span><span class="n">sampling_fraction</span><span class="p">,</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>    <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>    <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="p">)</span>
-<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="n">cv_rank</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">curve</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;rank&quot;</span><span class="p">)[</span><span class="s2">&quot;val_mse&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">idxmin</span><span class="p">())</span>
-<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated rank: </span><span class="si">{</span><span class="n">estimate</span><span class="o">.</span><span class="n">rank</span><span class="si">}</span><span class="s2">; cross-validation minimum: </span><span class="si">{</span><span class="n">cv_rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>
-<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="c1"># 4. Fit the final model at the chosen rank</span>
-<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">cv_rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="n">s_completed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
-<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>
-<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="c1"># 5. Evaluate on the observed entries</span>
-<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reconstruction error: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="c1"># 2. Select the model rank by calibrated cross-validation</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">cv</span> <span class="o">=</span> <span class="n">cross_val_score</span><span class="p">(</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="n">s</span><span class="p">,</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">21</span><span class="p">),</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="n">n_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="p">)</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spectral cutoff: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">spectral_cutoff</span><span class="si">}</span><span class="s2">; model rank: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="c1"># 4. Fit the final model at the chosen rank</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="n">s_completed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="c1"># 5. Evaluate on the observed entries</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reconstruction error: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 

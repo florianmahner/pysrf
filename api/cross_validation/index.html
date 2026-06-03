@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://florianmahner.github.io/pysrf/api/cross_validation/">
       
       
-        <link rel="prev" href="../rank_estimation/">
+        <link rel="prev" href="../model/">
       
       
         <link rel="next" href="../consensus/">
@@ -573,34 +573,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../rank_estimation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rank estimation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -669,6 +641,17 @@
     <span class="md-ellipsis">
       
         cross_val_score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pysrf.CVResult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CVResult
       
     </span>
   </a>
@@ -784,6 +767,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#pysrf.CVResult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CVResult
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -851,7 +845,8 @@
 
 
 <h1 id="cross-validation-api">Cross-Validation API<a class="headerlink" href="#cross-validation-api" title="Permanent link">&para;</a></h1>
-<p><code>cross_val_score</code> confirms the rank suggested by <code>estimate_rank</code> by holding out individual entries of the similarity matrix and measuring how well the model predicts them. Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears (transposed) in the held-out rows, so PySRF uses a restricted entry-wise hold-out instead. It returns a tidy <code>pandas</code> DataFrame with columns <code>[rep, fold, rank, val_mse]</code>; read it with a <code>groupby("rank")["val_mse"].mean().idxmin()</code> to pick the best rank. See <a href="../../quickstart/">quickstart</a> for a full example.</p>
+<p><code>cross_val_score</code> is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and sampling fraction from eigenspace stability, then evaluates SRF model ranks around that cutoff with restricted entry-wise cross-validation. The returned <code>CVResult</code> exposes the selected model rank as <code>cv.model_rank</code>, the fold-level validation scores as <code>cv.fold_scores</code>, and the per-rank averages as <code>cv.rank_scores</code>.</p>
+<p>Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears in many held-out pairs. PySRF therefore holds out symmetric off-diagonal entries and treats them as missing during fitting.</p>
 
 
 <div class="doc doc-object doc-function">
@@ -865,53 +860,22 @@
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cross_val_score</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">ranks</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">n_folds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">n_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">srf_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">srf_kwargs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CVResult</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>K-fold confirmation curve for SRF rank estimates.</p>
-
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pysrf/cross_validation.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span>
-<span class="normal"><a href="#__codelineno-0-24">24</a></span>
-<span class="normal"><a href="#__codelineno-0-25">25</a></span>
-<span class="normal"><a href="#__codelineno-0-26">26</a></span>
-<span class="normal"><a href="#__codelineno-0-27">27</a></span>
-<span class="normal"><a href="#__codelineno-0-28">28</a></span>
-<span class="normal"><a href="#__codelineno-0-29">29</a></span>
-<span class="normal"><a href="#__codelineno-0-30">30</a></span>
-<span class="normal"><a href="#__codelineno-0-31">31</a></span>
-<span class="normal"><a href="#__codelineno-0-32">32</a></span>
-<span class="normal"><a href="#__codelineno-0-33">33</a></span>
-<span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span>
-<span class="normal"><a href="#__codelineno-0-42">42</a></span>
-<span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span>
-<span class="normal"><a href="#__codelineno-0-45">45</a></span>
-<span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-48">48</a></span>
 <span class="normal"><a href="#__codelineno-0-49">49</a></span>
 <span class="normal"><a href="#__codelineno-0-50">50</a></span>
 <span class="normal"><a href="#__codelineno-0-51">51</a></span>
@@ -920,47 +884,145 @@
 <span class="normal"><a href="#__codelineno-0-54">54</a></span>
 <span class="normal"><a href="#__codelineno-0-55">55</a></span>
 <span class="normal"><a href="#__codelineno-0-56">56</a></span>
-<span class="normal"><a href="#__codelineno-0-57">57</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">cross_val_score</span><span class="p">(</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>    <span class="n">ranks</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a>    <span class="n">n_folds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24"></a>    <span class="n">n_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="n">srf_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;K-fold confirmation curve for SRF rank estimates.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>    <span class="n">ranks</span><span class="p">,</span> <span class="n">srf_kwargs</span> <span class="o">=</span> <span class="n">_validate_args</span><span class="p">(</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>        <span class="n">ranks</span><span class="p">,</span> <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">n_folds</span><span class="p">,</span> <span class="n">n_repeats</span><span class="p">,</span> <span class="n">srf_kwargs</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>    <span class="p">)</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>    <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="n">observed_mask</span> <span class="o">=</span> <span class="n">observation_mask</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">missing_values</span><span class="p">)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="n">bounds</span> <span class="o">=</span> <span class="n">_observed_bounds</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">observed_mask</span><span class="p">)</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="n">pool_fraction</span> <span class="o">=</span> <span class="n">_cv_pool_fraction</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">n_folds</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="n">split_seeds</span><span class="p">,</span> <span class="n">fit_seeds</span> <span class="o">=</span> <span class="n">_split_fit_seeds</span><span class="p">(</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">random_state</span><span class="p">,</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="n">n_repeats</span><span class="p">,</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="n">n_folds</span><span class="p">,</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="nb">len</span><span class="p">(</span><span class="n">ranks</span><span class="p">),</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="p">)</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="n">splits</span> <span class="o">=</span> <span class="n">_entry_splits</span><span class="p">(</span><span class="n">observed_mask</span><span class="p">,</span> <span class="n">pool_fraction</span><span class="p">,</span> <span class="n">n_folds</span><span class="p">,</span> <span class="n">split_seeds</span><span class="p">)</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="n">jobs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_fit_jobs</span><span class="p">(</span><span class="n">splits</span><span class="p">,</span> <span class="n">ranks</span><span class="p">,</span> <span class="n">fit_seeds</span><span class="p">))</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="n">scores</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">)(</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a>        <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_score</span><span class="p">)(</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>            <span class="n">s</span><span class="p">,</span> <span class="n">train_mask</span><span class="p">,</span> <span class="n">validation_mask</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">srf_kwargs</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="p">)</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">train_mask</span><span class="p">,</span> <span class="n">validation_mask</span><span class="p">,</span> <span class="n">seed</span> <span class="ow">in</span> <span class="n">jobs</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="p">)</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="p">{</span><span class="s2">&quot;rep&quot;</span><span class="p">:</span> <span class="n">rep</span><span class="p">,</span> <span class="s2">&quot;fold&quot;</span><span class="p">:</span> <span class="n">fold</span><span class="p">,</span> <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="n">rank</span><span class="p">,</span> <span class="s2">&quot;val_mse&quot;</span><span class="p">:</span> <span class="n">score</span><span class="p">}</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>        <span class="k">for</span> <span class="p">(</span><span class="n">rep</span><span class="p">,</span> <span class="n">fold</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">),</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="n">scores</span><span class="p">)</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span>
+<span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#__codelineno-0-81">81</a></span>
+<span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span>
+<span class="normal"><a href="#__codelineno-0-86">86</a></span>
+<span class="normal"><a href="#__codelineno-0-87">87</a></span>
+<span class="normal"><a href="#__codelineno-0-88">88</a></span>
+<span class="normal"><a href="#__codelineno-0-89">89</a></span>
+<span class="normal"><a href="#__codelineno-0-90">90</a></span>
+<span class="normal"><a href="#__codelineno-0-91">91</a></span>
+<span class="normal"><a href="#__codelineno-0-92">92</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="k">def</span><span class="w"> </span><span class="nf">cross_val_score</span><span class="p">(</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="n">similarity_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="n">ranks</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="n">n_folds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="n">n_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">random_state</span><span class="p">:</span> <span class="n">RandomStateLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="n">missing_values</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="n">srf_kwargs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CVResult</span><span class="p">:</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>    <span class="n">_check_args</span><span class="p">(</span><span class="n">n_folds</span><span class="p">,</span> <span class="n">n_repeats</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">)</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="n">fit_kwargs</span> <span class="o">=</span> <span class="n">_checked_srf_kwargs</span><span class="p">(</span><span class="n">srf_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="n">s</span> <span class="o">=</span> <span class="n">_prepare_similarity</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">missing_values</span><span class="p">)</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="n">n</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="n">ranks</span> <span class="o">=</span> <span class="n">_validate_ranks</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">bounds</span> <span class="o">=</span> <span class="n">_observed_bounds</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">calibration</span> <span class="o">=</span> <span class="n">_cv_sampling_fraction</span><span class="p">(</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>        <span class="n">s</span><span class="p">,</span> <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">random_state</span><span class="p">,</span> <span class="n">n_jobs</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="n">fold_fraction</span> <span class="o">=</span> <span class="n">get_fold_fraction</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">n_folds</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="n">fold_scores</span> <span class="o">=</span> <span class="n">_cross_validate_ranks</span><span class="p">(</span>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>        <span class="n">s</span><span class="p">,</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a>        <span class="n">ranks</span><span class="p">,</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>        <span class="n">fold_fraction</span><span class="p">,</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="n">n_folds</span><span class="p">,</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="n">n_repeats</span><span class="p">,</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="n">random_state</span><span class="p">,</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>        <span class="n">n_jobs</span><span class="p">,</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>        <span class="n">bounds</span><span class="p">,</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a>        <span class="n">fit_kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="p">)</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="n">rank_scores</span> <span class="o">=</span> <span class="n">_summarize</span><span class="p">(</span><span class="n">fold_scores</span><span class="p">)</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="k">return</span> <span class="n">CVResult</span><span class="p">(</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a>        <span class="n">model_rank</span><span class="o">=</span><span class="n">_best_rank</span><span class="p">(</span><span class="n">rank_scores</span><span class="p">),</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a>        <span class="n">fold_scores</span><span class="o">=</span><span class="n">fold_scores</span><span class="p">,</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a>        <span class="n">rank_scores</span><span class="o">=</span><span class="n">rank_scores</span><span class="p">,</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>        <span class="n">spectral_cutoff</span><span class="o">=</span><span class="n">_spectral_cutoff</span><span class="p">(</span><span class="n">calibration</span><span class="p">),</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="n">_training_fraction</span><span class="p">(</span><span class="n">fold_fraction</span><span class="p">,</span> <span class="n">n_folds</span><span class="p">),</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a>        <span class="n">candidate_ranks</span><span class="o">=</span><span class="n">ranks</span><span class="p">,</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>        <span class="n">calibration</span><span class="o">=</span><span class="n">calibration</span><span class="p">,</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="pysrf.CVResult" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">CVResult</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#pysrf.CVResult" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CVResult</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">model_rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">fold_scores</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">rank_scores</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">spectral_cutoff</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">sampling_fraction</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">candidate_ranks</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">calibration</span><span class="p">:</span> <span class="n">CVCalibration</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
     </div>
 
 </div>
@@ -1001,7 +1063,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../rank_estimation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Rank estimation">
+          <a href="../model/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Model (SRF)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -1011,7 +1073,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Rank estimation
+                Model (SRF)
               </div>
             </div>
           </a>
