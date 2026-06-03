@@ -16,10 +16,10 @@
         <loc>https://florianmahner.github.io/pysrf/api/model/</loc>
       </url>
       <url>
-        <loc>https://florianmahner.github.io/pysrf/api/cross_validation/</loc>
+        <loc>https://florianmahner.github.io/pysrf/api/rank_estimation/</loc>
       </url>
       <url>
-        <loc>https://florianmahner.github.io/pysrf/api/bounds/</loc>
+        <loc>https://florianmahner.github.io/pysrf/api/cross_validation/</loc>
       </url>
       <url>
         <loc>https://florianmahner.github.io/pysrf/development/</loc>
