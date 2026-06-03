@@ -5,8 +5,9 @@ consensus procedures to select or aggregate the most stable embedding.
 
 Reference
 ---------
-Mahner, F.P., Lam, K.C. & Hebart, M.N. Interpretable dimensions
-from sparse representational similarities. In preparation.
+Mahner, F.P.*, Lam, K.C.*, Pereira, F. & Hebart, M.N. (2026). Revealing the
+core dimensions underlying representations in brains, behavior and AI.
+arXiv:2605.26921. (* equal contribution). https://arxiv.org/abs/2605.26921
 """
 
 # Author: Florian P. Mahner

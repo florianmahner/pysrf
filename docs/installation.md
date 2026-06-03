@@ -1,11 +1,23 @@
 # Installation
 
-!!! warning "Cython compilation"
-    Compiling the Cython extension gives a 10-50x speedup. Without it, pysrf
-    falls back to a pure Python implementation. Make sure you have a C compiler
-    installed before proceeding.
+PySRF is built with the [meson-python](https://meson-python.readthedocs.io/)
+backend and ships a Cython extension (`_bsum`) that accelerates the inner
+solver. The backend compiles this extension for you during install, so you
+need a working C compiler (`gcc` or `clang`) on your system.
 
-## Quick install
+!!! note "Cython speedup"
+    The compiled extension gives a large speedup over the pure Python
+    fallback. If compilation fails, PySRF still imports and runs using the
+    Python implementation, just more slowly.
+
+## Requirements
+
+- Python 3.10 or newer (development targets 3.12.4).
+- A C compiler for building the Cython extension.
+
+PySRF is not yet published on PyPI, so install it from source.
+
+## Install from source
 
 ```bash
 git clone https://github.com/florianmahner/pysrf.git
@@ -13,57 +25,51 @@ cd pysrf
 pip install .
 ```
 
-This builds the Cython extension automatically using meson-python.
+Or install directly from GitHub without cloning first:
 
-## Developer setup
+```bash
+pip install "git+https://github.com/florianmahner/pysrf.git"
+```
 
-For development with an editable install:
+In both cases the meson-python backend compiles the `_bsum` Cython extension
+automatically. The runtime dependencies (numpy, scipy, scikit-learn, pandas,
+joblib, tqdm) are installed for you.
+
+## Editable install for development
+
+For an editable install that compiles the extension into a separate build
+directory and keeps the source tree clean:
 
 ```bash
 git clone https://github.com/florianmahner/pysrf.git
 cd pysrf
-make dev
+pip install -e . --no-build-isolation
 ```
 
-This installs all dependencies (including build tools) via Poetry and
-compiles the Cython extension into `build/`, keeping the source tree clean.
-
-### Makefile targets
-
-- `make dev`: install dependencies and compile Cython (editable install).
-- `make install`: install the package (non-editable).
-- `make test`: run the test suite.
-- `make format`: format code with ruff.
-- `make clean`: remove build artifacts.
-- `make docs`: build documentation.
-
-### Manual steps
-
-If you prefer not to use Make:
-
-```bash
-poetry install --no-root --all-extras
-poetry run pip install -e . --no-build-isolation
-```
+See the [Development](development.md) page for the full developer workflow,
+test commands, and contribution guidelines.
 
 ## Verify the installation
 
 ```python
 import pysrf
-print(pysrf.__version__)
 
-# Check whether the Cython extension is active
-from pysrf.model import _w_solver_backend
-print(f"Backend: {_w_solver_backend}")  # 'cython' if compiled
+print(pysrf.__version__)
 ```
 
-## Performance
+To check whether the fast Cython backend is active:
 
-### Multi-threaded BLAS
+```python
+from pysrf.model import _w_solver_backend
 
-SRF uses BLAS routines (via scipy) that benefit from multi-threading.
-Set `OMP_NUM_THREADS` **before** importing pysrf to enable parallel
-linear algebra:
+print(_w_solver_backend)  # 'cython' if compiled, 'python' otherwise
+```
+
+## Performance: multi-threaded BLAS
+
+The SRF solver relies on BLAS routines (via scipy) that benefit from
+multi-threading. Set `OMP_NUM_THREADS` **before** importing pysrf to enable
+parallel linear algebra:
 
 ```bash
 export OMP_NUM_THREADS=4
@@ -74,9 +80,14 @@ Or at the top of a script, before any imports:
 
 ```python
 import os
+
 os.environ["OMP_NUM_THREADS"] = "4"
 
 from pysrf import SRF
 ```
 
-When `verbose=1` is set, SRF logs the current thread count at fit time.
+With `verbose=1`, SRF logs the active thread count at fit time.
+
+## Next steps
+
+Head to the [Quick start](quickstart.md) to fit your first SRF model.
