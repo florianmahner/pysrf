@@ -42,7 +42,9 @@ def is_nan_marker(value: float | None) -> bool:
     return value is np.nan or (isinstance(value, float) and np.isnan(value))
 
 
-def observation_mask(x: np.ndarray, missing_values: float | None = np.nan) -> np.ndarray:
+def observation_mask(
+    x: np.ndarray, missing_values: float | None = np.nan
+) -> np.ndarray:
     if missing_values is None or is_nan_marker(missing_values):
         return np.isfinite(x)
     return np.not_equal(x, missing_values)

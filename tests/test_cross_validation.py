@@ -16,8 +16,9 @@ def s():
 
 
 def test_returns_long_dataframe(s):
-    curve = cross_val_score(s, ranks=[3, 5, 7], sampling_fraction=0.7,
-                             n_folds=3, n_jobs=1)
+    curve = cross_val_score(
+        s, ranks=[3, 5, 7], sampling_fraction=0.7, n_folds=3, n_jobs=1
+    )
     assert isinstance(curve, pd.DataFrame)
     assert set(curve.columns) == {"rep", "fold", "rank", "val_mse"}
     assert len(curve) == 3 * 3  # n_ranks * n_folds * n_repeats (default 1)
@@ -25,9 +26,13 @@ def test_returns_long_dataframe(s):
 
 def test_argmin_near_true_rank(s):
     est = estimate_rank(s, n_bootstrap=10)
-    curve = cross_val_score(s, ranks=[2, 4, 5, 6, 8],
-                             sampling_fraction=est.sampling_fraction,
-                             n_folds=5, n_jobs=1)
+    curve = cross_val_score(
+        s,
+        ranks=[2, 4, 5, 6, 8],
+        sampling_fraction=est.sampling_fraction,
+        n_folds=5,
+        n_jobs=1,
+    )
     mean = curve.groupby("rank")["val_mse"].mean()
     assert abs(int(mean.idxmin()) - 5) <= 1
 
@@ -45,10 +50,12 @@ def test_validates_n_folds(s):
 
 
 def test_deterministic(s):
-    a = cross_val_score(s, ranks=[3, 5], sampling_fraction=0.7,
-                         n_folds=3, random_state=11, n_jobs=1)
-    b = cross_val_score(s, ranks=[3, 5], sampling_fraction=0.7,
-                         n_folds=3, random_state=11, n_jobs=1)
+    a = cross_val_score(
+        s, ranks=[3, 5], sampling_fraction=0.7, n_folds=3, random_state=11, n_jobs=1
+    )
+    b = cross_val_score(
+        s, ranks=[3, 5], sampling_fraction=0.7, n_folds=3, random_state=11, n_jobs=1
+    )
     pd.testing.assert_frame_equal(a, b)
 
 
@@ -74,8 +81,12 @@ def test_custom_missing_value(s):
     s_missing = s.copy()
     s_missing[0, 1] = s_missing[1, 0] = -1.0
     curve = cross_val_score(
-        s_missing, ranks=[3], sampling_fraction=0.7,
-        n_folds=3, n_jobs=1, missing_values=-1.0,
+        s_missing,
+        ranks=[3],
+        sampling_fraction=0.7,
+        n_folds=3,
+        n_jobs=1,
+        missing_values=-1.0,
         srf_kwargs={"max_outer": 2, "max_inner": 2},
     )
     assert len(curve) == 3
@@ -83,5 +94,4 @@ def test_custom_missing_value(s):
 
 def test_cap_warning_when_inflation_exceeds_cap(s):
     with pytest.warns(RuntimeWarning, match="cap"):
-        cross_val_score(s, ranks=[3], sampling_fraction=0.95,
-                         n_folds=3, n_jobs=1)
+        cross_val_score(s, ranks=[3], sampling_fraction=0.95, n_folds=3, n_jobs=1)

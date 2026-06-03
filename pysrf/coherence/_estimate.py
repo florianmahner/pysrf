@@ -107,13 +107,22 @@ def estimate_rank(
     top_eigenvalues, top_eigenvectors = _top_eigenpairs(s, max_rank)
 
     coherence, recovered_spectral_mass = _bootstrap_subspace_stability(
-        s, observed_mask, top_eigenvectors, sampling_grid,
-        n_bootstrap=n_bootstrap, random_state=random_state, n_jobs=n_jobs,
+        s,
+        observed_mask,
+        top_eigenvectors,
+        sampling_grid,
+        n_bootstrap=n_bootstrap,
+        random_state=random_state,
+        n_jobs=n_jobs,
     )
 
     rank, leakage = _select_rank(coherence, sampling_grid, high_band_quantile)
     sampling_fraction, loss_curve = _calibrate_sampling_fraction(
-        recovered_spectral_mass, top_eigenvalues, sampling_grid, rank, recovery_tolerance,
+        recovered_spectral_mass,
+        top_eigenvalues,
+        sampling_grid,
+        rank,
+        recovery_tolerance,
     )
 
     return RankEstimate(
