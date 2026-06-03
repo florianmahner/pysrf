@@ -668,7 +668,9 @@ class SRF(TransformerMixin, BaseEstimator):
             reset=False,
             ensure_2d=True,
             dtype=np.float64,
-            ensure_all_finite="allow-nan" if is_nan_marker(self.missing_values) else True,
+            ensure_all_finite="allow-nan"
+            if is_nan_marker(self.missing_values)
+            else True,
         )
         observed_mask = observation_mask(x, self.missing_values)
         reconstruction = self.reconstruct()

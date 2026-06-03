@@ -9,9 +9,9 @@ from scipy.optimize import isotonic_regression
 @dataclass(frozen=True)
 class LossCurve:
     sampling_grid: np.ndarray  # ascending
-    raw: np.ndarray            # 1 - recovered_mass / reference_mass, at each p
-    monotone: np.ndarray       # isotonic projection of raw (non-increasing in p)
-    floor: float               # random-matrix lower bound on the calibrated p
+    raw: np.ndarray  # 1 - recovered_mass / reference_mass, at each p
+    monotone: np.ndarray  # isotonic projection of raw (non-increasing in p)
+    floor: float  # random-matrix lower bound on the calibrated p
 
 
 def _calibrate_sampling_fraction(
@@ -22,10 +22,14 @@ def _calibrate_sampling_fraction(
     recovery_tolerance: float,
 ) -> tuple[float, LossCurve]:
     recovered_median = np.median(recovered_spectral_mass, axis=2)
-    loss_curve = _recovery_loss_curve(sampling_grid, top_eigenvalues, recovered_median, rank)
+    loss_curve = _recovery_loss_curve(
+        sampling_grid, top_eigenvalues, recovered_median, rank
+    )
     sampling_fraction = max(
         _smallest_p_below_tolerance(
-            loss_curve.sampling_grid, loss_curve.monotone, recovery_tolerance,
+            loss_curve.sampling_grid,
+            loss_curve.monotone,
+            recovery_tolerance,
         ),
         loss_curve.floor,
     )
@@ -52,7 +56,9 @@ def _recovery_loss_curve(
 
 
 def _smallest_p_below_tolerance(
-    sampling_grid: np.ndarray, monotone_loss: np.ndarray, tolerance: float,
+    sampling_grid: np.ndarray,
+    monotone_loss: np.ndarray,
+    tolerance: float,
 ) -> float:
     if monotone_loss[-1] >= tolerance:
         return float(sampling_grid[-1])

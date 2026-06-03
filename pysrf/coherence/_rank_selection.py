@@ -27,7 +27,9 @@ def _leakage_profile(
         high_band = np.array([len(sampling_grid) - 1])
     p_band = sampling_grid[high_band]
     p_over_one_minus_p = p_band / np.maximum(1.0 - p_band, 1e-12)
-    deviation = (1.0 - coherence_median[:, high_band]) * p_over_one_minus_p[np.newaxis, :]
+    deviation = (1.0 - coherence_median[:, high_band]) * p_over_one_minus_p[
+        np.newaxis, :
+    ]
     return np.median(deviation, axis=1).astype(np.float64)
 
 
@@ -44,9 +46,9 @@ def _changepoint(leakage: np.ndarray, min_rank: int, min_segment: int) -> int:
 
 def _f_statistic(left: np.ndarray, right: np.ndarray) -> float:
     n_left, n_right = len(left), len(right)
-    within_segment_sse = (
-        ((left - left.mean()) ** 2).sum() + ((right - right.mean()) ** 2).sum()
-    )
+    within_segment_sse = ((left - left.mean()) ** 2).sum() + (
+        (right - right.mean()) ** 2
+    ).sum()
     pooled_variance = within_segment_sse / max(n_left + n_right - 2, 1)
     if pooled_variance <= 1e-12:
         return np.inf

@@ -20,7 +20,9 @@ def _replicate_seed(parent: int, p_index: int, replicate_index: int) -> int:
     co-prime mixers chosen to spread bits across the index space; no
     significance beyond that.
     """
-    return (int(parent) + 1_000_003 * int(p_index) + 9176 * int(replicate_index)) & 0xFFFFFFFF
+    return (
+        int(parent) + 1_000_003 * int(p_index) + 9176 * int(replicate_index)
+    ) & 0xFFFFFFFF
 
 
 def _bootstrap_parent_seed(random_state: RandomStateLike) -> int:
@@ -42,8 +44,15 @@ def _bootstrap_subspace_stability(
     parent_seed = _bootstrap_parent_seed(random_state)
 
     args_list = [
-        (index, float(fraction), similarity, observation_mask, top_eigenvectors,
-         n_bootstrap, parent_seed)
+        (
+            index,
+            float(fraction),
+            similarity,
+            observation_mask,
+            top_eigenvectors,
+            n_bootstrap,
+            parent_seed,
+        )
         for index, fraction in enumerate(sampling_grid)
     ]
 
@@ -84,7 +93,11 @@ def _bootstrap_at_fraction(
             seed = _replicate_seed(parent_seed, p_index, replicate_index)
             rng = np.random.default_rng(seed)
             replicate = _subsampled_replicate(
-                similarity, observation_mask, sampling_fraction, rng, triu,
+                similarity,
+                observation_mask,
+                sampling_fraction,
+                rng,
+                triu,
             )
             # `eigsh` is called without v0 on purpose: the bootstrap rng is
             # for the subsample, not for ARPACK's starting vector. Coupling
@@ -93,10 +106,12 @@ def _bootstrap_at_fraction(
             # per-dim leakage at the changepoint on borderline matrices.
             _, replicate_eigenvectors = _top_eigenpairs(replicate, max_rank)
             coherence[:, replicate_index] = _cumulative_subspace_overlap(
-                replicate_eigenvectors, top_eigenvectors,
+                replicate_eigenvectors,
+                top_eigenvectors,
             )
             recovered_mass[:, replicate_index] = _cumulative_recovered_mass(
-                similarity, replicate_eigenvectors,
+                similarity,
+                replicate_eigenvectors,
             )
     return coherence, recovered_mass
 
@@ -122,7 +137,8 @@ def _subsampled_replicate(
 
 
 def _cumulative_subspace_overlap(
-    replicate_eigenvectors: np.ndarray, top_eigenvectors: np.ndarray,
+    replicate_eigenvectors: np.ndarray,
+    top_eigenvectors: np.ndarray,
 ) -> np.ndarray:
     squared_overlap = (replicate_eigenvectors.T @ top_eigenvectors) ** 2
     ranks = np.arange(squared_overlap.shape[0])
@@ -131,16 +147,21 @@ def _cumulative_subspace_overlap(
 
 
 def _cumulative_recovered_mass(
-    similarity: np.ndarray, replicate_eigenvectors: np.ndarray,
+    similarity: np.ndarray,
+    replicate_eigenvectors: np.ndarray,
 ) -> np.ndarray:
     mass_by_dimension = np.einsum(
-        "ij,ij->j", replicate_eigenvectors, similarity @ replicate_eigenvectors,
+        "ij,ij->j",
+        replicate_eigenvectors,
+        similarity @ replicate_eigenvectors,
     )
     return np.cumsum(mass_by_dimension)
 
 
 def _top_eigenpairs(
-    a: np.ndarray, k: int, v0: np.ndarray | None = None,
+    a: np.ndarray,
+    k: int,
+    v0: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     if k < a.shape[0]:
         try:
@@ -152,7 +173,9 @@ def _top_eigenpairs(
 
 
 def _keep_top_k_descending(
-    values: np.ndarray, vectors: np.ndarray, k: int,
+    values: np.ndarray,
+    vectors: np.ndarray,
+    k: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     order = np.argsort(values)[::-1][:k]
     return values[order], vectors[:, order]

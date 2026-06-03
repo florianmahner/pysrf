@@ -28,20 +28,27 @@ def cross_val_score(
     srf_kwargs: dict | None = None,
 ) -> pd.DataFrame:
     """K-fold confirmation curve for SRF rank estimates."""
-    ranks, srf_kwargs = _validate_args(ranks, sampling_fraction, n_folds, n_repeats, srf_kwargs)
+    ranks, srf_kwargs = _validate_args(
+        ranks, sampling_fraction, n_folds, n_repeats, srf_kwargs
+    )
     s = np.asarray(similarity_matrix, dtype=np.float64)
     observed_mask = observation_mask(s, missing_values)
     bounds = _observed_bounds(s, observed_mask)
 
     pool_fraction = _cv_pool_fraction(sampling_fraction, n_folds, s.shape[0])
     split_seeds, fit_seeds = _split_fit_seeds(
-        random_state, n_repeats, n_folds, len(ranks),
+        random_state,
+        n_repeats,
+        n_folds,
+        len(ranks),
     )
     splits = _entry_splits(observed_mask, pool_fraction, n_folds, split_seeds)
     jobs = list(_fit_jobs(splits, ranks, fit_seeds))
 
     scores = Parallel(n_jobs=n_jobs)(
-        delayed(_fit_score)(s, train_mask, validation_mask, rank, bounds, seed, srf_kwargs)
+        delayed(_fit_score)(
+            s, train_mask, validation_mask, rank, bounds, seed, srf_kwargs
+        )
         for _, _, rank, train_mask, validation_mask, seed in jobs
     )
     return pd.DataFrame(
@@ -107,7 +114,9 @@ def _entry_splits(
     for rep, seed in enumerate(split_seeds):
         rng = check_random_state(int(seed))
         cv_pool_mask = _sample_cv_pool(observed_mask, pool_fraction, rng)
-        for fold, validation_mask in enumerate(_validation_masks(cv_pool_mask, n_folds, rng)):
+        for fold, validation_mask in enumerate(
+            _validation_masks(cv_pool_mask, n_folds, rng)
+        ):
             train_mask = cv_pool_mask & ~validation_mask
             diag = np.diag_indices_from(train_mask)
             train_mask[diag] = observed_mask[diag]
@@ -164,8 +173,11 @@ def _fit_jobs(
     for rep, fold, train_mask, validation_mask in splits:
         for rank_idx, rank in enumerate(ranks):
             yield (
-                rep, fold, int(rank),
-                train_mask, validation_mask,
+                rep,
+                fold,
+                int(rank),
+                train_mask,
+                validation_mask,
                 int(fit_seeds[rep, fold, rank_idx]),
             )
 
@@ -198,8 +210,11 @@ def _fit_score(
         train_matrix = np.full(s.shape, np.nan, dtype=np.float64)
         train_matrix[train_mask] = s[train_mask]
         est = SRF(
-            rank=rank, bounds=bounds, missing_values=np.nan,
-            random_state=seed, **srf_kwargs,
+            rank=rank,
+            bounds=bounds,
+            missing_values=np.nan,
+            random_state=seed,
+            **srf_kwargs,
         )
         est.fit(train_matrix)
         s_hat = est.reconstruct()
