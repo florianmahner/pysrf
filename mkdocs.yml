@@ -87,6 +87,7 @@ nav:
     - Examples: examples.md
   - API reference:
     - Model (SRF): api/model.md
+    - Rank estimation: api/rank_estimation.md
     - Cross-validation: api/cross_validation.md
-    - Sampling bounds: api/bounds.md
+    - Consensus: api/consensus.md
   - Development: development.md
