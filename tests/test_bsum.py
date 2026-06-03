@@ -56,9 +56,9 @@ class TestPythonFallback:
 class TestSolverSelection:
     @pytest.mark.skipif(not HAS_SCALAR, reason="Cython not compiled")
     def test_backend_is_cython(self):
-        assert _w_solver_backend == "cython", (
-            f"Expected 'cython' but got '{_w_solver_backend}'"
-        )
+        assert (
+            _w_solver_backend == "cython"
+        ), f"Expected 'cython' but got '{_w_solver_backend}'"
 
 
 @pytest.mark.skipif(not HAS_SCALAR, reason="Cython not compiled")
@@ -312,24 +312,24 @@ class TestMonotonicity:
         m, x0 = make_bsum_data(n=50, r=5, seed=42)
         errors = self._run_iterations(m, x0, update_w_python, 20)
         diffs = np.diff(errors)
-        assert np.all(diffs <= 1e-10), (
-            f"Python: non-monotonic at {np.argmax(diffs > 1e-10)}"
-        )
+        assert np.all(
+            diffs <= 1e-10
+        ), f"Python: non-monotonic at {np.argmax(diffs > 1e-10)}"
 
     @pytest.mark.skipif(not HAS_SCALAR, reason="Cython not compiled")
     def test_scalar_monotonicity(self):
         m, x0 = make_bsum_data(n=50, r=5, seed=42)
         errors = self._run_iterations(m, x0, update_w_scalar, 20)
         diffs = np.diff(errors)
-        assert np.all(diffs <= 1e-10), (
-            f"Scalar: non-monotonic at {np.argmax(diffs > 1e-10)}"
-        )
+        assert np.all(
+            diffs <= 1e-10
+        ), f"Scalar: non-monotonic at {np.argmax(diffs > 1e-10)}"
 
     @pytest.mark.skipif(not HAS_BLOCKED, reason="Cython not compiled")
     def test_blocked_monotonicity(self):
         m, x0 = make_bsum_data(n=50, r=5, seed=42)
         errors = self._run_iterations(m, x0, update_w_blas_blocked, 20)
         diffs = np.diff(errors)
-        assert np.all(diffs <= 1e-10), (
-            f"Blocked: non-monotonic at {np.argmax(diffs > 1e-10)}"
-        )
+        assert np.all(
+            diffs <= 1e-10
+        ), f"Blocked: non-monotonic at {np.argmax(diffs > 1e-10)}"

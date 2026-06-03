@@ -84,47 +84,33 @@ observed and the previously missing entries.
 
 The number of dimensions (the rank) controls what SRF can capture. Too few
 dimensions merge distinct factors or miss structure; too many split
-coherent factors or overfit noise. PySRF recommends a two-step workflow:
-
-1. `estimate_rank(s)` estimates how many dimensions the data supports and a
-   `sampling_fraction` suited to the data.
-2. `cross_val_score(...)` then confirms the estimate by measuring held-out
-   prediction error for ranks near it.
+coherent factors or overfit noise. Use `cross_val_score` to select the
+model rank from held-out prediction error.
 
 Ordinary entrywise cross-validation does not work here: entries in a
-similarity matrix are not independent — changing one item affects all of
-its pairs — so PySRF uses a restricted hold-out scheme designed for
+similarity matrix are not independent, because changing one item affects
+all of its pairs. PySRF therefore uses a restricted hold-out scheme for
 similarity matrices. It hides a sparse set of observed entries, treats them
 as missing during fitting, and then predicts them from the learned
-embedding.
+embedding. By default, `cross_val_score` calibrates the sampling fraction,
+then evaluates the candidate ranks you provide.
 
 ```python
-from pysrf import SRF, cross_val_score, estimate_rank
+from pysrf import SRF, cross_val_score
 
-# 1. Estimate the rank and a suitable sampling fraction
-estimate = estimate_rank(s, random_state=42)
+# Select the model rank by calibrated cross-validation
+cv = cross_val_score(s, range(1, 21), random_state=42)
 
-# 2. Confirm with held-out error for ranks near the estimate
-ranks = range(max(1, estimate.rank - 3), estimate.rank + 4)
-curve = cross_val_score(
-    s,
-    ranks=ranks,
-    sampling_fraction=estimate.sampling_fraction,
-    random_state=42,
-)
-best_rank = int(curve.groupby("rank")["val_mse"].mean().idxmin())
-
-print(f"Estimated rank: {estimate.rank}")
-print(f"Cross-validation minimum: {best_rank}")
+print(f"Spectral cutoff: {cv.spectral_cutoff}")
+print(f"Selected model rank: {cv.model_rank}")
 
 # Refit at the chosen rank on the full matrix
-model = SRF(rank=estimate.rank, random_state=42)
+model = SRF(rank=cv.model_rank, random_state=42)
 w = model.fit_transform(s)
 ```
 
-`cross_val_score` returns a `pandas.DataFrame` with one row per
-repeat / fold / rank and a `val_mse` column. Averaging `val_mse` per rank
-and taking the minimum gives the rank that best predicts held-out
-similarities.
+`cross_val_score` returns a `CVResult`. The final model rank is in
+`cv.model_rank`, the fold-level scores are in `cv.fold_scores`, and the
+per-rank averages are in `cv.rank_scores`.
 
 For consensus embeddings and a full pipeline, see [Examples](examples.md).

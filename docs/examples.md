@@ -65,43 +65,30 @@ shows that k-nearest-neighbor or median imputation distorts the pairwise
 similarity structure and biases the recovered dimensions, whereas leaving
 entries unobserved does not.
 
-## Rank estimation and cross-validation
+## Cross-validated rank selection
 
-The number of dimensions is usually unknown. PySRF first proposes a rank
-with `estimate_rank`, then `cross_val_score` checks whether nearby ranks
-give a lower held-out error using a hold-out scheme designed for
-similarity data. We search a small window around the estimate with 5
-repeats.
+The number of dimensions is usually unknown. `cross_val_score` selects the
+SRF model rank by first calibrating the CV protocol from eigenspace
+stability, then evaluating held-out error for candidate ranks around that
+spectral cutoff.
 
 ```python
 import numpy as np
-from pysrf import estimate_rank, cross_val_score
+from pysrf import cross_val_score
 
 rng = np.random.default_rng(42)
 n, rank = 100, 10
 w_true = rng.random((n, rank))
 s = w_true @ w_true.T
 
-estimate = estimate_rank(s, random_state=42)
+cv = cross_val_score(s, range(1, 21), n_repeats=5, random_state=42, n_jobs=-1)
 
-ranks = range(max(1, estimate.rank - 3), estimate.rank + 4)
-curve = cross_val_score(
-    s,
-    ranks=ranks,
-    sampling_fraction=estimate.sampling_fraction,
-    n_repeats=5,
-    random_state=42,
-    n_jobs=-1,
-)
-
-cv_rank = curve.groupby("rank")["val_mse"].mean().idxmin()
-print(f"Estimated rank: {estimate.rank}")
-print(f"Cross-validation minimum: {int(cv_rank)}")
+print(f"Spectral cutoff: {cv.spectral_cutoff}")
+print(f"Selected model rank: {cv.model_rank}")
 ```
 
-`cross_val_score` returns a tidy DataFrame with one row per
-`(rep, fold, rank, val_mse)`; averaging `val_mse` per rank and taking the
-minimum gives the cross-validated rank.
+`cv.fold_scores` holds the fold-level validation errors. `cv.rank_scores`
+holds the mean validation error per rank.
 
 ## Constructing similarity matrices from features
 
@@ -171,19 +158,22 @@ the Hungarian algorithm and returns the most central one.
 ```python
 import numpy as np
 from sklearn.pipeline import Pipeline
-from pysrf import SRF, EnsembleFit, AlignedConsensus, estimate_rank
+from pysrf import SRF, EnsembleFit, AlignedConsensus, cross_val_score
 
 rng = np.random.default_rng(42)
 n, rank = 100, 10
 w_true = rng.random((n, rank))
 s = w_true @ w_true.T
 
-estimate = estimate_rank(s, random_state=42)
+cv = cross_val_score(s, range(1, 21), random_state=42)
 
 pipe = Pipeline(
     [
-        ("ensemble", EnsembleFit(SRF(rank=estimate.rank, random_state=42), n_runs=50)),
-        ("consensus", AlignedConsensus(rank=estimate.rank)),
+        (
+            "ensemble",
+            EnsembleFit(SRF(rank=cv.model_rank, random_state=42), n_runs=50),
+        ),
+        ("consensus", AlignedConsensus(rank=cv.model_rank)),
     ]
 )
 
@@ -228,7 +218,7 @@ reconstruction error.
 
 ```python
 import numpy as np
-from pysrf import SRF, estimate_rank, cross_val_score
+from pysrf import SRF, cross_val_score
 
 # 1. Build a noisy, incomplete similarity matrix
 rng = np.random.default_rng(42)
@@ -240,24 +230,18 @@ s = (s + s.T) / 2          # keep it symmetric
 mask = rng.random((n, n)) < 0.2
 s[mask] = np.nan           # ~20% missing
 
-# 2. Estimate the rank
-estimate = estimate_rank(s, random_state=42, n_jobs=-1)
-
-# 3. Confirm with cross-validation over nearby ranks
-ranks = range(max(1, estimate.rank - 3), estimate.rank + 4)
-curve = cross_val_score(
+# 2. Select the model rank by calibrated cross-validation
+cv = cross_val_score(
     s,
-    ranks=ranks,
-    sampling_fraction=estimate.sampling_fraction,
+    range(1, 21),
     n_repeats=5,
     random_state=42,
     n_jobs=-1,
 )
-cv_rank = int(curve.groupby("rank")["val_mse"].mean().idxmin())
-print(f"Estimated rank: {estimate.rank}; cross-validation minimum: {cv_rank}")
+print(f"Spectral cutoff: {cv.spectral_cutoff}; model rank: {cv.model_rank}")
 
 # 4. Fit the final model at the chosen rank
-model = SRF(rank=cv_rank, random_state=42)
+model = SRF(rank=cv.model_rank, random_state=42)
 w = model.fit_transform(s)
 s_completed = model.reconstruct()
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
 
-from ._estimate import RankEstimate, estimate_rank
+from ._calibration import CVCalibration, calibrate_cross_validation
 
-__all__ = ["RankEstimate", "estimate_rank"]
+__all__ = ["CVCalibration", "calibrate_cross_validation"]

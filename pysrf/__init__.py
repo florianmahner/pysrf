@@ -6,9 +6,8 @@ import logging
 
 logging.getLogger("pysrf").addHandler(logging.NullHandler())
 
-from .coherence import RankEstimate, estimate_rank
-from .consensus import AlignedConsensus, ClusterConsensus, EnsembleFit
-from .cross_validation import cross_val_score
+from .consensus import AlignedConsensus, EnsembleFit
+from .cross_validation import CVResult, cross_val_score
 from .model import SRF
 
 try:
@@ -21,10 +20,8 @@ except Exception:
 
 __all__: list[str] = [
     "SRF",
-    "RankEstimate",
-    "estimate_rank",
+    "CVResult",
     "cross_val_score",
     "EnsembleFit",
-    "ClusterConsensus",
     "AlignedConsensus",
 ]

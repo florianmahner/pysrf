@@ -1,14 +1,16 @@
-# Rank Estimation API
+# Cross-Validation Calibration API
 
-`estimate_rank` is the first step in a typical PySRF workflow: it inspects a similarity matrix and estimates how many signal dimensions it contains, before you fit an `SRF`. It works by bootstrapping the eigenspace of `S` and measuring how stable the top dimensions stay under resampling, returning a `RankEstimate` whose `.rank` is the recommended number of dimensions and whose `.sampling_fraction` feeds straight into `cross_val_score`. See the "Choose the number of dimensions" section of [quickstart](../quickstart.md) for how to use it in practice.
+This lower-level API calibrates the cross-validation protocol. It returns a model-independent `spectral_cutoff` and a `sampling_fraction`; the final SRF model rank is still selected by `cross_val_score`.
 
-::: pysrf.estimate_rank
+Most users should call `cross_val_score` directly.
+
+::: pysrf.coherence.calibrate_cross_validation
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
-::: pysrf.RankEstimate
+::: pysrf.coherence.CVCalibration
     options:
       show_root_heading: true
       show_source: true
