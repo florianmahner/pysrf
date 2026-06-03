@@ -1132,7 +1132,16 @@ Generator, or RandomState.</p>
 <span class="normal"><a href="#__codelineno-0-126">126</a></span>
 <span class="normal"><a href="#__codelineno-0-127">127</a></span>
 <span class="normal"><a href="#__codelineno-0-128">128</a></span>
-<span class="normal"><a href="#__codelineno-0-129">129</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="k">def</span><span class="w"> </span><span class="nf">estimate_rank</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#__codelineno-0-133">133</a></span>
+<span class="normal"><a href="#__codelineno-0-134">134</a></span>
+<span class="normal"><a href="#__codelineno-0-135">135</a></span>
+<span class="normal"><a href="#__codelineno-0-136">136</a></span>
+<span class="normal"><a href="#__codelineno-0-137">137</a></span>
+<span class="normal"><a href="#__codelineno-0-138">138</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="k">def</span><span class="w"> </span><span class="nf">estimate_rank</span><span class="p">(</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="n">s</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="n">recovery_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.10</span><span class="p">,</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">max_rank</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1191,26 +1200,35 @@ Generator, or RandomState.</p>
 <a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="n">top_eigenvalues</span><span class="p">,</span> <span class="n">top_eigenvectors</span> <span class="o">=</span> <span class="n">_top_eigenpairs</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">max_rank</span><span class="p">)</span>
 <a id="__codelineno-0-108" name="__codelineno-0-108"></a>
 <a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="n">coherence</span><span class="p">,</span> <span class="n">recovered_spectral_mass</span> <span class="o">=</span> <span class="n">_bootstrap_subspace_stability</span><span class="p">(</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>        <span class="n">s</span><span class="p">,</span> <span class="n">observed_mask</span><span class="p">,</span> <span class="n">top_eigenvectors</span><span class="p">,</span> <span class="n">sampling_grid</span><span class="p">,</span>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="n">n_bootstrap</span><span class="o">=</span><span class="n">n_bootstrap</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a>    <span class="p">)</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="n">rank</span><span class="p">,</span> <span class="n">leakage</span> <span class="o">=</span> <span class="n">_select_rank</span><span class="p">(</span><span class="n">coherence</span><span class="p">,</span> <span class="n">sampling_grid</span><span class="p">,</span> <span class="n">high_band_quantile</span><span class="p">)</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a>    <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">loss_curve</span> <span class="o">=</span> <span class="n">_calibrate_sampling_fraction</span><span class="p">(</span>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="n">recovered_spectral_mass</span><span class="p">,</span> <span class="n">top_eigenvalues</span><span class="p">,</span> <span class="n">sampling_grid</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">recovery_tolerance</span><span class="p">,</span>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a>        <span class="n">s</span><span class="p">,</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="n">observed_mask</span><span class="p">,</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="n">top_eigenvectors</span><span class="p">,</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="n">n_bootstrap</span><span class="o">=</span><span class="n">n_bootstrap</span><span class="p">,</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
 <a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="p">)</span>
 <a id="__codelineno-0-118" name="__codelineno-0-118"></a>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="k">return</span> <span class="n">RankEstimate</span><span class="p">(</span>
-<a id="__codelineno-0-120" name="__codelineno-0-120"></a>        <span class="n">rank</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rank</span><span class="p">),</span>
-<a id="__codelineno-0-121" name="__codelineno-0-121"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">),</span>
-<a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="n">eigenvalues</span><span class="o">=</span><span class="n">top_eigenvalues</span><span class="p">,</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">leakage</span><span class="o">=</span><span class="n">leakage</span><span class="p">,</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">sampling_grid</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">sampling_grid</span><span class="p">,</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">recovery_loss_raw</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a>        <span class="n">recovery_loss_monotone</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">monotone</span><span class="p">,</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="n">detectability_floor</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">floor</span><span class="p">,</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="n">n_features_in</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
-<a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="p">)</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">rank</span><span class="p">,</span> <span class="n">leakage</span> <span class="o">=</span> <span class="n">_select_rank</span><span class="p">(</span><span class="n">coherence</span><span class="p">,</span> <span class="n">sampling_grid</span><span class="p">,</span> <span class="n">high_band_quantile</span><span class="p">)</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a>    <span class="n">sampling_fraction</span><span class="p">,</span> <span class="n">loss_curve</span> <span class="o">=</span> <span class="n">_calibrate_sampling_fraction</span><span class="p">(</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a>        <span class="n">recovered_spectral_mass</span><span class="p">,</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="n">top_eigenvalues</span><span class="p">,</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">rank</span><span class="p">,</span>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">recovery_tolerance</span><span class="p">,</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="p">)</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="k">return</span> <span class="n">RankEstimate</span><span class="p">(</span>
+<a id="__codelineno-0-129" name="__codelineno-0-129"></a>        <span class="n">rank</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">rank</span><span class="p">),</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a>        <span class="n">sampling_fraction</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sampling_fraction</span><span class="p">),</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a>        <span class="n">eigenvalues</span><span class="o">=</span><span class="n">top_eigenvalues</span><span class="p">,</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>        <span class="n">leakage</span><span class="o">=</span><span class="n">leakage</span><span class="p">,</span>
+<a id="__codelineno-0-133" name="__codelineno-0-133"></a>        <span class="n">sampling_grid</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">sampling_grid</span><span class="p">,</span>
+<a id="__codelineno-0-134" name="__codelineno-0-134"></a>        <span class="n">recovery_loss_raw</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a>        <span class="n">recovery_loss_monotone</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">monotone</span><span class="p">,</span>
+<a id="__codelineno-0-136" name="__codelineno-0-136"></a>        <span class="n">detectability_floor</span><span class="o">=</span><span class="n">loss_curve</span><span class="o">.</span><span class="n">floor</span><span class="p">,</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a>        <span class="n">n_features_in</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
