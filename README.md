@@ -1,4 +1,4 @@
-<img src="assets/logo.png" alt="PySRF" align="right" width="180">
+<img src="assets/graph.svg" alt="PySRF" align="right" width="180">
 
 # PySRF
 
@@ -9,13 +9,6 @@
 [![ruff](https://img.shields.io/badge/code%20style-ruff-261230?style=flat-square&logo=ruff&logoColor=D7FF64)](https://github.com/astral-sh/ruff)
 
 PySRF implements Similarity-Based Representation Factorization (SRF): given a symmetric, non-negative similarity matrix `S`, it reveals a small set of sparse, non-negative dimensions `W` with `S ≈ WWᵀ`. It learns from the observed entries only (no imputation) and selects the number of dimensions by cross-validation.
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/factorization-dark.svg">
-    <img src="assets/factorization.svg" alt="S ≈ W × Wᵀ factorization diagram" width="800">
-  </picture>
-</p>
 
 ## Install
 
