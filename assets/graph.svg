@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 644 613" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:square;">
-    <g transform="matrix(2,0,0,2,-9939.035288,-9122.062379)">
-        <g id="graph" transform="matrix(0.151452,0,0,0.194426,4969.517644,4561.031189)">
+<svg width="100%" height="100%" viewBox="0 0 322 360" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:square;">
+    <g transform="matrix(1,0,0,1,-4969.517644,-4557.031189)">
+        <g id="graph" transform="matrix(0.151452,0,0,0.228094,4969.517644,4557.031189)">
             <rect x="0" y="0" width="2125.984" height="1574.162" style="fill:none;"/>
-            <g transform="matrix(6.360626,0,0,2.853988,-4523.545795,-570.546039)">
+            <g transform="matrix(6.360626,0,0,2.432715,-4523.545795,-468.791904)">
                 <g id="patch_2" transform="matrix(1.047389,0,0,1.818348,709.487436,197.401972)">
                     <path d="M92.047,272.983C114.549,272.983 136.132,264.043 152.043,248.131C167.955,232.22 176.895,210.637 176.895,188.135C176.895,165.634 167.955,144.05 152.043,128.139C136.132,112.228 114.549,103.288 92.047,103.288C69.546,103.288 47.962,112.228 32.051,128.139C16.14,144.05 7.2,165.634 7.2,188.135C7.2,210.637 16.14,232.22 32.051,248.131C47.962,264.043 69.546,272.983 92.047,272.983Z" style="fill:rgb(204,102,119);fill-opacity:0.04;fill-rule:nonzero;"/>
                 </g>
@@ -308,6 +308,11 @@
                 <g id="patch_34" transform="matrix(1.047389,0,0,1.818348,709.487436,197.401972)">
                     <path d="M202.808,168.903C205.876,168.903 208.819,167.684 210.989,165.514C213.159,163.344 214.378,160.401 214.378,157.333C214.378,154.264 213.159,151.321 210.989,149.151C208.819,146.982 205.876,145.763 202.808,145.763C199.739,145.763 196.796,146.982 194.627,149.151C192.457,151.321 191.238,154.264 191.238,157.333C191.238,160.401 192.457,163.344 194.627,165.514C196.796,167.684 199.739,168.903 202.808,168.903Z" style="fill:rgb(68,170,153);fill-opacity:0.8;fill-rule:nonzero;stroke:rgb(51,34,136);stroke-opacity:0.8;stroke-width:1.58px;stroke-linecap:butt;"/>
                 </g>
+            </g>
+            <g transform="matrix(6.602758,0,0,4.384151,-33149.265478,-18377.180695)">
+                <g transform="matrix(41.666667,0,0,41.666667,5241.802904,4535.598441)">
+                </g>
+                <text x="5109.861px" y="4535.598px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:41.667px;">PySRF</text>
             </g>
         </g>
     </g>
