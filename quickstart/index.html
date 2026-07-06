@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sparse non-negative factorization of similarity matrices">
+        <meta name="description" content="Recover interpretable dimensions from representational similarities">
       
       
         <meta name="author" content="Florian Mahner">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Quick start - pysrf</title>
+        <title>Quick start - PySRF</title>
       
     
     
@@ -101,7 +101,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="pysrf" class="md-header__button md-logo" aria-label="pysrf" data-md-component="logo">
+    <a href="./.." title="PySRF" class="md-header__button md-logo" aria-label="PySRF" data-md-component="logo">
       
   <img src="../assets/logo.png" alt="logo">
 
@@ -114,7 +114,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            pysrf
+            PySRF
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -224,7 +224,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../installation/" class="md-tabs__link">
+        <a href="../explanation/" class="md-tabs__link">
           
   
   Get started
@@ -292,12 +292,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="pysrf" class="md-nav__button md-logo" aria-label="pysrf" data-md-component="logo">
+    <a href="./.." title="PySRF" class="md-nav__button md-logo" aria-label="PySRF" data-md-component="logo">
       
   <img src="../assets/logo.png" alt="logo">
 
     </a>
-    pysrf
+    PySRF
   </label>
   
     <div class="md-nav__source">
@@ -405,6 +405,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../explanation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is SRF?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../installation/" class="md-nav__link">
         
   
@@ -494,10 +522,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#decompose-a-similarity-matrix" class="md-nav__link">
+  <a href="#reveal-dimensions-from-a-similarity-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decompose a similarity matrix
+        Reveal dimensions from a similarity matrix
       
     </span>
   </a>
@@ -768,10 +796,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#decompose-a-similarity-matrix" class="md-nav__link">
+  <a href="#reveal-dimensions-from-a-similarity-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decompose a similarity matrix
+        Reveal dimensions from a similarity matrix
       
     </span>
   </a>
@@ -843,7 +871,7 @@
     
     
       <li class="md-path__item">
-        <a href="../installation/" class="md-path__link">
+        <a href="../explanation/" class="md-path__link">
           
   <span class="md-ellipsis">
     Get started
@@ -867,10 +895,10 @@
 
 
 <h1 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>This guide walks through the core PySRF workflow: decomposing a
-similarity matrix into interpretable dimensions, interpreting the result,
+<p>This guide walks through the core PySRF workflow: revealing
+interpretable dimensions from a similarity matrix, interpreting the result,
 learning from incomplete data, and choosing how many dimensions to keep.</p>
-<h2 id="decompose-a-similarity-matrix">Decompose a similarity matrix<a class="headerlink" href="#decompose-a-similarity-matrix" title="Permanent link">&para;</a></h2>
+<h2 id="reveal-dimensions-from-a-similarity-matrix">Reveal dimensions from a similarity matrix<a class="headerlink" href="#reveal-dimensions-from-a-similarity-matrix" title="Permanent link">&para;</a></h2>
 <p>A similarity matrix <code>S</code> captures pairwise relationships between stimuli.
 These similarities can come from diverse forms of measured data across
 systems, modalities, and species — for example behavioral similarity
@@ -891,7 +919,7 @@ that dimension is irrelevant to that item.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">s</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>  <span class="c1"># make it symmetric</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Decompose into 10 dimensions</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Reveal 10 dimensions</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
