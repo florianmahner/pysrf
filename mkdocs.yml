@@ -7,8 +7,8 @@ repo_name: florianmahner/pysrf
 
 theme:
   name: material
-  logo: assets/logo.png
-  favicon: assets/logo.png
+  logo: assets/graph.svg
+  favicon: assets/graph.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
