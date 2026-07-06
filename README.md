@@ -1,4 +1,4 @@
-<img src="assets/graph.svg" alt="PySRF" align="right" width="180">
+<img src="assets/graph.svg" alt="PySRF" align="right" width="260">
 
 # PySRF
 
