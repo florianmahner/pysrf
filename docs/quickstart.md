@@ -1,10 +1,10 @@
 # Quick start
 
-This guide walks through the core PySRF workflow: decomposing a
-similarity matrix into interpretable dimensions, interpreting the result,
+This guide walks through the core PySRF workflow: revealing
+interpretable dimensions from a similarity matrix, interpreting the result,
 learning from incomplete data, and choosing how many dimensions to keep.
 
-## Decompose a similarity matrix
+## Reveal dimensions from a similarity matrix
 
 A similarity matrix `S` captures pairwise relationships between stimuli.
 These similarities can come from diverse forms of measured data across
@@ -29,7 +29,7 @@ rng = np.random.default_rng(0)
 s = rng.random((100, 100))
 s = (s + s.T) / 2  # make it symmetric
 
-# Decompose into 10 dimensions
+# Reveal 10 dimensions
 model = SRF(rank=10, random_state=42)
 w = model.fit_transform(s)
 

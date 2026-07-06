@@ -1,5 +1,5 @@
-site_name: pysrf
-site_description: Sparse non-negative factorization of similarity matrices
+site_name: PySRF
+site_description: Recover interpretable dimensions from representational similarities
 site_author: Florian Mahner
 site_url: https://florianmahner.github.io/pysrf/
 repo_url: https://github.com/florianmahner/pysrf
@@ -82,6 +82,7 @@ extra_javascript:
 nav:
   - Home: index.md
   - Get started:
+    - What is SRF?: explanation.md
     - Installation: installation.md
     - Quick start: quickstart.md
     - Examples: examples.md
