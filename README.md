@@ -1,6 +1,6 @@
-<img src="assets/logo.png" alt="pysrf" align="right" width="180">
+<img src="assets/logo.png" alt="PySRF" align="right" width="180">
 
-# pysrf
+# PySRF
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-4B8BBE?style=flat-square&logo=python&logoColor=FFD43B)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-A78BFA?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -10,10 +10,17 @@
 
 **Discover interpretable dimensions from (sparse) representational similarities.**
 
-pysrf decomposes symmetric similarity matrices into sparse, non-negative
+PySRF decomposes symmetric similarity matrices into sparse, non-negative
 dimensions that capture the latent structure underlying them. It works on
 behavioral judgments, neural similarity matrices (fMRI, electrophysiology),
 kernel matrices from deep networks, and graph adjacencies.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/factorization-dark.svg">
+    <img src="assets/factorization.svg" alt="S ≈ W × Wᵀ factorization diagram" width="800">
+  </picture>
+</p>
 
 ## Install
 
