@@ -2,8 +2,6 @@
 
 <img src="assets/graph.svg" alt="PySRF" width="300">
 
-# PySRF
-
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-4B8BBE?style=flat-square&logo=python&logoColor=FFD43B)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-A78BFA?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-online-06B6D4?style=flat-square&logo=readthedocs&logoColor=white)](https://florianmahner.github.io/pysrf/)
