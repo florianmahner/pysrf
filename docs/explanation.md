@@ -21,6 +21,6 @@ SRF works on any symmetric, non-negative similarity matrix, however it was produ
 - **Machine learning**: kernels built from deep neural network activations.
 - **Graph representations**: any data you can convert to an adjacency graph, such as word-association networks.
 
-## Reference
+## Citation
 
-Mahner, F. P.\*, Lam, K. C.\*, Pereira, F., & Hebart, M. N. (2026). *Similarity-based representation factorization for revealing interpretable dimensions in representational data.* arXiv:2605.26921 (\* equal contribution). [https://arxiv.org/abs/2605.26921](https://arxiv.org/abs/2605.26921)
+To cite PySRF, use the **Cite this repository** button on [GitHub](https://github.com/florianmahner/pysrf) (generated from [`CITATION.cff`](https://github.com/florianmahner/pysrf/blob/master/CITATION.cff)), or read the preprint at [arXiv:2605.26921](https://arxiv.org/abs/2605.26921).

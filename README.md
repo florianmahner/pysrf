@@ -28,3 +28,7 @@ w = model.fit_transform(s)
 ```
 
 See **[florianmahner.github.io/pysrf](https://florianmahner.github.io/pysrf/)** for installation details, walkthroughs, examples, and the API reference.
+
+## Citation
+
+To cite PySRF, use the **Cite this repository** button in the sidebar (generated from [`CITATION.cff`](CITATION.cff)), or read the preprint at [arXiv:2605.26921](https://arxiv.org/abs/2605.26921).

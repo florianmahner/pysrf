@@ -1,10 +1,6 @@
 """Similarity-based Representation Factorization (SRF).
 
-Reference
----------
-Mahner, F.P.*, Lam, K.C.*, Pereira, F. & Hebart, M.N. (2026). Revealing the
-core dimensions underlying representations in brains, behavior and AI.
-arXiv:2605.26921. (* equal contribution). https://arxiv.org/abs/2605.26921
+To cite PySRF, see CITATION.cff (or https://arxiv.org/abs/2605.26921).
 """
 
 # Author: Florian P. Mahner

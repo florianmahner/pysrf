@@ -1,0 +1,43 @@
+# Single source of truth for how to cite PySRF.
+#
+# GitHub reads this file and shows a "Cite this repository" button that
+# generates APA/BibTeX from it. README, docs, and docstrings point here
+# instead of restating the reference, so it can never drift.
+#
+# When the paper is published, update `preferred-citation` below (type,
+# journal/doi, year, url) and nothing else needs to change.
+cff-version: 1.2.0
+message: "If you use PySRF, please cite the paper below."
+title: "PySRF: Similarity-Based Representation Factorization"
+authors:
+  - family-names: Mahner
+    given-names: Florian P.
+  - family-names: Lam
+    given-names: Ka Chun
+  - family-names: Pereira
+    given-names: Francisco
+  - family-names: Hebart
+    given-names: Martin N.
+repository-code: "https://github.com/florianmahner/pysrf"
+url: "https://florianmahner.github.io/pysrf/"
+license: MIT
+preferred-citation:
+  type: article
+  title: "Similarity-based representation factorization for revealing interpretable dimensions in representational data"
+  authors:
+    - family-names: Mahner
+      given-names: Florian P.
+    - family-names: Lam
+      given-names: Ka Chun
+    - family-names: Pereira
+      given-names: Francisco
+    - family-names: Hebart
+      given-names: Martin N.
+  year: 2026
+  journal: "arXiv preprint"
+  url: "https://arxiv.org/abs/2605.26921"
+  identifiers:
+    - type: other
+      value: "arXiv:2605.26921"
+      description: "arXiv preprint"
+notes: "Mahner and Lam contributed equally."
