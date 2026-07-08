@@ -109,7 +109,7 @@ At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than s
 
 ## Memory-efficient fitting
 
-The `_fit_complete_data` method in `model.py` uses `measure_bsum_step` from `_steps.py` to compute
+The `_fit_complete_data` method in `model.py` uses `bsum_step` from `_steps.py` to compute
 `||X - WW^T||_F` without materializing the n×n product `WW^T`. This keeps memory
 at O(n²) (just the input matrix) instead of O(2n²).
 

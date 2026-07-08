@@ -79,7 +79,7 @@ class BsumStep(NamedTuple):
         }
 
 
-def measure_bsum_step(x: np.ndarray, w: np.ndarray) -> BsumStep:
+def bsum_step(x: np.ndarray, w: np.ndarray) -> BsumStep:
     """Measure the fit of WW' to x without forming the n x n product."""
     xw = x @ w
     wtw = w.T @ w

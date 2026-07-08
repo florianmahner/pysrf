@@ -26,7 +26,7 @@ from helpers import make_bsum_data
 
 import pysrf
 from pysrf._bsum import BACKEND
-from pysrf._steps import measure_bsum_step
+from pysrf._steps import bsum_step
 
 
 def _load_python_bsum():
@@ -281,12 +281,12 @@ class TestEdgeCases:
 
 
 class TestResidual:
-    """Test the memory-efficient measure_bsum_step helper."""
+    """Test the memory-efficient bsum_step helper."""
 
     def test_matches_direct_computation(self):
         m, w0 = make_bsum_data(n=50, r=5, seed=42)
         w = update_w_python(m, w0)
-        residual = measure_bsum_step(m, w)
+        residual = bsum_step(m, w)
         wwt = w @ w.T
         np.testing.assert_allclose(
             residual.rec_error, np.linalg.norm(m - wwt, "fro"), rtol=1e-10
@@ -299,7 +299,7 @@ class TestResidual:
     def test_different_sizes(self, n, r):
         m, w0 = make_bsum_data(n=n, r=r, seed=42)
         w = update_w_python(m, w0, max_iter=10)
-        residual = measure_bsum_step(m, w)
+        residual = bsum_step(m, w)
         wwt = w @ w.T
         np.testing.assert_allclose(
             residual.rec_error, np.linalg.norm(m - wwt, "fro"), rtol=1e-10
@@ -310,7 +310,7 @@ class TestResidual:
 
     def test_residual_nonnegative(self):
         m, w0 = make_bsum_data(n=50, r=5, seed=42)
-        residual = measure_bsum_step(m, w0)
+        residual = bsum_step(m, w0)
         assert residual.rec_error >= 0
         assert residual.relative_fit >= 0
 

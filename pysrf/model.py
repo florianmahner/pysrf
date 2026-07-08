@@ -13,7 +13,7 @@ import os
 import sys
 import warnings
 from collections import defaultdict, deque
-from collections.abc import Callable
+from collections.abc import Iterator
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -28,7 +28,7 @@ from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
 
 from ._bsum import admm_step_, update_w
 from ._common import is_nan_marker, observation_mask
-from ._steps import STALL_WINDOW, AdmmStep, BsumStep, measure_bsum_step
+from ._steps import STALL_WINDOW, AdmmStep, BsumStep, bsum_step
 
 
 logger = logging.getLogger(__name__)
@@ -84,6 +84,46 @@ def _validate_bounds(val) -> None:
     lo, hi = val
     if lo is not None and hi is not None and lo > hi:
         raise ValueError("Lower bound cannot be greater than upper bound")
+
+
+def _complete_steps(
+    x: np.ndarray, w: np.ndarray, max_inner: int
+) -> Iterator[tuple[np.ndarray, BsumStep]]:
+    """Yield one BSUM iteration at a time on complete data."""
+    while True:
+        w = update_w(x, w, max_iter=max_inner)
+        yield w, bsum_step(x, w)
+
+
+def _missing_steps(
+    x: np.ndarray,
+    observed_mask: np.ndarray,
+    w: np.ndarray,
+    rho: float,
+    bounds: tuple[float | None, float | None] | None,
+    max_inner: int,
+) -> Iterator[tuple[np.ndarray, AdmmStep]]:
+    """Yield one ADMM iteration at a time on partially observed data.
+
+    An auxiliary matrix V and dual variables decouple the data-fitting
+    term from the factorization. Each iteration solves the W subproblem
+    on the current target, then admm_step_ updates V, the duals and the
+    next target in one pass.
+    """
+    bound_min, bound_max = bounds if bounds is not None else (None, None)
+
+    lam = np.zeros_like(x)
+    v = x.copy()
+    x_hat = np.empty_like(x)
+    # First solver target: lam / rho + v with lam = 0 is v
+    target = v.copy()
+    # The compiled kernel reads the mask as a uint8 buffer
+    obs = observed_mask.view(np.uint8)
+
+    while True:
+        w = update_w(target, w, max_iter=max_inner)
+        np.dot(w, w.T, out=x_hat)
+        yield w, admm_step_(x, obs, x_hat, v, lam, target, rho, bound_min, bound_max)
 
 
 class SRF(TransformerMixin, BaseEstimator):
@@ -204,23 +244,13 @@ class SRF(TransformerMixin, BaseEstimator):
             mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
 
-    def _fit_loop(
-        self,
-        w: np.ndarray,
-        step_fn: Callable[[np.ndarray], tuple[np.ndarray, BsumStep | AdmmStep]],
-    ) -> SRF:
-        """Run the outer iterations shared by both fitting paths.
-
-        step_fn advances the path-specific state by one iteration and
-        returns the updated embedding with its step measurement.
-        """
+    def _fit_loop(self, steps: Iterator[tuple[np.ndarray, BsumStep | AdmmStep]]) -> SRF:
+        """Drive the outer iterations; steps yields one measurement each."""
         history = defaultdict(list)
 
         recent = deque(maxlen=STALL_WINDOW)
         pbar = self._progress_bar()
-        for i in pbar:
-            w, step = step_fn(w)
-
+        for i, (w, step) in zip(pbar, steps):
             earlier = recent[0] if recent else None
             metrics = step.metrics(self._total_ss)
             metrics["converged"] = step.converged(earlier, self.tol)
@@ -243,76 +273,19 @@ class SRF(TransformerMixin, BaseEstimator):
                 ConvergenceWarning,
             )
 
-        self._store_results(w, i, history)
+        self.w_ = w
+        self.components_ = w
+        self.n_iter_ = i
+        self.history_ = history
 
         return self
 
-    def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        """Fit with complete data (no missing values).
+    def _validate_input(self, x: np.ndarray) -> np.ndarray:
+        """Validate the similarity matrix and derive the observation stats.
 
-        No auxiliary variables are needed; convergence is checked on the
-        progress of the relative fit ||X - WW'||_F / ||X||_F.
-        """
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
-
-        def step_fn(w: np.ndarray) -> tuple[np.ndarray, BsumStep]:
-            w = update_w(x, w, max_iter=self.max_inner)
-            return w, measure_bsum_step(x, w)
-
-        return self._fit_loop(w, step_fn)
-
-    def _fit_missing_data(self, x: np.ndarray) -> SRF:
-        """Fit with missing data.
-
-        Introduces an auxiliary matrix V and dual variables to decouple
-        the data-fitting term from the factorization. Each iteration
-        solves the W subproblem on the current target, then admm_step_
-        updates V, the dual variables and the next target in one pass.
-        """
-        bounds = self.bounds if self.bounds is not None else (None, None)
-        bound_min, bound_max = bounds
-
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
-        lam = np.zeros_like(x)
-        v = x.copy()
-        x_hat = np.empty_like(x)
-        # First solver target: lam / rho + v with lam = 0 is v
-        target = v.copy()
-        # The compiled kernel reads the mask as a uint8 buffer
-        obs = self._observed_mask.view(np.uint8)
-
-        def step_fn(w: np.ndarray) -> tuple[np.ndarray, AdmmStep]:
-            w = update_w(target, w, max_iter=self.max_inner)
-            np.dot(w, w.T, out=x_hat)
-            step = admm_step_(
-                x, obs, x_hat, v, lam, target, self.rho, bound_min, bound_max
-            )
-            return w, step
-
-        return self._fit_loop(w, step_fn)
-
-    def _store_results(self, w: np.ndarray, n_iter: int, history: dict) -> None:
-        """Set fitted attributes after optimization."""
-        self.w_ = w
-        self.components_ = w
-        self.n_iter_ = n_iter
-        self.history_ = history
-
-    def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> SRF:
-        """Fit the model to a similarity matrix.
-
-        Parameters
-        ----------
-        x : array-like of shape (n_samples, n_samples)
-            Symmetric similarity matrix. Missing values should be marked
-            according to the ``missing_values`` parameter.
-        y : Ignored
-            Not used, present for sklearn API compatibility.
-
-        Returns
-        -------
-        self : SRF
-            Fitted estimator.
+        Allocates only the one contract copy of x and the observation
+        mask; all statistics are computed without materializing the
+        observed entries.
         """
         self._validate_params()
         _validate_bounds(self.bounds)
@@ -335,14 +308,20 @@ class SRF(TransformerMixin, BaseEstimator):
                 "No observed entries found in the data. All values are missing."
             )
 
-        x[~self._observed_mask] = 0.0
+        if is_nan_marker(self.missing_values) or self.missing_values is None:
+            np.nan_to_num(x, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        else:
+            x[~self._observed_mask] = 0.0
         if self.check_input:
             check_symmetric(self._observed_mask, raise_exception=True)
             x = check_symmetric(x, raise_exception=True, tol=1e-10)
 
+        # Zero-filled missing entries drop out of the sums, so the
+        # variance identity avoids materializing the observed values
         n_observed = np.count_nonzero(self._observed_mask)
-        observed_mean = np.sum(x[self._observed_mask]) / n_observed
-        self._total_ss = np.sum((x[self._observed_mask] - observed_mean) ** 2)
+        observed_mean = np.sum(x) / n_observed
+        observed_sumsq = np.einsum("ij,ij->", x, x)
+        self._total_ss = observed_sumsq - n_observed * observed_mean**2
 
         if self.verbose:
             n_threads = os.environ.get("OMP_NUM_THREADS", "1")
@@ -353,10 +332,34 @@ class SRF(TransformerMixin, BaseEstimator):
                 n_threads,
             )
 
-        if n_observed == self._observed_mask.size:
-            return self._fit_complete_data(x)
+        return x
+
+    def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> SRF:
+        """Fit the model to a similarity matrix.
+
+        Parameters
+        ----------
+        x : array-like of shape (n_samples, n_samples)
+            Symmetric similarity matrix. Missing values should be marked
+            according to the ``missing_values`` parameter.
+        y : Ignored
+            Not used, present for sklearn API compatibility.
+
+        Returns
+        -------
+        self : SRF
+            Fitted estimator.
+        """
+        x = self._validate_input(x)
+        w = _initialize_w(x, self.rank, self.init, self.random_state)
+
+        if self._observed_mask.all():
+            steps = _complete_steps(x, w, self.max_inner)
         else:
-            return self._fit_missing_data(x)
+            steps = _missing_steps(
+                x, self._observed_mask, w, self.rho, self.bounds, self.max_inner
+            )
+        return self._fit_loop(steps)
 
     def transform(self, x: np.ndarray) -> np.ndarray:
         """Return the learned embedding matrix W.
