@@ -1072,7 +1072,7 @@ to 12+ decimal places.</p>
 <p>Speedup grows with n because the BLAS-3 dsymm/dgemm ratio improves with matrix size.
 At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than scalar.</p>
 <h2 id="memory-efficient-fitting">Memory-efficient fitting<a class="headerlink" href="#memory-efficient-fitting" title="Permanent link">&para;</a></h2>
-<p>The <code>_fit_complete_data</code> method in <code>model.py</code> uses <code>bsum_step</code> from <code>_steps.py</code> to compute
+<p>The complete-data step generator in <code>model.py</code> uses <code>bsum_step</code> from <code>_bsum</code> to compute
 <code>||X - WW^T||_F</code> without materializing the n×n product <code>WW^T</code>. This keeps memory
 at O(n²) (just the input matrix) instead of O(2n²).</p>
 <p>The identity used:
