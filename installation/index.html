@@ -1003,9 +1003,9 @@ test commands, and contribution guidelines.</p>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">pysrf</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
 </code></pre></div>
 <p>To check whether the fast Cython backend is active:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">_w_solver_backend</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf._bsum</span><span class="w"> </span><span class="kn">import</span> <span class="n">BACKEND</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">_w_solver_backend</span><span class="p">)</span>  <span class="c1"># &#39;cython&#39; if compiled, &#39;python&#39; otherwise</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">BACKEND</span><span class="p">)</span>  <span class="c1"># &#39;cython&#39; if compiled, &#39;python&#39; otherwise</span>
 </code></pre></div>
 <h2 id="performance-multi-threaded-blas">Performance: multi-threaded BLAS<a class="headerlink" href="#performance-multi-threaded-blas" title="Permanent link">&para;</a></h2>
 <p>The SRF solver relies on BLAS routines (via scipy) that benefit from

@@ -738,10 +738,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#update_w-scalar-ground-truth" class="md-nav__link">
+  <a href="#update_w_scalar-ground-truth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        update_w (scalar, ground truth)
+        update_w_scalar (ground truth)
       
     </span>
   </a>
@@ -821,10 +821,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#update_w-scalar-vs-python" class="md-nav__link">
+  <a href="#update_w_scalar-vs-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        update_w (scalar) vs Python
+        update_w_scalar vs Python
       
     </span>
   </a>
@@ -832,15 +832,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar" class="md-nav__link">
+  <a href="#update_w_blas-and-update_w_blas_blocked-vs-update_w_scalar" class="md-nav__link">
     <span class="md-ellipsis">
       
-        update_w_blas and update_w_blas_blocked vs update_w (scalar)
+        update_w_blas and update_w_blas_blocked vs update_w_scalar
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="update_w_blas and update_w_blas_blocked vs update_w (scalar)">
+    <nav class="md-nav" aria-label="update_w_blas and update_w_blas_blocked vs update_w_scalar">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -963,9 +963,11 @@
 with different performance characteristics. The <code>model.py</code> import uses the fastest
 (BLAS-3 blocked) by default, falling back to Python if Cython is not compiled.</p>
 <p>Functions in <code>pysrf._bsum</code>:
-1. <code>update_w</code>: scalar Cython (ground truth, bitwise-identical to Python)
+1. <code>update_w_scalar</code>: scalar Cython (ground truth, bitwise-identical to Python)
 2. <code>update_w_blas</code>: BLAS-2 dgemv (~5x over scalar)
 3. <code>update_w_blas_blocked</code>: BLAS-3 dsymm/dgemm (19-31x over scalar, default)</p>
+<p><code>update_w</code> is a module-level alias for <code>update_w_blas_blocked</code>. The sweep
+early-exit threshold is the module constant <code>INNER_TOL</code>.</p>
 <h2 id="algorithm">Algorithm<a class="headerlink" href="#algorithm" title="Permanent link">&para;</a></h2>
 <p>Per iteration, for each row i and rank index j:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n) — dominates at 95%+ of cost
@@ -976,7 +978,7 @@ with different performance characteristics. The <code>model.py</code> import use
 </code></pre></div>
 <p>Total per iteration: O(n²r + nr²). The mw_i computation is O(n²r) and dominates.</p>
 <h2 id="implementation-details">Implementation details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h2>
-<h3 id="update_w-scalar-ground-truth"><code>update_w</code> (scalar, ground truth)<a class="headerlink" href="#update_w-scalar-ground-truth" title="Permanent link">&para;</a></h3>
+<h3 id="update_w_scalar-ground-truth"><code>update_w_scalar</code> (ground truth)<a class="headerlink" href="#update_w_scalar-ground-truth" title="Permanent link">&para;</a></h3>
 <p>Precomputes <code>mw_i[j] = M[i,:] @ W[:,j]</code> for all j simultaneously in a single pass
 through M[i,:] per row. This reduces M memory reads from r passes to 1 pass per row.
 Uses Cython memoryviews for all array access.</p>
@@ -985,9 +987,9 @@ When we update W[i, j_prev] for j_prev &lt; j, this does NOT affect mw_i[j] beca
 the sum over k includes k=i, but we're modifying W[i, j_prev] (column j_prev),
 not W[k, j] (column j). The effect of W[i, j_prev] changes is captured in the
 WtW terms.</p>
-<p><strong>Numerical agreement</strong>: Bit-for-bit identical to the Python <code>update_w</code> in <code>model.py</code>.</p>
+<p><strong>Numerical agreement</strong>: Bit-for-bit identical to the Python <code>update_w</code> in <code>_bsum.py</code>.</p>
 <h3 id="update_w_blas-blas-2"><code>update_w_blas</code> (BLAS-2)<a class="headerlink" href="#update_w_blas-blas-2" title="Permanent link">&para;</a></h3>
-<p>Same per-row mw_i algorithm as <code>update_w</code>, but uses:</p>
+<p>Same per-row mw_i algorithm as <code>update_w_scalar</code>, but uses:</p>
 <ul>
 <li><strong>BLAS dgemv</strong> for <code>mw_i = M[i,:] @ W</code> (the dominant 95% cost). OpenBLAS dgemv
   uses optimized cache blocking, SIMD, and prefetching for this matrix-vector product.</li>
@@ -1070,7 +1072,7 @@ to 12+ decimal places.</p>
 <p>Speedup grows with n because the BLAS-3 dsymm/dgemm ratio improves with matrix size.
 At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than scalar.</p>
 <h2 id="memory-efficient-fitting">Memory-efficient fitting<a class="headerlink" href="#memory-efficient-fitting" title="Permanent link">&para;</a></h2>
-<p>The <code>_fit_complete_data</code> method in <code>model.py</code> uses <code>_frobenius_residual</code> to compute
+<p>The <code>_fit_complete_data</code> method in <code>model.py</code> uses <code>bsum_step</code> from <code>_steps.py</code> to compute
 <code>||X - WW^T||_F</code> without materializing the n×n product <code>WW^T</code>. This keeps memory
 at O(n²) (just the input matrix) instead of O(2n²).</p>
 <p>The identity used:
@@ -1079,14 +1081,14 @@ at O(n²) (just the input matrix) instead of O(2n²).</p>
 where <code>tr(X·W·W^T) = sum((X@W) * W)</code> costs O(n²r) and <code>||WW^T||²_F = ||W^TW||²_F</code>
 costs O(nr²), both with no n×n temporaries.</p>
 <h2 id="numerical-agreement">Numerical agreement<a class="headerlink" href="#numerical-agreement" title="Permanent link">&para;</a></h2>
-<h3 id="update_w-scalar-vs-python"><code>update_w</code> (scalar) vs Python<a class="headerlink" href="#update_w-scalar-vs-python" title="Permanent link">&para;</a></h3>
+<h3 id="update_w_scalar-vs-python"><code>update_w_scalar</code> vs Python<a class="headerlink" href="#update_w_scalar-vs-python" title="Permanent link">&para;</a></h3>
 <p>Bit-for-bit identical: max_diff = 0.0 in all tests. This is because both
 implementations perform the exact same arithmetic in the exact same order; the
 scalar Cython version just reorganizes the loop structure without changing the
 computation.</p>
 <!-- vale off -->
 
-<h3 id="update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar"><code>update_w_blas</code> and <code>update_w_blas_blocked</code> vs <code>update_w</code> (scalar)<a class="headerlink" href="#update_w_blas-and-update_w_blas_blocked-vs-update_w-scalar" title="Permanent link">&para;</a></h3>
+<h3 id="update_w_blas-and-update_w_blas_blocked-vs-update_w_scalar"><code>update_w_blas</code> and <code>update_w_blas_blocked</code> vs <code>update_w_scalar</code><a class="headerlink" href="#update_w_blas-and-update_w_blas_blocked-vs-update_w_scalar" title="Permanent link">&para;</a></h3>
 <p>The BLAS variants compute mathematically identical quantities via different
 floating-point summation order. This section provides a complete mathematical
 proof of equivalence, explains how IEEE 754 rounding cascades through the
@@ -1121,7 +1123,7 @@ WtW[j,:] = WtW[:,j] — same values, different memory layout. The ddot result
 differs from the scalar loop only by IEEE 754 rounding.</p>
 <p>The second term, <code>MW[i,j] = (M @ W_current)[i,j]</code>, is the critical difference:</p>
 <ul>
-<li><strong>Scalar</strong> (<code>update_w</code>): Precomputes <code>mw_i[j] = sum_k M[i,k]·W[k,j]</code>
+<li><strong>Scalar</strong> (<code>update_w_scalar</code>): Precomputes <code>mw_i[j] = sum_k M[i,k]·W[k,j]</code>
   for all j in a single pass at the start of row i. This is valid because
   within row i's j-loop, updating W[i, j_prev] for j_prev &lt; j does not affect
   mw_i[j]: the sum is over W[:,j] (column j), and only W[i, j_prev] (column
