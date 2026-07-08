@@ -90,9 +90,10 @@ def _complete_steps(
     x: np.ndarray, w: np.ndarray, max_inner: int
 ) -> Iterator[tuple[np.ndarray, Step]]:
     """Yield one BSUM iteration at a time on complete data."""
+    ss_x = np.einsum("ij,ij->", x, x)
     while True:
         w = update_w(x, w, max_iter=max_inner)
-        yield w, bsum_step(x, w)
+        yield w, bsum_step(x, w, ss_x)
 
 
 def _missing_steps(

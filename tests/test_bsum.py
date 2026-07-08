@@ -319,6 +319,13 @@ class TestResidual:
         python_step = _load_python_bsum().bsum_step(m, w0)
         np.testing.assert_array_equal(np.array(bsum_step(m, w0)), np.array(python_step))
 
+    def test_precomputed_ss_x_is_identical(self):
+        m, w0 = make_bsum_data(n=50, r=5, seed=42)
+        ss_x = np.einsum("ij,ij->", m, m)
+        np.testing.assert_array_equal(
+            np.array(bsum_step(m, w0, ss_x)), np.array(bsum_step(m, w0))
+        )
+
 
 class TestMonotonicity:
     """Verify that BSUM objective decreases monotonically per iteration.

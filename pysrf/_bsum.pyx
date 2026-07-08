@@ -29,12 +29,18 @@ BACKEND = "cython"
 INNER_TOL = 1e-6
 
 
-def bsum_step(x, w):
-    """Measure the fit of WW' to x without forming the n x n product."""
+def bsum_step(x, w, ss_x=None):
+    """Measure the fit of WW' to x without forming the n x n product.
+
+    ss_x is <X, X>, constant across iterations; pass it to skip the
+    full-matrix reduction.
+    """
+    if ss_x is None:
+        ss_x = np.einsum("ij,ij->", x, x)
     xw = x @ w
     wtw = w.T @ w
     return BsumStep(
-        ss_x=np.einsum("ij,ij->", x, x),
+        ss_x=ss_x,
         ss_xw=np.einsum("ij,ij->", xw, w),
         ss_wwt=np.einsum("ij,ij->", wtw, wtw),
     )
