@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Variables**: Always lowercase (`w`, `x`, `s`), never uppercase (`W`, `X`, `S`)
 - **Atomic functions**: Break complex operations into small, reusable helpers prefixed with `_`
 - **No complex one-liners**: Use explicit loops instead of dense list comprehensions
+- **Sparse comments/docstrings**: Code explains itself; comment only what code cannot show (citations, non-obvious constraints). Never restate implementation details, internal constants, or superseded versions — e.g. a `tol` docstring must not describe the solver's internal `INNER_TOL`
 
 ```python
 # Good: explicit loop
