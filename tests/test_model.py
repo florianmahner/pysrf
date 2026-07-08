@@ -9,9 +9,9 @@ def test_srf_initialization():
     model = SRF(rank=5, random_state=42)
     assert model.rank == 5
     assert model.rho == 3.0
-    assert model.max_outer == 30
-    assert model.max_inner == 20
-    assert model.tol == 1e-4
+    assert model.max_outer == 100
+    assert model.max_inner == 10
+    assert model.tol == 1e-3
 
 
 def test_srf_fit_complete_data():
@@ -111,6 +111,10 @@ def test_srf_invalid_inputs():
         model.fit(np.eye(10))
 
     model = SRF(rank=5, rho=-1)
+    with pytest.raises(ValueError):
+        model.fit(np.eye(10))
+
+    model = SRF(rank=5, rho=0)
     with pytest.raises(ValueError):
         model.fit(np.eye(10))
 

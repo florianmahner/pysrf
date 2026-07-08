@@ -8,14 +8,25 @@
 # Reference: Shi et al. (2016) "Inexact Block Coordinate Descent Methods For
 # Symmetric Nonnegative Matrix Factorization".
 # Link: https://arxiv.org/abs/1608.02649
+#
+# The update_w solvers call the factorization target `m` to match the
+# notation of the original derivations in the paper.
 
 import numpy as np
 cimport numpy as np
+
+from ._steps import AdmmStep
 from libc.math cimport fabs, sqrt, cbrt
+from cython.parallel cimport prange
 from libc.string cimport memcpy
-from scipy.linalg.cython_blas cimport ddot, daxpy, dgemv, dsymm, dgemm
+from scipy.linalg.cython_blas cimport ddot, daxpy, dgemv, dgemm
 
 np.import_array()
+
+BACKEND = "cython"
+
+# Element-change threshold at which a W sweep stops early (Lin, 2007)
+INNER_TOL = 1e-6
 
 ctypedef np.float64_t DTYPE_t
 
@@ -51,10 +62,10 @@ cdef inline double _dot_product(double[:] a, double[:] b) nogil:
 # Scalar Cython (per-row mw_i precomputation)
 # ---------------------------------------------------------------------------
 
-cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
-                                            double[:, ::1] w0,
-                                            int max_iter=100,
-                                            double tol=1e-6):
+cpdef np.ndarray[DTYPE_t, ndim=2] update_w_scalar(double[:, ::1] m,
+                                                   double[:, ::1] w0,
+                                                   int max_iter=100):
+    cdef double tol = INNER_TOL
     cdef int n = w0.shape[0]
     cdef int r = w0.shape[1]
     cdef np.ndarray[DTYPE_t, ndim=2] w = np.array(w0, copy=True)
@@ -108,7 +119,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
 
                 w_view[i, j] = new
 
-        if max_delta < tol and tol > 0.0:
+        if max_delta < tol:
             break
 
     return w
@@ -120,8 +131,8 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w(double[:, ::1] m,
 
 cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas(double[:, ::1] m,
                                                  double[:, ::1] w0,
-                                                 int max_iter=100,
-                                                 double tol=1e-6):
+                                                 int max_iter=100):
+    cdef double tol = INNER_TOL
     cdef Py_ssize_t n = w0.shape[0]
     cdef int r = w0.shape[1]
 
@@ -195,7 +206,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas(double[:, ::1] m,
 
                 w_p[ir + j] = new_val
 
-        if max_delta < tol and tol > 0.0:
+        if max_delta < tol:
             break
 
     return w
@@ -208,8 +219,8 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas(double[:, ::1] m,
 cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas_blocked(double[:, ::1] m,
                                                          double[:, ::1] w0,
                                                          int max_iter=100,
-                                                         double tol=1e-6,
                                                          int block_size=0):
+    cdef double tol = INNER_TOL
     cdef Py_ssize_t n = w0.shape[0]
     cdef int r = w0.shape[1]
 
@@ -239,8 +250,6 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas_blocked(double[:, ::1] m,
     cdef double* w_old_p = <double*>w_old_row.data
 
     # BLAS parameters
-    cdef char side_r = b'R'
-    cdef char uplo_l = b'L'
     cdef char trans_n = b'N'
     cdef int inc_1 = 1
     cdef double alpha_1 = 1.0
@@ -262,12 +271,15 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas_blocked(double[:, ::1] m,
     for it in range(max_iter):
         max_delta = 0.0
 
-        # Precompute MW = M @ W via dsymm (BLAS-3)
-        # C row-major (n,r) maps to Fortran col-major (r,n)
-        # MW = M @ W => in Fortran: C(r,n) = W(r,n) * M(n,n) => side='R'
-        dsymm(&side_r, &uplo_l, &blas_r, &blas_n, &alpha_1,
-              m_p, &blas_n,
+        # Precompute MW = M @ W via dgemm (BLAS-3). dgemm is used instead of
+        # dsymm although M is symmetric: gemm kernels are far better
+        # optimized and threaded in common BLAS builds, while symm rarely
+        # realizes its theoretical half-read advantage.
+        # C row-major (n,r) maps to Fortran col-major (r,n):
+        # C(r,n) = W^T(r,n) @ M^T(n,n), and M^T = M by symmetry
+        dgemm(&trans_n, &trans_n, &blas_r, &blas_n, &blas_n, &alpha_1,
               w_p, &blas_r,
+              m_p, &blas_n,
               &beta_0, mw_p, &blas_r)
 
         block_start = 0
@@ -335,7 +347,169 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas_blocked(double[:, ::1] m,
 
             block_start = block_end
 
-        if max_delta < tol and tol > 0.0:
+        if max_delta < tol:
             break
 
     return w
+
+
+
+# ---------------------------------------------------------------------------
+# ADMM iteration update (missing-data path)
+# ---------------------------------------------------------------------------
+
+def admm_step_(double[:, ::1] x,
+               unsigned char[:, ::1] obs,
+               double[:, ::1] x_hat,
+               double[:, ::1] v,
+               double[:, ::1] lam,
+               double[:, ::1] target,
+               double rho,
+               bound_min=None,
+               bound_max=None):
+    """Update V, the dual variables and the next solver target in place.
+
+    Performs the V update, dual ascent and solver-target computation of
+    one ADMM iteration in a single pass over the matrix, processing rows
+    in parallel with OpenMP.
+
+    All matrices must be symmetric; v, lam and target stay symmetric.
+
+    Returns
+    -------
+    step : AdmmStep
+        Measured inner products of the updated iteration state
+    """
+    cdef bint use_min = bound_min is not None
+    cdef bint use_max = bound_max is not None
+    cdef double bmin = bound_min if use_min else 0.0
+    cdef double bmax = bound_max if use_max else 0.0
+
+    cdef Py_ssize_t n = x.shape[0]
+    cdef Py_ssize_t i, j
+
+    cdef double data_fit = 0.0
+    cdef double primal = 0.0
+    cdef double lagrangian = 0.0
+    cdef double reconstruction = 0.0
+    cdef double dual_step = 0.0
+    cdef double norm_v_sq = 0.0
+    cdef double norm_x_hat_sq = 0.0
+    cdef double norm_lam_sq = 0.0
+    cdef double norm_x_sq = 0.0
+
+    cdef double denom = 1.0 + rho
+    cdef double xh_ij, xh_ji, raw_ij, raw_ji, v_new
+    cdef double prim_ij, prim_ji, lam_ij, lam_ji, d
+
+    for i in prange(n, nogil=True, schedule='guided'):
+        # --- diagonal element (symmetrization is a no-op there) ---
+        xh_ij = x_hat[i, i]
+        if obs[i, i]:
+            raw_ij = ((x[i, i] + rho * xh_ij) - lam[i, i]) / denom
+        else:
+            raw_ij = lam[i, i] / (-rho) + xh_ij
+        if use_min and raw_ij < bmin:
+            raw_ij = bmin
+        if use_max and raw_ij > bmax:
+            raw_ij = bmax
+        v_new = raw_ij
+
+        d = v_new - v[i, i]
+        dual_step += d * d
+        v[i, i] = v_new
+
+        prim_ij = v_new - xh_ij
+        primal += prim_ij * prim_ij
+        lam_ij = lam[i, i] + rho * prim_ij
+        lam[i, i] = lam_ij
+        lagrangian += lam_ij * prim_ij
+
+        if obs[i, i]:
+            d = x[i, i] - v_new
+            data_fit += d * d
+            d = x[i, i] - xh_ij
+            reconstruction += d * d
+            norm_x_sq += x[i, i] * x[i, i]
+
+        norm_v_sq += v_new * v_new
+        norm_x_hat_sq += xh_ij * xh_ij
+        norm_lam_sq += lam_ij * lam_ij
+        target[i, i] = lam_ij / rho + v_new
+
+        # --- strict upper triangle, mirrored to the lower ---
+        for j in range(i + 1, n):
+            xh_ij = x_hat[i, j]
+            xh_ji = x_hat[j, i]
+
+            if obs[i, j]:
+                raw_ij = ((x[i, j] + rho * xh_ij) - lam[i, j]) / denom
+                raw_ji = ((x[j, i] + rho * xh_ji) - lam[j, i]) / denom
+            else:
+                raw_ij = lam[i, j] / (-rho) + xh_ij
+                raw_ji = lam[j, i] / (-rho) + xh_ji
+
+            if use_min:
+                if raw_ij < bmin:
+                    raw_ij = bmin
+                if raw_ji < bmin:
+                    raw_ji = bmin
+            if use_max:
+                if raw_ij > bmax:
+                    raw_ij = bmax
+                if raw_ji > bmax:
+                    raw_ji = bmax
+
+            v_new = 0.5 * (raw_ij + raw_ji)
+
+            d = v_new - v[i, j]
+            dual_step += d * d
+            d = v_new - v[j, i]
+            dual_step += d * d
+            v[i, j] = v_new
+            v[j, i] = v_new
+
+            prim_ij = v_new - xh_ij
+            prim_ji = v_new - xh_ji
+            primal += prim_ij * prim_ij + prim_ji * prim_ji
+
+            lam_ij = lam[i, j] + rho * prim_ij
+            lam_ji = lam[j, i] + rho * prim_ji
+            lam[i, j] = lam_ij
+            lam[j, i] = lam_ji
+            lagrangian += lam_ij * prim_ij + lam_ji * prim_ji
+
+            if obs[i, j]:
+                d = x[i, j] - v_new
+                data_fit += d * d
+                d = x[j, i] - v_new
+                data_fit += d * d
+                d = x[i, j] - xh_ij
+                reconstruction += d * d
+                d = x[j, i] - xh_ji
+                reconstruction += d * d
+                norm_x_sq += x[i, j] * x[i, j] + x[j, i] * x[j, i]
+
+            norm_v_sq += 2.0 * (v_new * v_new)
+            norm_x_hat_sq += xh_ij * xh_ij + xh_ji * xh_ji
+            norm_lam_sq += lam_ij * lam_ij + lam_ji * lam_ji
+
+            target[i, j] = lam_ij / rho + v_new
+            target[j, i] = lam_ji / rho + v_new
+
+    return AdmmStep(
+        rho=rho,
+        data_fit=data_fit,
+        primal=primal,
+        lagrangian=lagrangian,
+        reconstruction=reconstruction,
+        ss_x=norm_x_sq,
+        dual_step=dual_step,
+        v=norm_v_sq,
+        x_hat=norm_x_hat_sq,
+        lam=norm_lam_sq,
+    )
+
+
+# The blocked BLAS-3 variant is the production solver
+update_w = update_w_blas_blocked

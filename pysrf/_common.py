@@ -23,9 +23,9 @@ def as_seed_sequence(random_state: RandomStateLike) -> np.random.SeedSequence:
     if random_state is None or isinstance(random_state, (int, np.integer)):
         return np.random.SeedSequence(random_state)
     if isinstance(random_state, np.random.Generator):
-        seed_seq = getattr(random_state.bit_generator, "seed_seq", None)
-        if isinstance(seed_seq, np.random.SeedSequence):
-            return seed_seq
+        seed_sequence = getattr(random_state.bit_generator, "seed_seq", None)
+        if isinstance(seed_sequence, np.random.SeedSequence):
+            return seed_sequence
         return np.random.SeedSequence(int(random_state.integers(0, 2**31 - 1)))
     if isinstance(random_state, np.random.RandomState):
         return np.random.SeedSequence(int(random_state.randint(0, 2**31 - 1)))
@@ -97,6 +97,28 @@ def n_jobs_for_tasks(n_jobs: int | None, n_tasks: int) -> int:
     if n_jobs < 0:
         n_jobs = max(1, joblib_cpu_count() + 1 + n_jobs)
     return max(1, min(n_jobs, n_tasks))
+
+
+def blas_limits_for_workers(
+    threads_per_worker: int | str | None, n_workers: int
+) -> int | None:
+    """Resolve the BLAS thread limit for each parallel worker.
+
+    None keeps the default: one BLAS thread per worker when several run in
+    parallel (reproducible, best for many small fits) and no limit for a
+    single worker. 'auto' divides the machine's cores across workers,
+    which is faster for large matrices. An integer is used as-is.
+
+    Returns None when BLAS threading should not be limited.
+    """
+    if threads_per_worker is None:
+        return 1 if n_workers > 1 else None
+    if threads_per_worker == "auto":
+        return max(1, joblib_cpu_count() // n_workers)
+    threads = int(threads_per_worker)
+    if threads < 1:
+        raise ValueError(f"threads_per_worker must be at least 1, got {threads}")
+    return threads
 
 
 def symmetrize_observations(x: np.ndarray) -> np.ndarray:

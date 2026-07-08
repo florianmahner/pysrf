@@ -11,11 +11,13 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections import defaultdict
+import warnings
+from collections import defaultdict, deque
+from collections.abc import Callable
 
 import numpy as np
-from scipy.linalg.blas import dsymm
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import ConvergenceWarning
 from tqdm import trange
 from sklearn.utils.validation import (
     check_is_fitted,
@@ -24,37 +26,12 @@ from sklearn.utils.validation import (
 )
 from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
 
+from ._bsum import admm_step_, update_w
 from ._common import is_nan_marker, observation_mask
+from ._steps import STALL_WINDOW, AdmmStep, BsumStep, measure_bsum_step
 
 
 logger = logging.getLogger(__name__)
-
-
-def _frobenius_residual(x: np.ndarray, w: np.ndarray) -> tuple[float, float]:
-    """Compute ||X - WW'||_F and ||WW'||_F without forming the n x n product.
-
-    Parameters
-    ----------
-    x : ndarray of shape (n, n)
-        Symmetric matrix
-    w : ndarray of shape (n, r)
-        Factor matrix
-
-    Returns
-    -------
-    reconstruction_err : float
-        ||X - WW'||_F, Frobenius distance between X and its approximation
-    approx_norm : float
-        ||WW'||_F, Frobenius norm of the low-rank approximation
-    """
-    xw = dsymm(1.0, x, w)
-    wtw = w.T @ w
-    ss_x = np.einsum("ij,ij->", x, x)
-    ss_xw = np.einsum("ij,ij->", xw, w)
-    ss_wwt = np.einsum("ij,ij->", wtw, wtw)
-    reconstruction_err = np.sqrt(max(0.0, ss_x - 2.0 * ss_xw + ss_wwt))
-    approx_norm = np.sqrt(ss_wwt)
-    return reconstruction_err, approx_norm
 
 
 def _initialize_w(
@@ -102,118 +79,11 @@ def _initialize_w(
 
 
 def _validate_bounds(val) -> None:
-    """Raise ValueError if lower bound exceeds upper bound."""
     if val is None:
         return
     lo, hi = val
     if lo is not None and hi is not None and lo > hi:
         raise ValueError("Lower bound cannot be greater than upper bound")
-
-
-def _get_w_solver() -> tuple[callable, str]:
-    """Return the best available solver for the W update step.
-
-    Tries the compiled Cython implementation first, falls back to the
-    pure-Python solver with a warning.
-
-    Returns
-    -------
-    solver : callable
-        The update_w function to use
-    source : str
-        ``'cython'`` or ``'python'``
-    """
-    try:
-        from ._bsum import update_w_blas_blocked
-
-        return update_w_blas_blocked, "cython"
-    except ImportError:
-        import warnings
-
-        warnings.warn(
-            "Cython implementation not available. Using Python implementation "
-            "which is significantly slower. Compile Cython to improve performance.",
-            RuntimeWarning,
-            stacklevel=2,
-        )
-        from ._bsum import update_w
-
-        return update_w, "python"
-
-
-_w_solver, _w_solver_backend = _get_w_solver()
-
-
-def update_v_(
-    observed_mask: np.ndarray,
-    x: np.ndarray,
-    x_hat: np.ndarray,
-    lam: np.ndarray,
-    rho: float,
-    bound_min: float,
-    bound_max: float,
-    v: np.ndarray,
-) -> None:
-    """Update the auxiliary variable V for missing data handling.
-
-    V is an auxiliary variable that decouples the data-fitting term
-    from the factorization constraint.
-
-    For unobserved entries: v_ij = x_hat_ij - lam_ij / rho.
-    For observed entries: v_ij = (x_ij + rho * x_hat_ij - lam_ij) / (1 + rho).
-
-    Parameters
-    ----------
-    observed_mask : ndarray of shape (n, n)
-        Binary mask, True where similarities are observed
-    x : ndarray of shape (n, n)
-        Similarity matrix
-    x_hat : ndarray of shape (n, n)
-        Current reconstruction WW'
-    lam : ndarray of shape (n, n)
-        Dual variables enforcing agreement between V and WW'
-    rho : float
-        Penalty weight for the constraint V = WW'
-    bound_min : float or None
-        Lower bound on V entries
-    bound_max : float or None
-        Upper bound on V entries
-    v : ndarray of shape (n, n)
-        Auxiliary variable, updated in place
-    """
-    v[:] = lam
-    v /= -rho
-    v += x_hat
-
-    v[observed_mask] = (
-        x[observed_mask] + rho * x_hat[observed_mask] - lam[observed_mask]
-    ) / (1.0 + rho)
-
-    if bound_min is not None or bound_max is not None:
-        np.clip(v, bound_min, bound_max, out=v)
-
-    # Enforce symmetry
-    v += v.T
-    v *= 0.5
-
-
-def update_lambda_(
-    lam: np.ndarray, v: np.ndarray, x_hat: np.ndarray, rho: float
-) -> None:
-    """Update dual variables via dual ascent: lam += rho * (V - WW').
-
-    Parameters
-    ----------
-    lam : ndarray of shape (n, n)
-        Dual variables, updated in place
-    v : ndarray of shape (n, n)
-        Auxiliary variable
-    x_hat : ndarray of shape (n, n)
-        Current reconstruction WW'
-    rho : float
-        Penalty weight for the constraint V = WW'
-    """
-    lam += rho * (v - x_hat)
 
 
 class SRF(TransformerMixin, BaseEstimator):
@@ -233,12 +103,17 @@ class SRF(TransformerMixin, BaseEstimator):
         Number of dimensions in the embedding
     rho : float, default=3.0
         Penalty weight controlling how closely WW' must match V
-    max_outer : int, default=30
-        Maximum number of outer optimization iterations
-    max_inner : int, default=20
+    max_outer : int, default=100
+        Maximum number of outer optimization iterations; the stall rule
+        usually stops far earlier
+    max_inner : int, default=10
         Maximum iterations for the W update per outer iteration
-    tol : float, default=1e-4
-        Convergence tolerance
+    tol : float, default=1e-3
+        Relative convergence tolerance. Fitting stops when the relative
+        fit ||X - WW'||_F / ||X||_F over observed entries falls below tol
+        or improves by less than tol across the last 10 iterations
+        (Xu et al., 2012). With missing data, the ADMM splitting must
+        additionally agree: ||V - WW'||_F <= tol * max(||V||_F, ||WW'||_F).
     verbose : int, default=0
         Whether to print optimization progress
     init : str, default='random_sqrt'
@@ -282,7 +157,7 @@ class SRF(TransformerMixin, BaseEstimator):
 
     _parameter_constraints = {
         "rank": [Interval(Integral, 1, None, closed="left")],
-        "rho": [Interval(Real, 0.0, None, closed="left")],
+        "rho": [Interval(Real, 0.0, None, closed="neither")],
         "max_outer": [Interval(Integral, 1, None, closed="left")],
         "max_inner": [Interval(Integral, 1, None, closed="left")],
         "tol": [Interval(Real, 0.0, None, closed="left")],
@@ -293,15 +168,14 @@ class SRF(TransformerMixin, BaseEstimator):
         "bounds": [None, tuple],
         "check_input": ["boolean"],
     }
-    _solver = staticmethod(_w_solver)
 
     def __init__(
         self,
         rank: int = 10,
         rho: float = 3.0,
-        max_outer: int = 30,
-        max_inner: int = 20,
-        tol: float = 1e-4,
+        max_outer: int = 100,
+        max_inner: int = 10,
+        tol: float = 1e-3,
         verbose: int = 0,
         init: str = "random_sqrt",
         random_state: int | None = None,
@@ -321,194 +195,101 @@ class SRF(TransformerMixin, BaseEstimator):
         self.bounds = bounds
         self.check_input = check_input
 
-    def _tolerance(self, *norms):
-        """Adaptive convergence tolerance (Boyd et al., 2010, Sec. 3.3.1)."""
-        return self.n_features_in_ * self.tol + self.tol * max(norms)
+    def _progress_bar(self):
+        return trange(
+            1,
+            self.max_outer + 1,
+            disable=not self.verbose,
+            desc="SRF",
+            mininterval=10.0 if not sys.stderr.isatty() else 0.1,
+        )
 
-    def _compute_metrics(
+    def _fit_loop(
         self,
-        x: np.ndarray,
-        v: np.ndarray,
-        x_hat: np.ndarray,
-        lam: np.ndarray,
-        primal_residual: np.ndarray,
-        v_old: np.ndarray | None = None,
-    ) -> dict[str, float]:
-        """Compute optimization metrics for monitoring and convergence.
+        w: np.ndarray,
+        step_fn: Callable[[np.ndarray], tuple[np.ndarray, BsumStep | AdmmStep]],
+    ) -> SRF:
+        """Run the outer iterations shared by both fitting paths.
 
-        Convergence follows Boyd et al. (2010), Section 3.3.1, using
-        adaptive primal/dual tolerances that scale with the problem.
-
-        Parameters
-        ----------
-        x : ndarray of shape (n, n)
-            Similarity matrix
-        v : ndarray of shape (n, n)
-            Auxiliary variable
-        x_hat : ndarray of shape (n, n)
-            Current reconstruction WW'
-        lam : ndarray of shape (n, n)
-            Dual variables
-        primal_residual : ndarray of shape (n, n)
-            V - WW'
-        v_old : ndarray of shape (n, n) or None
-            Previous V, used to compute the dual residual
-
-        Returns
-        -------
-        metrics : dict[str, float]
-            Keys: total_objective, data_fit, penalty, lagrangian,
-            rec_error, evar, primal_residual, dual_residual, converged
+        step_fn advances the path-specific state by one iteration and
+        returns the updated embedding with its step measurement.
         """
-        observed_mask = self._observed_mask
-
-        data_fit = np.sum((x[observed_mask] - v[observed_mask]) ** 2)
-
-        penalty_term = np.einsum("ij,ij->", primal_residual, primal_residual)
-        penalty = (self.rho / 2.0) * penalty_term
-
-        lagrangian = np.einsum("ij,ij->", lam, primal_residual)
-        total_obj = data_fit + penalty + lagrangian
-
-        rec_ss = np.sum((x[observed_mask] - x_hat[observed_mask]) ** 2)
-        rec_error = np.sqrt(rec_ss)
-
-        if self._total_var > 0:
-            evar = 1.0 - rec_ss / self._total_var
-        else:
-            evar = 0.0
-
-        primal_res = np.sqrt(penalty_term)
-        if v_old is not None:
-            dual_res = self.rho * np.sqrt(np.einsum("ij,ij->", v - v_old, v - v_old))
-        else:
-            dual_res = np.inf
-
-        eps_pri = self._tolerance(np.linalg.norm(v), np.linalg.norm(x_hat))
-        eps_dual = self._tolerance(np.linalg.norm(lam))
-        converged = primal_res <= eps_pri and dual_res <= eps_dual
-
-        return {
-            "total_objective": total_obj,
-            "data_fit": data_fit,
-            "penalty": penalty,
-            "lagrangian": lagrangian,
-            "rec_error": rec_error,
-            "evar": evar,
-            "primal_residual": primal_res,
-            "dual_residual": dual_res,
-            "converged": converged,
-        }
-
-    def _fit_complete_data(self, x: np.ndarray) -> SRF:
-        """Fit with complete data (no missing values).
-
-        When all similarities are observed, no auxiliary variables are
-        needed. Convergence is checked directly on ||X - WW'||_F.
-        """
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
         history = defaultdict(list)
 
-        n = x.shape[0]
-        x_norm = np.linalg.norm(x, "fro")
-        total_var = np.var(x)
-
-        pbar = trange(
-            1,
-            self.max_outer + 1,
-            disable=not self.verbose,
-            desc="SRF",
-            mininterval=10.0 if not sys.stderr.isatty() else 0.1,
-        )
+        recent = deque(maxlen=STALL_WINDOW)
+        pbar = self._progress_bar()
         for i in pbar:
-            w = self._solver(x, w, max_iter=self.max_inner, tol=self.tol)
+            w, step = step_fn(w)
 
-            reconstruction_err, approx_norm = _frobenius_residual(x, w)
-
-            mse = reconstruction_err**2 / (n * n)
-            evar = 1.0 - mse / total_var if total_var > 0 else 0.0
-
-            history["rec_error"].append(reconstruction_err)
-            history["evar"].append(evar)
-            history["primal_residual"].append(reconstruction_err)
-
-            pbar.set_postfix(
-                rec_error=f"{reconstruction_err:.3f}",
-                evar=f"{evar:.3f}",
-            )
-
-            if reconstruction_err <= self._tolerance(x_norm, approx_norm):
-                logger.info("Converged at iteration %d", i)
-                break
-
-        self._store_results(w, i, history)
-
-        return self
-
-    def _fit_missing_data(self, x: np.ndarray) -> SRF:
-        """Fit with missing data.
-
-        Introduces auxiliary variable V and dual variables to decouple
-        the data-fitting term from the factorization, iterating between
-        updating W, V, and the dual variables until convergence.
-        """
-        bound_min, bound_max = self.bounds
-        history = defaultdict(list)
-
-        w = _initialize_w(x, self.rank, self.init, self.random_state)
-        lam = np.zeros_like(x)
-
-        v = x.copy()
-        x_hat = np.empty_like(x)
-        np.dot(w, w.T, out=x_hat)
-
-        v_old = np.empty_like(x)
-        target = np.empty_like(x)
-        primal_residual = np.empty_like(x)
-
-        pbar = trange(
-            1,
-            self.max_outer + 1,
-            disable=not self.verbose,
-            desc="SRF",
-            mininterval=10.0 if not sys.stderr.isatty() else 0.1,
-        )
-        for i in pbar:
-            v_old[:] = v
-
-            target[:] = lam
-            target /= self.rho
-            target += v
-            w = self._solver(target, w, max_iter=self.max_inner, tol=self.tol)
-            # Avoid temporary by writing directly into pre-allocated buffer
-            np.dot(w, w.T, out=x_hat)
-
-            update_v_(
-                self._observed_mask, x, x_hat, lam, self.rho, bound_min, bound_max, v
-            )
-            primal_residual[:] = v
-            primal_residual -= x_hat
-            target[:] = primal_residual
-            target *= self.rho
-            lam += target
-
-            metrics = self._compute_metrics(x, v, x_hat, lam, primal_residual, v_old)
+            earlier = recent[0] if recent else None
+            metrics = step.metrics(self._total_ss)
+            metrics["converged"] = step.converged(earlier, self.tol)
             for key, value in metrics.items():
                 history[key].append(value)
 
             pbar.set_postfix(
-                obj=f"{metrics['total_objective']:.3f}",
                 rec_error=f"{metrics['rec_error']:.3f}",
                 evar=f"{metrics['evar']:.3f}",
             )
 
-            if i > 1 and metrics["converged"]:
+            if metrics["converged"]:
                 logger.info("Converged at iteration %d", i)
                 break
+            recent.append(step)
+        else:
+            warnings.warn(
+                f"Maximum number of outer iterations ({self.max_outer}) "
+                "reached without convergence. Increase max_outer or tol.",
+                ConvergenceWarning,
+            )
 
         self._store_results(w, i, history)
 
         return self
+
+    def _fit_complete_data(self, x: np.ndarray) -> SRF:
+        """Fit with complete data (no missing values).
+
+        No auxiliary variables are needed; convergence is checked on the
+        progress of the relative fit ||X - WW'||_F / ||X||_F.
+        """
+        w = _initialize_w(x, self.rank, self.init, self.random_state)
+
+        def step_fn(w: np.ndarray) -> tuple[np.ndarray, BsumStep]:
+            w = update_w(x, w, max_iter=self.max_inner)
+            return w, measure_bsum_step(x, w)
+
+        return self._fit_loop(w, step_fn)
+
+    def _fit_missing_data(self, x: np.ndarray) -> SRF:
+        """Fit with missing data.
+
+        Introduces an auxiliary matrix V and dual variables to decouple
+        the data-fitting term from the factorization. Each iteration
+        solves the W subproblem on the current target, then admm_step_
+        updates V, the dual variables and the next target in one pass.
+        """
+        bounds = self.bounds if self.bounds is not None else (None, None)
+        bound_min, bound_max = bounds
+
+        w = _initialize_w(x, self.rank, self.init, self.random_state)
+        lam = np.zeros_like(x)
+        v = x.copy()
+        x_hat = np.empty_like(x)
+        # First solver target: lam / rho + v with lam = 0 is v
+        target = v.copy()
+        # The compiled kernel reads the mask as a uint8 buffer
+        obs = self._observed_mask.view(np.uint8)
+
+        def step_fn(w: np.ndarray) -> tuple[np.ndarray, AdmmStep]:
+            w = update_w(target, w, max_iter=self.max_inner)
+            np.dot(w, w.T, out=x_hat)
+            step = admm_step_(
+                x, obs, x_hat, v, lam, target, self.rho, bound_min, bound_max
+            )
+            return w, step
+
+        return self._fit_loop(w, step_fn)
 
     def _store_results(self, w: np.ndarray, n_iter: int, history: dict) -> None:
         """Set fitted attributes after optimization."""
@@ -560,11 +341,8 @@ class SRF(TransformerMixin, BaseEstimator):
             x = check_symmetric(x, raise_exception=True, tol=1e-10)
 
         n_observed = np.count_nonzero(self._observed_mask)
-        if n_observed > 0:
-            observed_mean = np.sum(x[self._observed_mask]) / n_observed
-            self._total_var = np.sum((x[self._observed_mask] - observed_mean) ** 2)
-        else:
-            self._total_var = 0.0
+        observed_mean = np.sum(x[self._observed_mask]) / n_observed
+        self._total_ss = np.sum((x[self._observed_mask] - observed_mean) ** 2)
 
         if self.verbose:
             n_threads = os.environ.get("OMP_NUM_THREADS", "1")
@@ -661,6 +439,6 @@ class SRF(TransformerMixin, BaseEstimator):
             else True,
         )
         observed_mask = observation_mask(x, self.missing_values)
-        reconstruction = self.reconstruct()
-        mse = np.mean((x[observed_mask] - reconstruction[observed_mask]) ** 2)
+        s_hat = self.reconstruct()
+        mse = np.mean((x[observed_mask] - s_hat[observed_mask]) ** 2)
         return -mse

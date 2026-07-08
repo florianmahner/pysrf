@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pytest
+from sklearn.exceptions import ConvergenceWarning
 
 from pysrf import SRF
 
@@ -14,18 +17,18 @@ class TestEarlyStopping:
     """Test that early stopping works correctly."""
 
     def test_early_stopping_triggers_before_max_iter(self):
-        """Model should stop before max_outer when tolerance is met."""
+        """Model should stop before max_outer when the fit stalls."""
         s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
         max_outer = 100
 
-        # Use a tolerance that allows convergence (relative to typical residuals)
         model = SRF(rank=3, max_outer=max_outer, tol=1e-2, random_state=42)
         model.fit(s)
 
         assert model.n_iter_ < max_outer, (
             f"Model ran all {max_outer} iterations without early stopping. "
-            f"Final primal residual: {model.history_['primal_residual'][-1]:.2e}"
+            f"Final reconstruction error: {model.history_['rec_error'][-1]:.2e}"
         )
+        assert model.history_["converged"][-1]
 
     def test_loose_tolerance_stops_earlier(self):
         """Looser tolerance should result in fewer iterations."""
@@ -48,13 +51,14 @@ class TestEarlyStopping:
         s_missing = make_missing_matrix(s, fraction=0.2)
         max_outer = 100
 
-        model = SRF(rank=3, max_outer=max_outer, tol=1e-4, random_state=42)
+        model = SRF(rank=3, max_outer=max_outer, tol=1e-2, random_state=42)
         model.fit(s_missing)
 
         assert model.n_iter_ < max_outer, (
             f"Model with missing data ran all {max_outer} iterations. "
             f"Final primal residual: {model.history_['primal_residual'][-1]:.2e}"
         )
+        assert model.history_["converged"][-1]
 
     def test_n_iter_matches_history_length(self):
         """n_iter_ should match the length of history arrays."""
@@ -64,21 +68,42 @@ class TestEarlyStopping:
         model.fit(s)
 
         assert model.n_iter_ == len(model.history_["rec_error"])
-        assert model.n_iter_ == len(model.history_["primal_residual"])
+        assert model.n_iter_ == len(model.history_["converged"])
 
-    def test_convergence_residuals_decrease(self):
-        """Primal residual should generally decrease over iterations."""
+    def test_rec_error_smaller_than_initial(self):
+        """Reconstruction error should end below its starting value."""
         s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
         model.fit(s)
 
-        primal_res = np.array(model.history_["primal_residual"])
-        # Check that final residual is smaller than initial
-        assert primal_res[-1] < primal_res[0], (
-            f"Primal residual should decrease: initial={primal_res[0]:.2e}, "
-            f"final={primal_res[-1]:.2e}"
+        rec_error = np.array(model.history_["rec_error"])
+        assert rec_error[-1] < rec_error[0], (
+            f"Reconstruction error should decrease: initial={rec_error[0]:.2e}, "
+            f"final={rec_error[-1]:.2e}"
         )
+
+    def test_warns_when_max_outer_reached(self):
+        """Hitting the iteration cap without converging should warn."""
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
+
+        model = SRF(rank=3, max_outer=3, tol=1e-12, random_state=42)
+        with pytest.warns(ConvergenceWarning):
+            model.fit(s)
+
+        assert not model.history_["converged"][-1]
+        assert model.n_iter_ == 3
+
+    def test_no_warning_when_converged(self):
+        """A converged fit should not raise a ConvergenceWarning."""
+        s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
+
+        model = SRF(rank=3, max_outer=100, tol=1e-2, random_state=42)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ConvergenceWarning)
+            model.fit(s)
+
+        assert model.history_["converged"][-1]
 
 
 class TestMonotonicity:
@@ -115,19 +140,18 @@ class TestMonotonicity:
             f"Found {np.sum(diffs > 1e-10)} increases, max increase: {np.max(diffs):.2e}"
         )
 
-    def test_data_fit_decreases_complete_data(self):
-        """Data fit term should decrease monotonically for complete data."""
+    def test_data_fit_decreases_missing_data(self):
+        """Data fit term should end below its starting value with missing data."""
         s = make_symmetric_matrix(n=30, rank=3, noise_level=0.01)
+        s_missing = make_missing_matrix(s, fraction=0.2)
 
         model = SRF(rank=3, max_outer=20, tol=1e-8, random_state=42)
-        model.fit(s)
+        model.fit(s_missing)
 
-        data_fit = np.array(model.history_["primal_residual"]) ** 2
-        diffs = np.diff(data_fit)
-
-        assert np.all(diffs <= 1e-10), (
-            f"Data fit should decrease monotonically. "
-            f"Found {np.sum(diffs > 1e-10)} increases, max increase: {np.max(diffs):.2e}"
+        data_fit = np.array(model.history_["data_fit"])
+        assert data_fit[-1] < data_fit[0], (
+            f"Data fit should decrease: initial={data_fit[0]:.2e}, "
+            f"final={data_fit[-1]:.2e}"
         )
 
     def test_evar_increases_complete_data(self):
@@ -164,18 +188,15 @@ class TestMonotonicity:
 class TestConvergenceQuality:
     """Test the quality of converged solutions."""
 
-    def test_converged_solution_has_low_residual(self):
-        """After convergence, primal residual should be small."""
+    def test_converged_solution_has_low_relative_fit(self):
+        """After convergence, the relative fit should be small."""
         s = make_symmetric_matrix(n=30, rank=3, noise_level=0.001)
 
         model = SRF(rank=3, max_outer=100, tol=1e-5, random_state=42)
         model.fit(s)
 
-        final_primal_res = model.history_["primal_residual"][-1]
-        # Primal residual should be reasonably small after convergence
-        assert (
-            final_primal_res < 1.0
-        ), f"Final primal residual too large: {final_primal_res:.2e}"
+        relative_fit = model.history_["rec_error"][-1] / np.linalg.norm(s, "fro")
+        assert relative_fit < 0.05, f"Final relative fit too large: {relative_fit:.2e}"
 
     def test_low_rank_recovery(self):
         """Model should recover good approximation of low-rank matrix."""

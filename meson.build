@@ -19,6 +19,8 @@ scipy_inc = run_command(py,
 add_project_arguments('-I' + numpy_inc, language: 'cython')
 add_project_arguments('-I' + scipy_inc, language: 'cython')
 
+openmp = dependency('openmp', required: false)
+
 py.extension_module(
   '_bsum',
   'pysrf/_bsum.pyx',
@@ -29,6 +31,7 @@ py.extension_module(
     '-ffp-contract=off',
     '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION',
   ],
+  dependencies: openmp,
   install: true,
   subdir: 'pysrf',
 )
@@ -38,6 +41,7 @@ py.install_sources(
 	    'pysrf/__init__.py',
     'pysrf/_bsum.py',
     'pysrf/_common.py',
+    'pysrf/_steps.py',
     'pysrf/consensus.py',
     'pysrf/cross_validation.py',
     'pysrf/model.py',
@@ -48,10 +52,9 @@ py.install_sources(
 py.install_sources(
   [
     'pysrf/coherence/__init__.py',
-    'pysrf/coherence/_bootstrap.py',
-    'pysrf/coherence/_estimate.py',
-    'pysrf/coherence/_rank_selection.py',
-    'pysrf/coherence/_sampling_fraction.py',
+    'pysrf/coherence/_calibration.py',
+    'pysrf/coherence/_coherence.py',
+    'pysrf/coherence/_stability.py',
   ],
   subdir: 'pysrf/coherence',
 )
