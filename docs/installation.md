@@ -60,9 +60,9 @@ print(pysrf.__version__)
 To check whether the fast Cython backend is active:
 
 ```python
-from pysrf.model import _w_solver_backend
+from pysrf._bsum import BACKEND
 
-print(_w_solver_backend)  # 'cython' if compiled, 'python' otherwise
+print(BACKEND)  # 'cython' if compiled, 'python' otherwise
 ```
 
 ## Performance: multi-threaded BLAS

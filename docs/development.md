@@ -96,12 +96,9 @@ poetry run python setup.py build_ext --inplace
 Verify which implementation is active:
 
 ```python
-from pysrf.model import _get_update_w_function
+from pysrf._bsum import BACKEND
 
-update_w = _get_update_w_function()
-print(f"Using: {update_w.__module__}")
-# _bsum    → Cython (fast)
-# pysrf.model → pure Python fallback
+print(BACKEND)  # 'cython' if compiled, 'python' otherwise
 ```
 
 ## Documentation

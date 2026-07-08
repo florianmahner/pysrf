@@ -8,9 +8,12 @@ with different performance characteristics. The `model.py` import uses the faste
 (BLAS-3 blocked) by default, falling back to Python if Cython is not compiled.
 
 Functions in `pysrf._bsum`:
-1. `update_w`: scalar Cython (ground truth, bitwise-identical to Python)
+1. `update_w_scalar`: scalar Cython (ground truth, bitwise-identical to Python)
 2. `update_w_blas`: BLAS-2 dgemv (~5x over scalar)
 3. `update_w_blas_blocked`: BLAS-3 dsymm/dgemm (19-31x over scalar, default)
+
+`update_w` is a module-level alias for `update_w_blas_blocked`. The sweep
+early-exit threshold is the module constant `INNER_TOL`.
 
 ## Algorithm
 
@@ -28,7 +31,7 @@ Total per iteration: O(n²r + nr²). The mw_i computation is O(n²r) and dominat
 
 ## Implementation details
 
-### `update_w` (scalar, ground truth)
+### `update_w_scalar` (ground truth)
 
 Precomputes `mw_i[j] = M[i,:] @ W[:,j]` for all j simultaneously in a single pass
 through M[i,:] per row. This reduces M memory reads from r passes to 1 pass per row.
@@ -40,11 +43,11 @@ the sum over k includes k=i, but we're modifying W[i, j_prev] (column j_prev),
 not W[k, j] (column j). The effect of W[i, j_prev] changes is captured in the
 WtW terms.
 
-**Numerical agreement**: Bit-for-bit identical to the Python `update_w` in `model.py`.
+**Numerical agreement**: Bit-for-bit identical to the Python `update_w` in `_bsum.py`.
 
 ### `update_w_blas` (BLAS-2)
 
-Same per-row mw_i algorithm as `update_w`, but uses:
+Same per-row mw_i algorithm as `update_w_scalar`, but uses:
 
 - **BLAS dgemv** for `mw_i = M[i,:] @ W` (the dominant 95% cost). OpenBLAS dgemv
   uses optimized cache blocking, SIMD, and prefetching for this matrix-vector product.
@@ -106,7 +109,7 @@ At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than s
 
 ## Memory-efficient fitting
 
-The `_fit_complete_data` method in `model.py` uses `_frobenius_residual` to compute
+The `_fit_complete_data` method in `model.py` uses `measure_bsum_step` from `_steps.py` to compute
 `||X - WW^T||_F` without materializing the n×n product `WW^T`. This keeps memory
 at O(n²) (just the input matrix) instead of O(2n²).
 
@@ -119,7 +122,7 @@ costs O(nr²), both with no n×n temporaries.
 
 ## Numerical agreement
 
-### `update_w` (scalar) vs Python
+### `update_w_scalar` vs Python
 
 Bit-for-bit identical: max_diff = 0.0 in all tests. This is because both
 implementations perform the exact same arithmetic in the exact same order; the
@@ -128,7 +131,7 @@ computation.
 
 <!-- vale off -->
 
-### `update_w_blas` and `update_w_blas_blocked` vs `update_w` (scalar)
+### `update_w_blas` and `update_w_blas_blocked` vs `update_w_scalar`
 
 The BLAS variants compute mathematically identical quantities via different
 floating-point summation order. This section provides a complete mathematical
@@ -173,7 +176,7 @@ differs from the scalar loop only by IEEE 754 rounding.
 
 The second term, `MW[i,j] = (M @ W_current)[i,j]`, is the critical difference:
 
-- **Scalar** (`update_w`): Precomputes `mw_i[j] = sum_k M[i,k]·W[k,j]`
+- **Scalar** (`update_w_scalar`): Precomputes `mw_i[j] = sum_k M[i,k]·W[k,j]`
   for all j in a single pass at the start of row i. This is valid because
   within row i's j-loop, updating W[i, j_prev] for j_prev < j does not affect
   mw_i[j]: the sum is over W[:,j] (column j), and only W[i, j_prev] (column
