@@ -13,6 +13,7 @@ from threadpoolctl import threadpool_limits
 
 from ._common import (
     RandomStateLike,
+    blas_limits_for_workers,
     n_jobs_for_tasks,
     observation_mask,
     replace_missing_with_nan,
@@ -45,6 +46,15 @@ class _CVSplit:
     validation_mask: np.ndarray
 
 
+@dataclass(frozen=True, slots=True)
+class _CVJob:
+    repeat: int
+    fold: int
+    rank: int
+    split_seed: int
+    fit_seed: int
+
+
 def cross_val_score(
     similarity_matrix: np.ndarray,
     ranks: Sequence[int],
@@ -53,6 +63,7 @@ def cross_val_score(
     n_repeats: int = 1,
     random_state: RandomStateLike = 0,
     n_jobs: int | None = -1,
+    threads_per_worker: int | str | None = None,
     missing_values: float | None = np.nan,
     srf_kwargs: Mapping[str, object] | None = None,
 ) -> CVResult:
@@ -76,6 +87,7 @@ def cross_val_score(
         n_repeats,
         random_state,
         n_jobs,
+        threads_per_worker,
         bounds,
         fit_kwargs,
     )
@@ -172,59 +184,89 @@ def _cv_seeds(
     return split_seeds, fit_seeds.reshape(n_repeats, n_folds, n_ranks)
 
 
+def _observed_pair_ids(
+    observed: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Coordinates and flat triu ids of observed upper-triangle entries.
+
+    The ids match np.flatnonzero(observed[np.triu_indices(n, k=1)]) in
+    values, order and dtype without materializing the O(n^2) triu index
+    arrays.
+    """
+    n = observed.shape[0]
+    rows, cols = np.nonzero(np.triu(observed, k=1))
+    ids = rows * (2 * n - rows - 1) // 2 + (cols - rows - 1)
+    return ids, rows, cols
+
+
+def _split_fold_ids(
+    observed: np.ndarray,
+    fold_fraction: float,
+    n_folds: int,
+    seed: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[np.ndarray]]:
+    """Regenerate one repeat's entrywise split in pair-id space.
+
+    Replicates the exact RandomState call sequence of the original
+    mask-based implementation (choice over observed pair ids, then a
+    permutation of the sorted sample), so the resulting folds are
+    bit-identical to the dense-mask splits for the same seed.
+    """
+    ids, rows, cols = _observed_pair_ids(observed)
+    if ids.size == 0:
+        raise ValueError("cross-validation needs observed off-diagonal entries")
+    rng = check_random_state(int(seed))
+    n_keep = max(1, int(fold_fraction * ids.size))
+    kept = rng.choice(ids, size=n_keep, replace=False)
+    sampled = np.sort(kept)
+    if sampled.size < n_folds:
+        raise ValueError(
+            f"cross-validation needs at least {n_folds} fold-sampled "
+            f"off-diagonal entries; got {sampled.size}"
+        )
+    folds = np.array_split(rng.permutation(sampled), n_folds)
+    return ids, rows, cols, sampled, folds
+
+
+def _ids_to_mask(
+    target_ids: np.ndarray,
+    ids: np.ndarray,
+    rows: np.ndarray,
+    cols: np.ndarray,
+    n: int,
+) -> np.ndarray:
+    pos = np.searchsorted(ids, target_ids)
+    mask = np.zeros((n, n), dtype=bool)
+    mask[rows[pos], cols[pos]] = True
+    mask[cols[pos], rows[pos]] = True
+    return mask
+
+
 def _entrywise_splits(
     observed: np.ndarray,
     fold_fraction: float,
     n_folds: int,
     split_seeds: np.ndarray,
 ) -> list[_CVSplit]:
+    """Dense-mask splits, kept for inspection and tests.
+
+    The scoring path regenerates splits per job via _split_fold_ids and
+    never materializes these masks.
+    """
+    n = observed.shape[0]
     splits: list[_CVSplit] = []
     for repeat, seed in enumerate(split_seeds):
-        rng = check_random_state(int(seed))
-        fold_sample = _sample_fold_entries(observed, fold_fraction, rng)
-        for fold, validation in enumerate(_fold_masks(fold_sample, n_folds, rng)):
-            train = fold_sample & ~validation
+        ids, rows, cols, sampled, folds = _split_fold_ids(
+            observed, fold_fraction, n_folds, int(seed)
+        )
+        for fold, fold_ids in enumerate(folds):
+            validation = _ids_to_mask(np.sort(fold_ids), ids, rows, cols, n)
+            train_ids = np.setdiff1d(sampled, fold_ids, assume_unique=True)
+            train = _ids_to_mask(train_ids, ids, rows, cols, n)
             diag = np.diag_indices_from(train)
             train[diag] = observed[diag]
             splits.append(_CVSplit(repeat, fold, train, validation))
     return splits
-
-
-def _sample_fold_entries(
-    observed: np.ndarray, fold_fraction: float, rng: np.random.RandomState
-) -> np.ndarray:
-    pairs = _observed_pairs(observed)
-    if pairs.size == 0:
-        raise ValueError("cross-validation needs observed off-diagonal entries")
-    n_keep = max(1, int(fold_fraction * pairs.size))
-    kept = rng.choice(pairs, size=n_keep, replace=False)
-    return _pairs_to_mask(kept, observed.shape[0])
-
-
-def _fold_masks(
-    fold_sample: np.ndarray, n_folds: int, rng: np.random.RandomState
-) -> list[np.ndarray]:
-    pairs = _observed_pairs(fold_sample)
-    if pairs.size < n_folds:
-        raise ValueError(
-            f"cross-validation needs at least {n_folds} fold-sampled "
-            f"off-diagonal entries; got {pairs.size}"
-        )
-    shuffled = np.array_split(rng.permutation(pairs), n_folds)
-    return [_pairs_to_mask(fold, fold_sample.shape[0]) for fold in shuffled]
-
-
-def _observed_pairs(mask: np.ndarray) -> np.ndarray:
-    i, j = np.triu_indices(mask.shape[0], k=1)
-    return np.flatnonzero(mask[i, j])
-
-
-def _pairs_to_mask(pairs: np.ndarray, n: int) -> np.ndarray:
-    i, j = np.triu_indices(n, k=1)
-    mask = np.zeros((n, n), dtype=bool)
-    mask[i[pairs], j[pairs]] = True
-    mask[j[pairs], i[pairs]] = True
-    return mask
 
 
 def get_fold_fraction(sampling_fraction: float, n_folds: int, n: int) -> float:
@@ -262,106 +304,139 @@ def _cross_validate_ranks(
     n_repeats: int,
     random_state: RandomStateLike,
     n_jobs: int | None,
+    threads_per_worker: int | str | None,
     bounds: tuple[float, float],
     fit_kwargs: dict,
 ) -> pd.DataFrame:
     split_seeds, fit_seeds = _cv_seeds(random_state, n_repeats, n_folds, len(ranks))
-    splits = _entrywise_splits(observation_mask(s), fold_fraction, n_folds, split_seeds)
-    return _score_splits(s, splits, ranks, fit_seeds, n_jobs, bounds, fit_kwargs)
+    jobs = [
+        _CVJob(repeat, fold, rank, int(split_seeds[repeat]), int(fit_seeds[repeat, fold, i]))
+        for repeat in range(n_repeats)
+        for fold in range(n_folds)
+        for i, rank in enumerate(ranks)
+    ]
+    return _score_jobs(
+        s, jobs, fold_fraction, n_folds, n_jobs, threads_per_worker, bounds, fit_kwargs
+    )
 
 
-def _score_splits(
+def _score_jobs(
     s: np.ndarray,
-    splits: list[_CVSplit],
-    ranks: tuple[int, ...],
-    fit_seeds: np.ndarray,
+    jobs: list[_CVJob],
+    fold_fraction: float,
+    n_folds: int,
     n_jobs: int | None,
+    threads_per_worker: int | str | None,
     bounds: tuple[float, float],
     fit_kwargs: dict,
 ) -> pd.DataFrame:
-    jobs = [
-        (split, rank, int(fit_seeds[split.repeat, split.fold, i]))
-        for split in splits
-        for i, rank in enumerate(ranks)
-    ]
     n_jobs = n_jobs_for_tasks(n_jobs, len(jobs))
-    pin = n_jobs > 1
+    limits = blas_limits_for_workers(threads_per_worker, n_jobs)
 
     if n_jobs == 1:
-        scores = [_score_job(s, job, bounds, fit_kwargs, pin) for job in jobs]
+        scores = [
+            _score_job(s, job, fold_fraction, n_folds, bounds, fit_kwargs, limits)
+            for job in jobs
+        ]
     else:
         scores = Parallel(n_jobs=n_jobs, prefer="processes")(
-            delayed(_score_job)(s, job, bounds, fit_kwargs, pin) for job in jobs
+            delayed(_score_job)(
+                s, job, fold_fraction, n_folds, bounds, fit_kwargs, limits
+            )
+            for job in jobs
         )
 
     return pd.DataFrame(
         [
             {
-                "repeat": split.repeat,
-                "fold": split.fold,
-                "candidate_rank": rank,
+                "repeat": job.repeat,
+                "fold": job.fold,
+                "candidate_rank": job.rank,
                 "val_mse": score,
             }
-            for (split, rank, _), score in zip(jobs, scores)
+            for job, score in zip(jobs, scores)
         ]
     )
 
 
+def _materialize_split(
+    s: np.ndarray,
+    job: _CVJob,
+    fold_fraction: float,
+    n_folds: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Rebuild this job's train matrix and validation pair coordinates.
+
+    Splits are regenerated deterministically from the job's split seed,
+    so nothing but the seed travels from the parent to the worker.
+    """
+    observed = observation_mask(s)
+    ids, rows, cols, sampled, folds = _split_fold_ids(
+        observed, fold_fraction, n_folds, job.split_seed
+    )
+    val_ids = np.sort(folds[job.fold])
+    train_ids = np.setdiff1d(sampled, val_ids, assume_unique=True)
+
+    train_pos = np.searchsorted(ids, train_ids)
+    train_rows = rows[train_pos]
+    train_cols = cols[train_pos]
+    train = np.full(s.shape, np.nan, dtype=np.float64)
+    train[train_rows, train_cols] = s[train_rows, train_cols]
+    train[train_cols, train_rows] = s[train_cols, train_rows]
+    diag = np.flatnonzero(np.diagonal(observed))
+    train[diag, diag] = s[diag, diag]
+
+    val_pos = np.searchsorted(ids, val_ids)
+    return train, rows[val_pos], cols[val_pos]
+
+
 def _score_job(
     s: np.ndarray,
-    job: tuple[_CVSplit, int, int],
+    job: _CVJob,
+    fold_fraction: float,
+    n_folds: int,
     bounds: tuple[float, float],
     fit_kwargs: dict,
-    pin_threads: bool,
+    blas_limits: int | None,
 ) -> float:
-    split, rank, seed = job
-    return _fit_and_score(
-        s,
-        split.train_mask,
-        split.validation_mask,
-        rank,
-        seed,
-        bounds,
-        fit_kwargs,
-        pin_threads,
-    )
-
-
-def _fit_and_score(
-    s: np.ndarray,
-    train_mask: np.ndarray,
-    validation_mask: np.ndarray,
-    rank: int,
-    seed: int,
-    bounds: tuple[float, float],
-    fit_kwargs: dict,
-    pin_threads: bool,
-) -> float:
-    limit = threadpool_limits(limits=1) if pin_threads else nullcontext()
+    limit = threadpool_limits(limits=blas_limits) if blas_limits else nullcontext()
     with limit:
-        train = np.full(s.shape, np.nan, dtype=np.float64)
-        train[train_mask] = s[train_mask]
+        train, val_rows, val_cols = _materialize_split(s, job, fold_fraction, n_folds)
         est = SRF(
-            rank=rank,
+            rank=job.rank,
             bounds=bounds,
             missing_values=np.nan,
-            random_state=seed,
+            random_state=job.fit_seed,
             **fit_kwargs,
         )
         est.fit(train)
         s_hat = est.reconstruct()
-        return _validation_mse(s, s_hat, validation_mask)
+        return _pairs_mse(s, s_hat, val_rows, val_cols)
+
+
+def _validation_pairs(validation_mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    rows, cols = np.nonzero(validation_mask)
+    upper = rows < cols
+    return rows[upper], cols[upper]
+
+
+def _pairs_mse(
+    s: np.ndarray, s_hat: np.ndarray, rows: np.ndarray, cols: np.ndarray
+) -> float:
+    s_val = s[rows, cols]
+    s_hat_val = s_hat[rows, cols]
+    scored = np.isfinite(s_val) & np.isfinite(s_hat_val)
+    if not scored.any():
+        return float("nan")
+    residual = s_val[scored] - s_hat_val[scored]
+    return float(np.mean(residual * residual))
 
 
 def _validation_mse(
     s: np.ndarray, s_hat: np.ndarray, validation_mask: np.ndarray
 ) -> float:
-    triu = np.triu_indices(s.shape[0], k=1)
-    scored = validation_mask[triu] & np.isfinite(s[triu]) & np.isfinite(s_hat[triu])
-    if not scored.any():
-        return float("nan")
-    residual = s[triu][scored] - s_hat[triu][scored]
-    return float(np.mean(residual * residual))
+    rows, cols = _validation_pairs(validation_mask)
+    return _pairs_mse(s, s_hat, rows, cols)
 
 
 def _summarize(fold_scores: pd.DataFrame) -> pd.DataFrame:

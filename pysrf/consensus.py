@@ -3,11 +3,16 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.optimize import linear_sum_assignment
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils.validation import check_is_fitted
+from threadpoolctl import threadpool_limits
+
+from ._common import blas_limits_for_workers, n_jobs_for_tasks
 
 
 def l2_norm_columns(v: np.ndarray) -> np.ndarray:
@@ -87,11 +92,13 @@ class EnsembleFit(BaseEstimator, TransformerMixin):
         n_runs: int = 50,
         random_state: int = 0,
         n_jobs: int = -1,
+        threads_per_worker: int | str | None = None,
     ):
         self.base_estimator = base_estimator
         self.n_runs = n_runs
         self.random_state = random_state
         self.n_jobs = n_jobs
+        self.threads_per_worker = threads_per_worker
 
     def fit(self, x: np.ndarray, y: np.ndarray | None = None) -> EnsembleFit:
         """Fit n_runs independent estimators in parallel.
@@ -107,14 +114,24 @@ class EnsembleFit(BaseEstimator, TransformerMixin):
         self : EnsembleFit
         """
 
-        def _fit_one(seed):
-            est = clone(self.base_estimator)
-            est.set_params(random_state=seed)
-            return est, est.fit_transform(x)
+        n_jobs = n_jobs_for_tasks(self.n_jobs, self.n_runs)
+        limits = blas_limits_for_workers(self.threads_per_worker, n_jobs)
 
-        results = Parallel(n_jobs=self.n_jobs)(
-            delayed(_fit_one)(self.random_state + i) for i in range(self.n_runs)
-        )
+        def _fit_one(seed):
+            # Limit BLAS threads per worker so parallel runs do not
+            # oversubscribe the machine
+            limit = threadpool_limits(limits=limits) if limits else nullcontext()
+            with limit:
+                est = clone(self.base_estimator)
+                est.set_params(random_state=seed)
+                return est, est.fit_transform(x)
+
+        if n_jobs == 1:
+            results = [_fit_one(self.random_state + i) for i in range(self.n_runs)]
+        else:
+            results = Parallel(n_jobs=n_jobs, prefer="processes")(
+                delayed(_fit_one)(self.random_state + i) for i in range(self.n_runs)
+            )
 
         estimators, embeddings = zip(*results)
         self.estimators_ = list(estimators)
