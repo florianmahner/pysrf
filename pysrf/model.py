@@ -26,9 +26,9 @@ from sklearn.utils.validation import (
 )
 from sklearn.utils._param_validation import Interval, StrOptions, Integral, Real
 
-from ._bsum import admm_step_, update_w
+from ._bsum import admm_step_, bsum_step, update_w
 from ._common import is_nan_marker, observation_mask
-from ._steps import STALL_WINDOW, AdmmStep, BsumStep, bsum_step
+from ._steps import PROGRESS_WINDOW, Step
 
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ def _validate_bounds(val) -> None:
 
 def _complete_steps(
     x: np.ndarray, w: np.ndarray, max_inner: int
-) -> Iterator[tuple[np.ndarray, BsumStep]]:
+) -> Iterator[tuple[np.ndarray, Step]]:
     """Yield one BSUM iteration at a time on complete data."""
     while True:
         w = update_w(x, w, max_iter=max_inner)
@@ -102,7 +102,7 @@ def _missing_steps(
     rho: float,
     bounds: tuple[float | None, float | None] | None,
     max_inner: int,
-) -> Iterator[tuple[np.ndarray, AdmmStep]]:
+) -> Iterator[tuple[np.ndarray, Step]]:
     """Yield one ADMM iteration at a time on partially observed data.
 
     An auxiliary matrix V and dual variables decouple the data-fitting
@@ -244,11 +244,11 @@ class SRF(TransformerMixin, BaseEstimator):
             mininterval=10.0 if not sys.stderr.isatty() else 0.1,
         )
 
-    def _fit_loop(self, steps: Iterator[tuple[np.ndarray, BsumStep | AdmmStep]]) -> SRF:
+    def _fit_loop(self, steps: Iterator[tuple[np.ndarray, Step]]) -> SRF:
         """Drive the outer iterations; steps yields one measurement each."""
         history = defaultdict(list)
 
-        recent = deque(maxlen=STALL_WINDOW)
+        recent = deque(maxlen=PROGRESS_WINDOW)
         pbar = self._progress_bar()
         for i, (w, step) in zip(pbar, steps):
             earlier = recent[0] if recent else None

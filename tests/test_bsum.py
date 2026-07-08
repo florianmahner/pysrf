@@ -26,7 +26,7 @@ from helpers import make_bsum_data
 
 import pysrf
 from pysrf._bsum import BACKEND
-from pysrf._steps import bsum_step
+from pysrf._bsum import bsum_step
 
 
 def _load_python_bsum():
@@ -313,6 +313,11 @@ class TestResidual:
         residual = bsum_step(m, w0)
         assert residual.rec_error >= 0
         assert residual.relative_fit >= 0
+
+    def test_matches_python_mirror(self):
+        m, w0 = make_bsum_data(n=50, r=5, seed=42)
+        python_step = _load_python_bsum().bsum_step(m, w0)
+        np.testing.assert_array_equal(np.array(bsum_step(m, w0)), np.array(python_step))
 
 
 class TestMonotonicity:

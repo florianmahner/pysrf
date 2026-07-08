@@ -15,7 +15,7 @@
 import numpy as np
 cimport numpy as np
 
-from ._steps import AdmmStep
+from ._steps import AdmmStep, BsumStep
 from libc.math cimport fabs, sqrt, cbrt
 from cython.parallel cimport prange
 from libc.string cimport memcpy
@@ -27,6 +27,17 @@ BACKEND = "cython"
 
 # Element-change threshold at which a W sweep stops early (Lin, 2007)
 INNER_TOL = 1e-6
+
+
+def bsum_step(x, w):
+    """Measure the fit of WW' to x without forming the n x n product."""
+    xw = x @ w
+    wtw = w.T @ w
+    return BsumStep(
+        ss_x=np.einsum("ij,ij->", x, x),
+        ss_xw=np.einsum("ij,ij->", xw, w),
+        ss_wwt=np.einsum("ij,ij->", wtw, wtw),
+    )
 
 ctypedef np.float64_t DTYPE_t
 

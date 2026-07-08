@@ -1,6 +1,9 @@
-"""
-This module implements the BSUM algorithm from
-Shi et al. (2016). "Inexact Block Coordinate Descent Methods For Symmetric Nonnegative Matrix Factorization"
+"""Readable reference mirror of the compiled extension.
+
+Implements the BSUM algorithm from Shi et al. (2016), "Inexact Block
+Coordinate Descent Methods For Symmetric Nonnegative Matrix
+Factorization". The parity tests hold this module and the extension to
+identical results; it is imported only when the extension is absent.
 """
 
 import math
@@ -8,7 +11,7 @@ import warnings
 
 import numpy as np
 
-from ._steps import AdmmStep
+from ._steps import AdmmStep, BsumStep
 
 # This module is only imported when the compiled extension is absent
 warnings.warn(
@@ -23,6 +26,17 @@ BACKEND = "python"
 
 # Element-change threshold at which a W sweep stops early (Lin, 2007)
 INNER_TOL = 1e-6
+
+
+def bsum_step(x, w):
+    """Measure the fit of WW' to x without forming the n x n product."""
+    xw = x @ w
+    wtw = w.T @ w
+    return BsumStep(
+        ss_x=np.einsum("ij,ij->", x, x),
+        ss_xw=np.einsum("ij,ij->", xw, w),
+        ss_wwt=np.einsum("ij,ij->", wtw, wtw),
+    )
 
 
 def _quartic_root(a: float, b: float, c: float, d: float) -> float:

@@ -20,13 +20,14 @@ def _relative_fit(reconstruction: float, ss_x: float) -> float:
     return 0.0
 
 
-# Iterations the stall test looks back over, as in scikit-learn's NMF
-STALL_WINDOW = 10
+# Iterations the convergence test measures progress over (scikit-learn's
+# NMF checks every 10 iterations the same way)
+PROGRESS_WINDOW = 10
 
 
 def _fit_stalled(f: float, f_earlier: float | None, tol: float) -> bool:
     """Stopping rule of Xu et al. (2012), Eq. 20, measured over
-    STALL_WINDOW iterations: the relative fit is below tol or improved
+    PROGRESS_WINDOW iterations: the relative fit is below tol or improved
     by less than tol across the window."""
     if f <= tol:
         return True
@@ -77,17 +78,6 @@ class BsumStep(NamedTuple):
             "rec_error": self.rec_error,
             "evar": _explained_variance(self.reconstruction, total_ss),
         }
-
-
-def bsum_step(x: np.ndarray, w: np.ndarray) -> BsumStep:
-    """Measure the fit of WW' to x without forming the n x n product."""
-    xw = x @ w
-    wtw = w.T @ w
-    return BsumStep(
-        ss_x=np.einsum("ij,ij->", x, x),
-        ss_xw=np.einsum("ij,ij->", xw, w),
-        ss_wwt=np.einsum("ij,ij->", wtw, wtw),
-    )
 
 
 class AdmmStep(NamedTuple):
@@ -164,3 +154,6 @@ class AdmmStep(NamedTuple):
             "primal_residual": self.primal_residual,
             "dual_residual": self.dual_residual,
         }
+
+
+Step = BsumStep | AdmmStep
