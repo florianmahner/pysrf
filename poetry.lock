@@ -2984,4 +2984,4 @@ dev = ["cython", "griffe", "ipykernel", "matplotlib", "meson", "meson-python", "
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "4ca1cdcdf1b283de29794a634bda1ae4b437d3acfe609518f1bdd1967c171abc"
+content-hash = "ba696ec156cc6fa3ed7a7ea03885cb16cf6977ef319067a59ca79a7c158700d3"
