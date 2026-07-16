@@ -1,5 +1,5 @@
 # Author: Florian P. Mahner
-# License: MIT
+# License: BSD-3-Clause
 
 from __future__ import annotations
 

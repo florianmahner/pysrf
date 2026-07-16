@@ -4,7 +4,7 @@ To cite PySRF, see CITATION.cff (or https://arxiv.org/abs/2605.26921).
 """
 
 # Author: Florian P. Mahner
-# License: MIT
+# License: BSD-3-Clause
 
 from __future__ import annotations
 
