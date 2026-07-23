@@ -1,0 +1,32 @@
+name: Attribution guard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  no-ai-attribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # AI-attributed commits seed GitHub's permanent contributor cache, which
+      # only a repo transfer can flush again — so fail on the whole history,
+      # not just the pushed range.
+      - name: Scan history for AI attribution
+        run: |
+          names='(claude|anthropic|copilot|chatgpt|gpt-[0-9]|openai|gemini|cursor|devin|aider|windsurf|codex|codeium|tabnine)'
+          idents='(anthropic\.com|openai\.com|devin\.ai|codeium\.com|claude\[bot\]|copilot\[bot\]|devin-ai-integration|chatgpt|aider@|<claude)'
+          bad=0
+          if git log --all -i -E --grep="co-authored-by:.*${names}" --format='%h %s' | grep .; then
+            bad=1
+          fi
+          if git log --all --format='%h %an <%ae> / %cn <%ce>' | grep -iE "${idents}"; then
+            bad=1
+          fi
+          if [ "${bad}" -ne 0 ]; then
+            echo "::error::AI attribution found in commit history (listed above). Rewrite it out before it reaches the contributor list."
+            exit 1
+          fi
