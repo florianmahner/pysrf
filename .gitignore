@@ -54,3 +54,6 @@ site/
 .DS_Store
 Thumbs.db
 CLAUDE.md
+
+# Screenshots dropped into the repo root
+Screenshot*.png
