@@ -1150,10 +1150,7 @@ unobserved. Here we drop about 30% of the entries to <code>NaN</code>.</p>
 </code></pre></div>
 <p>SRF fits using only the observed pairs and then predicts the held-out ones in <code>reconstruct()</code>. This beats imputing the gaps first: the paper (§2.1) shows that k-nearest-neighbor or median imputation distorts the pairwise similarity structure and biases revealed dimensions, whereas leaving entries unobserved does not.</p>
 <h2 id="cross-validated-rank-selection">Cross-validated rank selection<a class="headerlink" href="#cross-validated-rank-selection" title="Permanent link">&para;</a></h2>
-<p>The number of dimensions is usually unknown. <code>cross_val_score</code> selects the
-SRF model rank by first calibrating the CV protocol from eigenspace
-stability, then evaluating held-out error for the candidate ranks you
-provide.</p>
+<p>The number of dimensions is usually unknown. <code>cross_val_score</code> selects the SRF model rank with a restricted hold-out scheme: it first calibrates the hold-out protocol from the similarity matrix, then evaluates held-out prediction error for the candidate ranks you provide.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>

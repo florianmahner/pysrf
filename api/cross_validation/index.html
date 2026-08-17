@@ -992,8 +992,8 @@
 
 
 <h1 id="cross-validation-api">Cross-Validation API<a class="headerlink" href="#cross-validation-api" title="Permanent link">&para;</a></h1>
-<p><code>cross_val_score</code> is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and sampling fraction from eigenspace stability, then evaluates the candidate ranks you provide with restricted entry-wise cross-validation. The returned <code>CVResult</code> exposes the selected model rank as <code>cv.model_rank</code>, the fold-level validation scores as <code>cv.fold_scores</code>, and the per-rank averages as <code>cv.rank_scores</code>. Calibration itself is documented in <a href="../calibration/">Calibration</a>.</p>
-<p>Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears in many held-out pairs. PySRF therefore holds out symmetric off-diagonal entries and treats them as missing during fitting.</p>
+<p><code>cross_val_score</code> is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and a sampling fraction from the similarity matrix, then evaluates the candidate ranks you provide with restricted entrywise cross-validation. The returned <code>CVResult</code> exposes the selected model rank as <code>cv.model_rank</code>, the fold-level validation scores as <code>cv.fold_scores</code>, and the per-rank averages as <code>cv.rank_scores</code>. Calibration itself is documented in <a href="../calibration/">Calibration</a>.</p>
+<p>Entries of a similarity matrix are not independent observations: once observed entries exceed the matrix-completion threshold, held-out entries are already determined by the training entries, which biases rank selection toward overly large ranks. <code>cross_val_score</code> therefore fixes a sparse observation pattern before cross-validation, keeping each fold's training set below that threshold. Folds are assigned at the level of unordered off-diagonal pairs, mirrored symmetrically, and treated as missing during fitting.</p>
 
 
 <div class="doc doc-object doc-function">

@@ -1014,22 +1014,22 @@
 
 
 <h1 id="what-is-srf">What is SRF?<a class="headerlink" href="#what-is-srf" title="Permanent link">&para;</a></h1>
-<p>A similarity matrix <code>S</code> records how similar every pair of items is to one another. Knowing that a dog is more similar to a cow than to a car does not tell you <em>why</em> — whether the similarity is driven by animacy, size, shape, or some other property.</p>
-<p>SRF (Similarity-Based Representation Factorization) reveals those properties. It factorizes a symmetric, non-negative similarity matrix into a small set of sparse, non-negative dimensions: <code>S ≈ WWᵀ</code>. Each row of <code>W</code> gives the loadings for one item, one value per dimension.</p>
-<p>A similarity matrix can also be viewed as a weighted graph, and in that view SRF's dimensions are <strong>soft community memberships</strong> — each item gets a non-negative loading on every dimension, and a near-zero loading means that dimension simply doesn't apply to that item. For example, <em>lion</em> loads strongly on the animate dimension, while <em>ball</em> loads on both round and natural. Because loadings are non-negative, dimensions add up rather than cancel out, which makes the result easy to read.</p>
+<p>A similarity matrix records how similar every pair of items is. Knowing that a dog has a more similar representation to a cow than to a car does not reveal whether this similarity is driven by animacy, naturalness, real-world size, shape, or other, potentially unknown properties.</p>
+<p>SRF (Similarity-Based Representation Factorization) reveals such properties. It represents a symmetric, non-negative similarity matrix <span class="arithmatex">\(S\)</span> with a low-rank symmetric factorization <span class="arithmatex">\(S \approx WW^\top\)</span>, where <span class="arithmatex">\(W\)</span> is non-negative and each row of <span class="arithmatex">\(W\)</span> holds one item's loadings across dimensions. As dimensions can only contribute positively to similarity, this yields an additive, parts-based representation that can be interpreted directly.</p>
+<p>A similarity matrix can also be viewed as a weighted graph where edges connect similar items. In that view, dimensions revealed by SRF act as <strong>soft community memberships</strong>: each item receives a non-negative loading on every dimension, and a near-zero loading means a dimension does not apply to that item. For example, <em>lion</em> loads strongly on an animate dimension, while <em>ball</em> loads on both round and natural.</p>
 <h2 id="why-it-works-on-real-data">Why it works on real data<a class="headerlink" href="#why-it-works-on-real-data" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Missing data</strong>: real similarity matrices are often incomplete. SRF learns directly from the observed entries, with no imputation — and can then predict the entries you never measured.</li>
-<li><strong>Dimensionality selection</strong>: you usually don't know how many dimensions to use. <code>cross_val_score</code> calibrates the hold-out protocol and selects the SRF model rank by validation error.</li>
+<li><strong>Missing data</strong>: many similarity datasets are incomplete because exhaustive sampling of all stimulus pairs is infeasible. SRF fits the model while treating unobserved entries as missing, so it learns from incomplete similarity matrices without imputing missing values. After fitting, it predicts every pair, including pairs that were never measured.</li>
+<li><strong>Dimensionality selection</strong>: the number of dimensions is usually unknown. <code>cross_val_score</code> selects it with a restricted hold-out scheme designed specifically for similarity data, choosing the rank that best predicts held-out similarities.</li>
 <li><strong>Fast solver</strong>: the core fit runs in compiled Cython, with a pure-Python fallback when the extension is not compiled.</li>
 </ul>
 <h2 id="when-to-use-srf">When to use SRF<a class="headerlink" href="#when-to-use-srf" title="Permanent link">&para;</a></h2>
 <p>SRF works on any symmetric, non-negative similarity matrix, however it was produced:</p>
 <ul>
-<li><strong>Behavioral data</strong>: any task that yields a measure of similarity between items.</li>
+<li><strong>Behavioral data</strong>: similarity judgments, including pairwise ratings and triplet odd-one-out tasks.</li>
 <li><strong>Neural data</strong>: similarity matrices from fMRI, electrophysiology, or other neural recordings.</li>
 <li><strong>Machine learning</strong>: kernels built from deep neural network activations.</li>
-<li><strong>Graph representations</strong>: any data you can convert to an adjacency graph, such as word-association networks.</li>
+<li><strong>Graph representations</strong>: weighted graphs such as word association networks, where SRF learns from sparse, partially observed connections.</li>
 </ul>
 <h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
 <p>To cite PySRF, use the <strong>Cite this repository</strong> button on <a href="https://github.com/florianmahner/pysrf">GitHub</a> (generated from <a href="https://github.com/florianmahner/pysrf/blob/master/CITATION.cff"><code>CITATION.cff</code></a>), or read the preprint at <a href="https://arxiv.org/abs/2605.26921">arXiv:2605.26921</a>.</p>

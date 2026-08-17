@@ -992,7 +992,7 @@
 
 
 <h1 id="calibration-api">Calibration API<a class="headerlink" href="#calibration-api" title="Permanent link">&para;</a></h1>
-<p>This lower-level API lives in <code>pysrf.coherence</code>. It returns a model-independent spectral cutoff plus a sampling fraction. Most users should call <code>cross_val_score</code>, which runs this calibration by default.</p>
+<p>This lower-level API lives in <code>pysrf.coherence</code> and calibrates the cross-validation protocol from a similarity matrix alone. It returns two quantities: a spectral cutoff, the number of leading eigendirections that remain stable under random off-diagonal subsampling, and a sampling fraction, the smallest sampling probability that preserves most of that spectral structure. Both are model independent and determined entirely by the similarity matrix. Most users should call <code>cross_val_score</code>, which runs this calibration by default.</p>
 
 
 <div class="doc doc-object doc-function">

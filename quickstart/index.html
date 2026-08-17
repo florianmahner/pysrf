@@ -1014,22 +1014,10 @@
 
 
 <h1 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>This guide walks through the core PySRF workflow: revealing
-interpretable dimensions from a similarity matrix, interpreting the result,
-learning from incomplete data, and choosing how many dimensions to keep.</p>
+<p>This guide walks through the core PySRF workflow: revealing interpretable dimensions from a similarity matrix, interpreting the result, learning from incomplete data, and choosing how many dimensions to keep.</p>
 <h2 id="reveal-dimensions-from-a-similarity-matrix">Reveal dimensions from a similarity matrix<a class="headerlink" href="#reveal-dimensions-from-a-similarity-matrix" title="Permanent link">&para;</a></h2>
-<p>A similarity matrix <code>S</code> captures pairwise relationships between stimuli.
-These similarities can come from diverse forms of measured data across
-systems, modalities, and species — for example behavioral similarity
-judgments, neural recordings, or computational models. You can also think
-of <code>S</code> as a weighted graph, where stronger edges connect more similar
-items. PySRF expects this matrix to be symmetric and non-negative.</p>
-<p>SRF factorizes the matrix into a single non-negative embedding <code>W</code> so that
-<code>S ≈ WW^T</code>. Each row of <code>W</code> holds one item's loadings across the
-dimensions, and each column is a dimension. Because loadings are
-non-negative, the dimensions act as soft community memberships: an item
-can belong to several dimensions at once, and a near-zero loading means
-that dimension is irrelevant to that item.</p>
+<p>A similarity matrix <span class="arithmatex">\(S\)</span> captures pairwise relationships between stimuli. These similarities can come from diverse forms of measured data across systems, modalities, and species, for example behavioral similarity judgments, neural recordings, or deep neural network activations. You can also think of <span class="arithmatex">\(S\)</span> as a weighted graph, where stronger edges connect more similar items. PySRF expects this matrix to be symmetric and non-negative.</p>
+<p>SRF factorizes the matrix into a single non-negative embedding <span class="arithmatex">\(W\)</span> so that <span class="arithmatex">\(S \approx WW^\top\)</span>. Each row of <span class="arithmatex">\(W\)</span> holds one item's loadings across dimensions, and each column is a dimension. Because loadings are non-negative, dimensions act as soft community memberships: an item can belong to several dimensions at once, and a near-zero loading means a dimension is irrelevant to that item.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1087,13 +1075,7 @@ observed and the previously missing entries.</p>
 dimensions merge distinct factors or miss structure; too many split
 coherent factors or overfit noise. Use <code>cross_val_score</code> to select the
 model rank from held-out prediction error.</p>
-<p>Ordinary entrywise cross-validation does not work here: entries in a
-similarity matrix are not independent, because changing one item affects
-all of its pairs. PySRF therefore uses a restricted hold-out scheme for
-similarity matrices. It hides a sparse set of observed entries, treats them
-as missing during fitting, and then predicts them from the learned
-embedding. By default, <code>cross_val_score</code> calibrates the sampling fraction,
-then evaluates the candidate ranks you provide.</p>
+<p>Ordinary entrywise cross-validation is unreliable here: entries in a similarity matrix are not independent observations, and with enough observed entries the held-out values are already determined by the training entries through the low-rank structure itself. PySRF therefore uses a restricted hold-out scheme designed specifically for similarity data. It fixes a sparse observation pattern before cross-validation, treats held-out pairs as missing during fitting, and then predicts them from the learned embedding. By default, <code>cross_val_score</code> calibrates the sampling fraction from the similarity matrix, then evaluates the candidate ranks you provide.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Select the model rank by calibrated cross-validation</span>

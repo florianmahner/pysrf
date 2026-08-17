@@ -951,7 +951,7 @@
 
 
 <h1 id="pysrf">PySRF<a class="headerlink" href="#pysrf" title="Permanent link">&para;</a></h1>
-<p>PySRF implements SRF (Similarity-Based Representation Factorization): given a symmetric, non-negative similarity matrix <code>S</code>, it reveals a small set of sparse, non-negative dimensions <code>W</code> with <code>S ≈ WWᵀ</code>. It learns from the observed entries only (no imputation) and selects the number of dimensions by cross-validation.</p>
+<p>PySRF implements SRF (Similarity-Based Representation Factorization), a method for revealing low-dimensional, non-negative, interpretable embeddings from similarity matrices. Given a symmetric, non-negative similarity matrix <span class="arithmatex">\(S\)</span>, SRF reveals a small set of sparse, non-negative dimensions <span class="arithmatex">\(W\)</span> with <span class="arithmatex">\(S \approx WW^\top\)</span>. It learns from observed entries without imputing missing values and selects the number of dimensions by cross-validation.</p>
 <p>New here? See <a href="explanation/">What is SRF?</a> for how the method works and when to use it, or jump straight to <a href="installation/">Installation</a> and the <a href="quickstart/">Quick start</a>.</p>
 <h2 id="quick-example">Quick example<a class="headerlink" href="#quick-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>

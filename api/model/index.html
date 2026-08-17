@@ -1170,7 +1170,7 @@
 
 
 <h1 id="model-api">Model API<a class="headerlink" href="#model-api" title="Permanent link">&para;</a></h1>
-<p><code>SRF</code> is the main estimator in PySRF. Given a symmetric similarity matrix <code>S</code>, it learns a sparse, non-negative embedding <code>W</code> such that <code>S ≈ WW^T</code>, where each row of <code>W</code> holds an item's loadings on revealed dimensions and small loadings mark dimensions that are irrelevant to that item. It works directly on matrices with missing entries, so no imputation is needed. Reach for <code>SRF</code> whenever you want interpretable, part-based dimensions out of a similarity matrix; see <a href="../../quickstart/">quickstart</a> for an end-to-end walkthrough.</p>
+<p><code>SRF</code> is the main estimator in PySRF. Given a symmetric similarity matrix <span class="arithmatex">\(S\)</span>, it learns a sparse, non-negative embedding <span class="arithmatex">\(W\)</span> such that <span class="arithmatex">\(S \approx WW^\top\)</span>, where each row of <span class="arithmatex">\(W\)</span> holds an item's loadings on revealed dimensions and small loadings mark dimensions that are irrelevant to that item. It works directly on matrices with missing entries, so no imputation is needed. Reach for <code>SRF</code> whenever you want interpretable, parts-based dimensions out of a similarity matrix; see <a href="../../quickstart/">quickstart</a> for an end-to-end walkthrough.</p>
 <h2 id="srf-class">SRF Class<a class="headerlink" href="#srf-class" title="Permanent link">&para;</a></h2>
 
 

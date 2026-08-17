@@ -1413,7 +1413,7 @@ with different performance characteristics. The <code>model.py</code> import use
 early-exit threshold is the module constant <code>INNER_TOL</code>.</p>
 <h2 id="algorithm">Algorithm<a class="headerlink" href="#algorithm" title="Permanent link">&para;</a></h2>
 <p>Per iteration, for each row i and rank index j:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n) — dominates at 95%+ of cost
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n), dominates at 95%+ of cost
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>dot_val = W[i,:] · WtW[j,:]               # O(r)
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>coefficients = f(old, diag, WtW, mw_i)    # O(1)
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>new = quartic_root(coefficients)           # O(1)
@@ -1520,10 +1520,9 @@ At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than s
 <p>The complete-data step generator in <code>model.py</code> uses <code>bsum_step</code> from <code>_bsum</code> to compute
 <code>||X - WW^T||_F</code> without materializing the n×n product <code>WW^T</code>. This keeps memory
 at O(n²) (just the input matrix) instead of O(2n²).</p>
-<p>The identity used:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>||X - WW^T||²_F = ||X||²_F - 2·tr(X·W·W^T) + ||WW^T||²_F
-</code></pre></div>
-where <code>tr(X·W·W^T) = sum((X@W) * W)</code> costs O(n²r) and <code>||WW^T||²_F = ||W^TW||²_F</code>
+<p>The identity used:</p>
+<div class="arithmatex">\[\|X - WW^\top\|_F^2 = \|X\|_F^2 - 2\,\operatorname{tr}(X W W^\top) + \|WW^\top\|_F^2\]</div>
+<p>where <code>tr(X·W·W^T) = sum((X@W) * W)</code> costs O(n²r) and <code>||WW^T||²_F = ||W^TW||²_F</code>
 costs O(nr²), both with no n×n temporaries.</p>
 <h2 id="numerical-agreement">Numerical agreement<a class="headerlink" href="#numerical-agreement" title="Permanent link">&para;</a></h2>
 <h3 id="update_w_scalar-vs-python"><code>update_w_scalar</code> vs Python<a class="headerlink" href="#update_w_scalar-vs-python" title="Permanent link">&para;</a></h3>
@@ -1552,10 +1551,10 @@ identical inputs → identical outputs. ✓</p>
 <p><strong>3. Coefficient b = 12 · W[i,j]</strong>: Depends only on the current element. All
 implementations read <code>old = W[i,j]</code> from the same array, so b is identical. ✓</p>
 <p><strong>4. Coefficient c = 4·((diag[i] − M[i,i]) + WtW[j,j] + W[i,j]²)</strong>:
-- <code>diag[i]</code> = ||W[i,:]||² — maintained incrementally via
+- <code>diag[i]</code> = ||W[i,:]||² is maintained incrementally via
   <code>diag[i] += new² − old²</code>, identical in all implementations.
-- <code>M[i,i]</code> — read-only input, identical.
-- <code>WtW[j,j]</code> — maintained incrementally via <code>WtW[j,j] += delta²</code> after each
+- <code>M[i,i]</code> is read-only input, identical.
+- <code>WtW[j,j]</code> is maintained incrementally via <code>WtW[j,j] += delta²</code> after each
   update. The rank-1 update <code>WtW[j,:] += delta·W[i,:]</code> uses daxpy in the BLAS
   variants for the row (stride-1) and a scalar loop for the column (stride-r).
   Since daxpy computes <code>y[k] += alpha·x[k]</code> element-by-element with no
@@ -1564,7 +1563,7 @@ implementations read <code>old = W[i,j]</code> from the same array, so b is iden
 <p>The first term, <code>W[i,:] · WtW[:,j]</code>: The scalar variant uses a scalar loop over
 WtW[:,j] (column, stride r). The BLAS variants use <code>ddot(r, W[i,:], 1,
 WtW[j,:], 1)</code> on WtW[j,:] (row, stride 1). Since WtW = W^T W is symmetric,
-WtW[j,:] = WtW[:,j] — same values, different memory layout. The ddot result
+WtW[j,:] = WtW[:,j]: same values, different memory layout. The ddot result
 differs from the scalar loop only by IEEE 754 rounding.</p>
 <p>The second term, <code>MW[i,j] = (M @ W_current)[i,j]</code>, is the critical difference:</p>
 <ul>
@@ -1586,9 +1585,9 @@ differs from the scalar loop only by IEEE 754 rounding.</p>
 <p>At the start of iteration, MW₀ = M @ W₀ via dgemm. When processing row i,
   rows 0..i−1 have already been updated: W_current[k,:] = W₀[k,:] + ΔW[k,:]
   for k &lt; i, and W_current[k,:] = W₀[k,:] for k ≥ i. The needed value is:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>MW_correct[i,j] = sum_k M[i,k] · W_current[k,j]
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>                 = sum_k M[i,k] · W₀[k,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>                 = MW₀[i,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>MW_correct[i,j] = sum_k M[i,k] · W_current[k,j]
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                 = sum_k M[i,k] · W₀[k,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>                 = MW₀[i,j] + sum_{k&lt;i} M[i,k] · ΔW[k,j]
 </code></pre></div>
 <p>The correction <code>sum_{k&lt;i} M[i,k] · ΔW[k,j]</code> is computed in two parts:</p>
 <p><strong>Inter-block</strong> (via dgemm, after each block completes): For rows in
@@ -1615,10 +1614,9 @@ implementations is the summation order in:
 <p>All other operations are arithmetically identical.</p>
 <h4 id="ieee-754-rounding-error-bound">IEEE 754 rounding error bound<a class="headerlink" href="#ieee-754-rounding-error-bound" title="Permanent link">&para;</a></h4>
 <p>By Higham (2002, Theorem 3.1), the forward error of a floating-point inner
-product fl(x^T y) of length n satisfies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>|fl(x^T y) − x^T y| ≤ γ_n · |x|^T |y|
-</code></pre></div>
-<p>where γ_n = nu/(1−nu) ≈ nu and u = 2^{-53} ≈ 1.11×10^{-16} is the IEEE 754
+product <span class="arithmatex">\(\operatorname{fl}(x^\top y)\)</span> of length n satisfies:</p>
+<div class="arithmatex">\[|\operatorname{fl}(x^\top y) - x^\top y| \le \gamma_n\, |x|^\top |y|\]</div>
+<p>where <span class="arithmatex">\(\gamma_n = nu/(1-nu) \approx nu\)</span> and <span class="arithmatex">\(u = 2^{-53} \approx 1.11 \times 10^{-16}\)</span> is the IEEE 754
 double-precision unit roundoff. Two different summation orders (e.g., scalar
 sequential vs BLAS SIMD) each satisfy this bound independently, so their
 results can differ by up to ~2·γ_n · |x|^T |y|.</p>
@@ -1628,7 +1626,7 @@ max difference ≈ 2 · 100 · 1.11×10^{-16} · (sum of |M[i,k]·W[k,j]|)
 ~10^{-14} differences after one iteration.</p>
 <p>This non-reproducibility of BLAS results due to summation reordering is a
 well-documented phenomenon. Standard BLAS libraries (OpenBLAS, MKL, cuBLAS)
-do not guarantee a specific summation order — SIMD instructions accumulate
+do not guarantee a specific summation order; SIMD instructions accumulate
 partial sums in parallel lanes that are reduced in implementation-defined order
 (Ahrens, Demmel &amp; Nguyen, 2020; Demmel &amp; Nguyen, 2015). The ReproBLAS project
 provides reproducible alternatives at ~1.5× cost, but standard BLAS is used
@@ -1646,12 +1644,12 @@ Near the non-negativity boundary:</p>
 </ol>
 <p>This boundary flip propagates through subsequent WtW updates within the same
 row's j-loop and cascades to all downstream elements. Over many iterations,
-flips accumulate — but both algorithms converge to the same fixed point of the
+flips accumulate, but both algorithms converge to the same fixed point of the
 NMF objective (Shi et al. 2017, Theorem 1).</p>
 <h4 id="reconstruction-quality-is-identical">Reconstruction quality is identical<a class="headerlink" href="#reconstruction-quality-is-identical" title="Permanent link">&para;</a></h4>
 <p>Despite element-wise divergence, the reconstruction quality
 <code>||M − WW^T||_F / ||M||_F</code> matches to <strong>10+ decimal places</strong> at all iteration
-counts. Both algorithms minimize the same objective function — boundary flips
+counts. Both algorithms minimize the same objective function; boundary flips
 select a slightly different path through the solution space but converge to
 equally good local minima.</p>
 <p>Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):</p>
@@ -1712,7 +1710,7 @@ equally good local minima.</p>
 <ul>
 <li>Shi, Q., Sun, H., Lu, S., Hong, M. &amp; Razaviyayn, M. (2017). "Inexact Block
   Coordinate Descent Methods for Symmetric Nonnegative Matrix Factorization."
-  IEEE Trans. Signal Processing, 65(22), 5995–6008.
+  IEEE Trans. Signal Processing, 65(22), 5995-6008.
   https://arxiv.org/abs/1607.03092</li>
 <li>Higham, N. J. (2002). "Accuracy and Stability of Numerical Algorithms."
   2nd ed., SIAM. Theorem 3.1 (inner product error bound).</li>
@@ -1720,22 +1718,22 @@ equally good local minima.</p>
   Reproducible Floating Point Summation." ACM Trans. Math. Software, 46(3).
   https://doi.org/10.1145/3389360</li>
 <li>Demmel, J. &amp; Nguyen, H. D. (2015). "Parallel Reproducible Summation."
-  IEEE Trans. Computers, 64(7), 2060–2070.</li>
+  IEEE Trans. Computers, 64(7), 2060-2070.</li>
 <li>Ye, Y. &amp; Bhatt, N. (2024). "FPRev: Revealing Floating-Point Accumulation
   Orders in Software/Hardware Implementations." arXiv:2411.00442.</li>
 </ul>
 <!-- vale on -->
 
 <h2 id="running-benchmarks">Running benchmarks<a class="headerlink" href="#running-benchmarks" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Submit to SLURM</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>sbatch<span class="w"> </span>benchmarks/run.sh
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Or run interactively</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>python<span class="w"> </span>benchmarks/bench_bsum.py<span class="w">   </span><span class="c1"># solver variants</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>python<span class="w"> </span>benchmarks/bench_fit.py<span class="w">    </span><span class="c1"># end-to-end fit timing</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Correctness tests</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_bsum.py<span class="w"> </span>-v
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Submit to SLURM</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>sbatch<span class="w"> </span>benchmarks/run.sh
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Or run interactively</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>python<span class="w"> </span>benchmarks/bench_bsum.py<span class="w">   </span><span class="c1"># solver variants</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>python<span class="w"> </span>benchmarks/bench_fit.py<span class="w">    </span><span class="c1"># end-to-end fit timing</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Correctness tests</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_bsum.py<span class="w"> </span>-v
 </code></pre></div>
 
 
