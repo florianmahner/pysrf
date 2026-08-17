@@ -259,17 +259,14 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../development/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../development/" class="md-tabs__link">
+        
   
   Development
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -760,34 +757,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/calibration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Calibration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/consensus/" class="md-nav__link">
         
   
@@ -822,58 +791,6 @@
   
   
   
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Development
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Development
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../development/" class="md-nav__link">
         
@@ -891,42 +808,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bsum_implementations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    BSUM implementations
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1108,7 +989,9 @@ the rank, building stable consensus embeddings, and running a complete
 workflow. Every snippet runs against the real PySRF API and uses
 <code>random_state=42</code> for reproducibility.</p>
 <h2 id="basic-factorization">Basic factorization<a class="headerlink" href="#basic-factorization" title="Permanent link">&para;</a></h2>
-<p>Start with a similarity matrix that has exact low-rank structure: build it from a known embedding <code>w_true</code> and ask SRF to reveal latent dimensions.</p>
+<p>Start with a similarity matrix that has exact low-rank structure: build it
+from a known embedding <code>w_true</code> and ask SRF to recover the latent
+dimensions.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -1118,14 +1001,16 @@ workflow. Every snippet runs against the real PySRF API and uses
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">w_true</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">rank</span><span class="p">))</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">s</span> <span class="o">=</span> <span class="n">w_true</span> <span class="o">@</span> <span class="n">w_true</span><span class="o">.</span><span class="n">T</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Reveal dimensions</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Recover the dimensions</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">s_hat</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Score (negative MSE): </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reconstruction error: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p><code>score</code> returns negative mean squared error on observed entries, so higher is better and zero is a perfect fit. Because the input has exact rank 10, the score is close to zero. Real similarity matrices contain noise and their rank is unknown, so the later examples show how to estimate it.</p>
+<p>Because the input has exact rank 10, the reconstruction error is close to
+zero. Real similarity matrices contain noise and their rank is unknown, so
+the later examples show how to estimate it.</p>
 <h2 id="missing-data">Missing data<a class="headerlink" href="#missing-data" title="Permanent link">&para;</a></h2>
 <p>Similarity datasets are often incomplete: behavioral experiments sample
 only a fraction of all item pairs, and some entries are simply missing.
@@ -1147,7 +1032,11 @@ unobserved. Here we drop about 30% of the entries to <code>NaN</code>.</p>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">s_completed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>  <span class="c1"># fills in the missing pairs</span>
 </code></pre></div>
-<p>SRF fits using only the observed pairs and then predicts the held-out ones in <code>reconstruct()</code>. This beats imputing the gaps first: the paper (§2.1) shows that k-nearest-neighbor or median imputation distorts the pairwise similarity structure and biases revealed dimensions, whereas leaving entries unobserved does not.</p>
+<p>SRF fits using only the observed pairs and then predicts the held-out ones
+in <code>reconstruct()</code>. This beats imputing the gaps first: the paper (§2.1)
+shows that k-nearest-neighbor or median imputation distorts the pairwise
+similarity structure and biases the recovered dimensions, whereas leaving
+entries unobserved does not.</p>
 <h2 id="cross-validated-rank-selection">Cross-validated rank selection<a class="headerlink" href="#cross-validated-rank-selection" title="Permanent link">&para;</a></h2>
 <p>The number of dimensions is usually unknown. <code>cross_val_score</code> selects the
 SRF model rank by first calibrating the CV protocol from eigenspace
@@ -1270,7 +1159,10 @@ the reconstructed entries respect that range.</p>
 <a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="k">assert</span> <span class="n">s_reconstructed</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">1</span>
 </code></pre></div>
 <h2 id="complete-workflow">Complete workflow<a class="headerlink" href="#complete-workflow" title="Permanent link">&para;</a></h2>
-<p>A full analysis ties the pieces together: build a noisy, incomplete similarity matrix, estimate the rank, confirm it with cross-validation, fit the final model, reconstruct the missing entries, and score the fit on observed entries.</p>
+<p>A full analysis ties the pieces together: build a noisy, incomplete
+similarity matrix, estimate the rank, confirm it with cross-validation,
+fit the final model, reconstruct the missing entries, and report the
+reconstruction error.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">SRF</span><span class="p">,</span> <span class="n">cross_val_score</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -1294,13 +1186,13 @@ the reconstructed entries respect that range.</p>
 <a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="p">)</span>
 <a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spectral cutoff: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">spectral_cutoff</span><span class="si">}</span><span class="s2">; model rank: </span><span class="si">{</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="c1"># 3. Fit the final model at the chosen rank</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="c1"># 4. Fit the final model at the chosen rank</span>
 <a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SRF</span><span class="p">(</span><span class="n">rank</span><span class="o">=</span><span class="n">cv</span><span class="o">.</span><span class="n">model_rank</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 <a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="n">w</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 <a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="n">s_completed</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">reconstruct</span><span class="p">()</span>
 <a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>
-<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="c1"># 4. Score the fit on observed entries (negative MSE, higher is better)</span>
-<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Score (negative MSE): </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="c1"># 5. Evaluate on the observed entries</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reconstruction error: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 
