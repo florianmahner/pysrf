@@ -89,5 +89,8 @@ nav:
   - API reference:
     - Model (SRF): api/model.md
     - Cross-validation: api/cross_validation.md
+    - Calibration: api/calibration.md
     - Consensus: api/consensus.md
-  - Development: development.md
+  - Development:
+    - Development: development.md
+    - BSUM implementations: bsum_implementations.md

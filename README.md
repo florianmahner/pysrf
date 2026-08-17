@@ -15,8 +15,10 @@ PySRF implements Similarity-Based Representation Factorization (SRF): given a sy
 ## Install
 
 ```bash
-git clone https://github.com/florianmahner/pysrf.git && cd pysrf && ./setup.sh
+pip install "git+https://github.com/florianmahner/pysrf.git"
 ```
+
+A C compiler is needed to build the Cython extension; see the [installation guide](https://florianmahner.github.io/pysrf/installation/) for details.
 
 ## Quick start
 

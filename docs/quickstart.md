@@ -36,9 +36,9 @@ w = model.fit_transform(s)
 # Reconstruct the similarity matrix from the embedding
 s_hat = model.reconstruct()
 
-# Measure reconstruction error (lower is better)
-error = model.score(s)
-print(f"Reconstruction error: {error:.4f}")
+# Score the fit: negative MSE on observed entries (higher is better, zero is perfect)
+score = model.score(s)
+print(f"Score (negative MSE): {score:.4f}")
 ```
 
 `w` has shape `(100, 10)`: one row per item, one column per dimension.
