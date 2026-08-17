@@ -22,9 +22,15 @@
         <loc>https://florianmahner.github.io/pysrf/api/cross_validation/</loc>
       </url>
       <url>
+        <loc>https://florianmahner.github.io/pysrf/api/calibration/</loc>
+      </url>
+      <url>
         <loc>https://florianmahner.github.io/pysrf/api/consensus/</loc>
       </url>
       <url>
         <loc>https://florianmahner.github.io/pysrf/development/</loc>
+      </url>
+      <url>
+        <loc>https://florianmahner.github.io/pysrf/bsum_implementations/</loc>
       </url>
 </urlset>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Recover interpretable dimensions from representational similarities">
+        <meta name="description" content="Reveal interpretable dimensions from representational similarities">
       
       
         <meta name="author" content="Florian Mahner">
@@ -259,14 +259,17 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../development/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development/" class="md-tabs__link">
+          
   
   Development
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -713,6 +716,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/consensus/" class="md-nav__link">
         
   
@@ -747,6 +778,58 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../development/" class="md-nav__link">
         
@@ -764,6 +847,42 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bsum_implementations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BSUM implementations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -902,7 +1021,7 @@
 <ul>
 <li><strong>Missing data</strong>: real similarity matrices are often incomplete. SRF learns directly from the observed entries, with no imputation — and can then predict the entries you never measured.</li>
 <li><strong>Dimensionality selection</strong>: you usually don't know how many dimensions to use. <code>cross_val_score</code> calibrates the hold-out protocol and selects the SRF model rank by validation error.</li>
-<li><strong>Fast solver</strong>: the core fit is Cython-accelerated, giving a 10–50× speedup over pure Python.</li>
+<li><strong>Fast solver</strong>: the core fit runs in compiled Cython, with a pure-Python fallback when the extension is not compiled.</li>
 </ul>
 <h2 id="when-to-use-srf">When to use SRF<a class="headerlink" href="#when-to-use-srf" title="Permanent link">&para;</a></h2>
 <p>SRF works on any symmetric, non-negative similarity matrix, however it was produced:</p>
