@@ -8,7 +8,9 @@ workflow. Every snippet runs against the real PySRF API and uses
 
 ## Basic factorization
 
-Start with a similarity matrix that has exact low-rank structure: build it from a known embedding `w_true` and ask SRF to reveal latent dimensions.
+Start with a similarity matrix that has exact low-rank structure: build it
+from a known embedding `w_true` and ask SRF to recover the latent
+dimensions.
 
 ```python
 import numpy as np
@@ -20,15 +22,17 @@ n, rank = 100, 10
 w_true = rng.random((n, rank))
 s = w_true @ w_true.T
 
-# Reveal dimensions
+# Recover the dimensions
 model = SRF(rank=10, random_state=42)
 w = model.fit_transform(s)
 s_hat = model.reconstruct()
 
-print(f"Score (negative MSE): {model.score(s):.6f}")
+print(f"Reconstruction error: {model.score(s):.6f}")
 ```
 
-`score` returns negative mean squared error on observed entries, so higher is better and zero is a perfect fit. Because the input has exact rank 10, the score is close to zero. Real similarity matrices contain noise and their rank is unknown, so the later examples show how to estimate it.
+Because the input has exact rank 10, the reconstruction error is close to
+zero. Real similarity matrices contain noise and their rank is unknown, so
+the later examples show how to estimate it.
 
 ## Missing data
 
@@ -55,7 +59,11 @@ w = model.fit_transform(s)
 s_completed = model.reconstruct()  # fills in the missing pairs
 ```
 
-SRF fits using only the observed pairs and then predicts the held-out ones in `reconstruct()`. This beats imputing the gaps first: the paper (§2.1) shows that k-nearest-neighbor or median imputation distorts the pairwise similarity structure and biases revealed dimensions, whereas leaving entries unobserved does not.
+SRF fits using only the observed pairs and then predicts the held-out ones
+in `reconstruct()`. This beats imputing the gaps first: the paper (§2.1)
+shows that k-nearest-neighbor or median imputation distorts the pairwise
+similarity structure and biases the recovered dimensions, whereas leaving
+entries unobserved does not.
 
 ## Cross-validated rank selection
 
@@ -203,7 +211,10 @@ assert s_reconstructed.max() <= 1
 
 ## Complete workflow
 
-A full analysis ties the pieces together: build a noisy, incomplete similarity matrix, estimate the rank, confirm it with cross-validation, fit the final model, reconstruct the missing entries, and score the fit on observed entries.
+A full analysis ties the pieces together: build a noisy, incomplete
+similarity matrix, estimate the rank, confirm it with cross-validation,
+fit the final model, reconstruct the missing entries, and report the
+reconstruction error.
 
 ```python
 import numpy as np
@@ -229,11 +240,11 @@ cv = cross_val_score(
 )
 print(f"Spectral cutoff: {cv.spectral_cutoff}; model rank: {cv.model_rank}")
 
-# 3. Fit the final model at the chosen rank
+# 4. Fit the final model at the chosen rank
 model = SRF(rank=cv.model_rank, random_state=42)
 w = model.fit_transform(s)
 s_completed = model.reconstruct()
 
-# 4. Score the fit on observed entries (negative MSE, higher is better)
-print(f"Score (negative MSE): {model.score(s):.4f}")
+# 5. Evaluate on the observed entries
+print(f"Reconstruction error: {model.score(s):.4f}")
 ```

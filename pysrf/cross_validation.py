@@ -29,31 +29,6 @@ _RESERVED_SRF_KWARGS = frozenset({"rank", "bounds", "missing_values", "random_st
 
 @dataclass(frozen=True, slots=True)
 class CVResult:
-    """Rank-selection result returned by cross_val_score.
-
-    Attributes
-    ----------
-    model_rank : int
-        Selected rank: the candidate with the lowest mean validation MSE.
-    fold_scores : DataFrame
-        One row per fit with columns ``repeat``, ``fold``,
-        ``candidate_rank`` and ``val_mse``.
-    rank_scores : DataFrame
-        Per-rank summary with columns ``candidate_rank``, ``val_mse_mean``,
-        ``val_mse_std``, ``n_fold_scores`` and ``val_mse_sem``.
-    spectral_cutoff : int or None
-        Spectral cutoff estimated during calibration. None when an
-        explicit ``sampling_fraction`` skipped calibration.
-    sampling_fraction : float
-        Realized fraction of observed off-diagonal entries each fold
-        trained on.
-    candidate_ranks : tuple of int
-        Ranks that were evaluated.
-    calibration : CVCalibration or None
-        Full calibration result. None when an explicit
-        ``sampling_fraction`` skipped calibration.
-    """
-
     model_rank: int
     fold_scores: pd.DataFrame
     rank_scores: pd.DataFrame
@@ -92,65 +67,6 @@ def cross_val_score(
     missing_values: float | None = np.nan,
     srf_kwargs: Mapping[str, object] | None = None,
 ) -> CVResult:
-    """Select the SRF model rank by restricted entrywise cross-validation.
-
-    Folds hide symmetric sets of observed off-diagonal entries, which are
-    treated as missing while SRF fits the remaining entries and are then
-    predicted from the fitted embedding. Validation error is the mean
-    squared error on held-out entries, and the rank with the lowest mean
-    error across folds and repeats is selected. Diagonal entries are never
-    held out. When ``sampling_fraction`` is None, the hold-out protocol is
-    first calibrated on the data with
-    ``pysrf.coherence.calibrate_cross_validation``.
-
-    Parameters
-    ----------
-    similarity_matrix : ndarray of shape (n_samples, n_samples)
-        Symmetric similarity matrix. Missing values should be marked
-        according to the ``missing_values`` parameter.
-    ranks : sequence of int
-        Candidate model ranks to evaluate. Duplicates are dropped; each
-        rank must be between 1 and n_samples.
-    sampling_fraction : float or None, default=None
-        Fraction of observed off-diagonal entries each fold trains on,
-        in (0, 1). None calibrates it from the data.
-    n_folds : int, default=5
-        Number of cross-validation folds. Must be at least 2.
-    n_repeats : int, default=1
-        Number of times the fold split is repeated with fresh randomness.
-    random_state : int, Generator, RandomState, SeedSequence or None, default=0
-        Controls fold splits and SRF initializations.
-    n_jobs : int or None, default=-1
-        Number of parallel workers for fold fits. -1 uses all available
-        cores, None runs a single worker.
-    threads_per_worker : int, 'auto' or None, default=None
-        BLAS threads for each parallel worker. None uses one thread per
-        worker when several run in parallel, 'auto' divides available
-        cores across workers, and an integer is used as given.
-    missing_values : float or None, default=np.nan
-        Sentinel value marking missing entries in the similarity matrix.
-    srf_kwargs : mapping or None, default=None
-        Additional keyword arguments passed to every SRF fit, for example
-        ``{"max_outer": 200}``. Must not contain ``rank``, ``bounds``,
-        ``missing_values`` or ``random_state``, which are set per fit.
-
-    Returns
-    -------
-    result : CVResult
-        Selected model rank, fold-level and per-rank validation scores,
-        and calibration details.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from pysrf import SRF, cross_val_score
-    >>> rng = np.random.default_rng(0)
-    >>> s = rng.random((100, 100))
-    >>> s = (s + s.T) / 2
-    >>> cv = cross_val_score(s, range(1, 21), random_state=42)
-    >>> model = SRF(rank=cv.model_rank, random_state=42)
-    >>> w = model.fit_transform(s)
-    """
     _check_args(n_folds, n_repeats, n_jobs)
     fit_kwargs = _checked_srf_kwargs(srf_kwargs)
 

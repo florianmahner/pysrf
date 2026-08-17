@@ -10,7 +10,7 @@ with different performance characteristics. The `model.py` import uses the faste
 Functions in `pysrf._bsum`:
 1. `update_w_scalar`: scalar Cython (ground truth, bitwise-identical to Python)
 2. `update_w_blas`: BLAS-2 dgemv (~5x over scalar)
-3. `update_w_blas_blocked`: BLAS-3 dgemm (19-31x over scalar, default)
+3. `update_w_blas_blocked`: BLAS-3 dsymm/dgemm (19-31x over scalar, default)
 
 `update_w` is a module-level alias for `update_w_blas_blocked`. The sweep
 early-exit threshold is the module constant `INNER_TOL`.
@@ -62,24 +62,22 @@ computes `mw_i = A @ M[i,:] = W^T @ M[i,:] = M[i,:] @ W`.
 ### `update_w_blas_blocked` (BLAS-3, fastest, default)
 
 Replaces per-row BLAS-2 operations (memory-bound dgemv) with BLAS-3 operations
-(compute-bound dgemm):
+(compute-bound dsymm/dgemm):
 
-1. **dgemm** precomputes `MW = M @ W` for the entire matrix at once (BLAS-3);
-   dgemm is used instead of dsymm because gemm kernels are better optimized
-   and threaded in common BLAS builds
+1. **dsymm** precomputes `MW = M @ W` for the entire matrix at once (BLAS-3)
 2. **dgemm** applies inter-block corrections after each block completes
 3. **Scalar daxpy** corrections within each block for rows processed earlier
 
-The key insight: instead of calling dgemv n times (once per row), we call dgemm
+The key insight: instead of calling dgemv n times (once per row), we call dsymm
 once per iteration to get all MW values, then correct them as W changes within
 each block. For block_size B:
-- 1 full dgemm call (n×n × n×r → n×r): O(n²r) but at BLAS-3 bandwidth
+- 1 dsymm call (n×n × n×r → n×r): O(n²r) but at BLAS-3 bandwidth
 - n/B dgemm calls for inter-block corrections: O(n²r/B) total
 - O(B²r) scalar corrections within each block
 
 The parameter `block_size` controls the trade-off between BLAS-3 efficiency and
-correction overhead. The default block_size is `min(50, max(1, n // 10))` because the full
-dgemm dominates and corrections are cheap.
+correction overhead. The default block_size is `min(50, max(1, n // 10))` because the dsymm
+dominates and corrections are cheap.
 
 **Numerical agreement**: Same as `update_w_blas`; small floating-point differences
 (1e-13 to 1e-9) due to BLAS summation reordering, but reconstruction error matches
@@ -106,7 +104,7 @@ Measured on SLURM compute nodes (4 threads), 5 BSUM iterations, tol=0.0:
 
 <!-- vale on -->
 
-Speedup grows with n because the BLAS-3 dgemm ratio improves with matrix size.
+Speedup grows with n because the BLAS-3 dsymm/dgemm ratio improves with matrix size.
 At production sizes (n=1854, rank=50), the blocked variant is ~19x faster than scalar.
 
 ## Memory-efficient fitting
@@ -191,9 +189,9 @@ The second term, `MW[i,j] = (M @ W_current)[i,j]`, is the critical difference:
   mathematical quantity, but dgemv uses SIMD accumulation which changes
   summation order.
 - **Blocked** (`update_w_blas_blocked`): Precomputes MW = M @ W for all rows at
-  once via dgemm, then corrects for W changes during the iteration:
+  once via dsymm, then corrects for W changes during the iteration:
 
-  At the start of iteration, MW₀ = M @ W₀ via dgemm. When processing row i,
+  At the start of iteration, MW₀ = M @ W₀ via dsymm. When processing row i,
   rows 0..i−1 have already been updated: W_current[k,:] = W₀[k,:] + ΔW[k,:]
   for k < i, and W_current[k,:] = W₀[k,:] for k ≥ i. The needed value is:
 
@@ -218,7 +216,7 @@ The second term, `MW[i,j] = (M @ W_current)[i,j]`, is the critical difference:
   completed blocks) + (intra-block corrections from current block)
   = MW₀[i,:] + sum_{k=0..i−1} M[i,k] · ΔW[k,:] = (M @ W_current)[i,:]. ✓
 
-  The dgemm calls use BLAS-3 accumulation which differs in
+  The dsymm and dgemm calls use BLAS-3 accumulation which differs in
   summation order from the scalar loop, introducing IEEE 754 rounding
   differences.
 
@@ -229,7 +227,7 @@ rank-1 updates: `WtW[j,:] += delta·W[i,:]` (daxpy, element-wise identical),
 
 **Conclusion**: The ONLY source of floating-point difference between
 implementations is the summation order in:
-- dgemm/dgemv for MW computation (BLAS uses SIMD/blocked accumulation)
+- dsymm/dgemv for MW computation (BLAS uses SIMD/blocked accumulation)
 - ddot for W[i,:] · WtW[:,j] (BLAS may use pairwise summation)
 
 All other operations are arithmetically identical.
@@ -332,9 +330,9 @@ Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):
 sbatch benchmarks/run.sh
 
 # Or run interactively
-python benchmarks/bench_bsum.py   # solver variants
-python benchmarks/bench_fit.py    # end-to-end fit timing
+srun --partition=interactive --cpus-per-task=4 --mem=16G --time=00:30:00 \
+    python benchmarks/benchmark.py
 
 # Correctness tests
-poetry run pytest tests/test_bsum.py -v
+python benchmarks/correctness.py
 ```

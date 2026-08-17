@@ -10,7 +10,7 @@ A similarity matrix can also be viewed as a weighted graph, and in that view SRF
 
 - **Missing data**: real similarity matrices are often incomplete. SRF learns directly from the observed entries, with no imputation — and can then predict the entries you never measured.
 - **Dimensionality selection**: you usually don't know how many dimensions to use. `cross_val_score` calibrates the hold-out protocol and selects the SRF model rank by validation error.
-- **Fast solver**: the core fit runs in compiled Cython, with a pure-Python fallback when the extension is not compiled.
+- **Fast solver**: the core fit is Cython-accelerated, giving a 10–50× speedup over pure Python.
 
 ## When to use SRF
 
