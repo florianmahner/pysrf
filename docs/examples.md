@@ -60,10 +60,7 @@ SRF fits using only the observed pairs and then predicts the held-out ones in `r
 
 ## Cross-validated rank selection
 
-The number of dimensions is usually unknown. `cross_val_score` selects the
-SRF model rank by first calibrating the CV protocol from eigenspace
-stability, then evaluating held-out error for the candidate ranks you
-provide.
+The number of dimensions is usually unknown. `cross_val_score` selects the SRF model rank with a restricted hold-out scheme: it first calibrates the hold-out protocol from the similarity matrix, then evaluates held-out prediction error for the candidate ranks you provide.
 
 ```python
 import numpy as np

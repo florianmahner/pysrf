@@ -10,7 +10,7 @@
 
 </div>
 
-PySRF implements Similarity-Based Representation Factorization (SRF): given a symmetric, non-negative similarity matrix `S`, it reveals a small set of sparse, non-negative dimensions `W` with `S ≈ WWᵀ`. It learns from the observed entries only (no imputation) and selects the number of dimensions by cross-validation.
+PySRF implements Similarity-Based Representation Factorization (SRF), a method for revealing low-dimensional, non-negative, interpretable embeddings from similarity matrices. Given a symmetric, non-negative similarity matrix `S`, it reveals a small set of sparse, non-negative dimensions `W` with `S ≈ WWᵀ`. It learns from observed entries without imputing missing values and selects the number of dimensions by cross-validation.
 
 ## Install
 

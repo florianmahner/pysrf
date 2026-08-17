@@ -158,7 +158,7 @@ cpdef np.ndarray[DTYPE_t, ndim=2] update_w_blas(double[:, ::1] m,
     cdef np.ndarray[DTYPE_t, ndim=1] diag = np.einsum("ij,ij->i", w, w)
     cdef np.ndarray[DTYPE_t, ndim=1] mw_i_buf = np.empty(r)
 
-    # Raw C pointers — all arrays are C-contiguous
+    # Raw C pointers; all arrays are C-contiguous
     cdef double* w_p = <double*>w.data
     cdef double* wtw_p = <double*>wtw.data
     cdef double* diag_p = <double*>diag.data

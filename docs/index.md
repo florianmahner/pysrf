@@ -6,7 +6,7 @@ hide:
 
 # PySRF
 
-PySRF implements SRF (Similarity-Based Representation Factorization): given a symmetric, non-negative similarity matrix `S`, it reveals a small set of sparse, non-negative dimensions `W` with `S ≈ WWᵀ`. It learns from the observed entries only (no imputation) and selects the number of dimensions by cross-validation.
+PySRF implements SRF (Similarity-Based Representation Factorization), a method for revealing low-dimensional, non-negative, interpretable embeddings from similarity matrices. Given a symmetric, non-negative similarity matrix \(S\), SRF reveals a small set of sparse, non-negative dimensions \(W\) with \(S \approx WW^\top\). It learns from observed entries without imputing missing values and selects the number of dimensions by cross-validation.
 
 New here? See [What is SRF?](explanation.md) for how the method works and when to use it, or jump straight to [Installation](installation.md) and the [Quick start](quickstart.md).
 

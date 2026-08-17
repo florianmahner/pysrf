@@ -160,7 +160,7 @@ class AlignedConsensus(BaseEstimator, TransformerMixin):
     Symmetric NMF produces the same dimensions across runs but in
     different order (permutation ambiguity, no rotation). This class
     aligns dimensions via the Hungarian algorithm and returns the
-    most central run — the one closest to the element-wise median
+    most central run, the one closest to the element-wise median
     across all aligned runs.
 
     Parameters

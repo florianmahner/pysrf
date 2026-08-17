@@ -1,24 +1,12 @@
 # Quick start
 
-This guide walks through the core PySRF workflow: revealing
-interpretable dimensions from a similarity matrix, interpreting the result,
-learning from incomplete data, and choosing how many dimensions to keep.
+This guide walks through the core PySRF workflow: revealing interpretable dimensions from a similarity matrix, interpreting the result, learning from incomplete data, and choosing how many dimensions to keep.
 
 ## Reveal dimensions from a similarity matrix
 
-A similarity matrix `S` captures pairwise relationships between stimuli.
-These similarities can come from diverse forms of measured data across
-systems, modalities, and species — for example behavioral similarity
-judgments, neural recordings, or computational models. You can also think
-of `S` as a weighted graph, where stronger edges connect more similar
-items. PySRF expects this matrix to be symmetric and non-negative.
+A similarity matrix \(S\) captures pairwise relationships between stimuli. These similarities can come from diverse forms of measured data across systems, modalities, and species, for example behavioral similarity judgments, neural recordings, or deep neural network activations. You can also think of \(S\) as a weighted graph, where stronger edges connect more similar items. PySRF expects this matrix to be symmetric and non-negative.
 
-SRF factorizes the matrix into a single non-negative embedding `W` so that
-`S ≈ WW^T`. Each row of `W` holds one item's loadings across the
-dimensions, and each column is a dimension. Because loadings are
-non-negative, the dimensions act as soft community memberships: an item
-can belong to several dimensions at once, and a near-zero loading means
-that dimension is irrelevant to that item.
+SRF factorizes the matrix into a single non-negative embedding \(W\) so that \(S \approx WW^\top\). Each row of \(W\) holds one item's loadings across dimensions, and each column is a dimension. Because loadings are non-negative, dimensions act as soft community memberships: an item can belong to several dimensions at once, and a near-zero loading means a dimension is irrelevant to that item.
 
 ```python
 import numpy as np
@@ -88,13 +76,7 @@ dimensions merge distinct factors or miss structure; too many split
 coherent factors or overfit noise. Use `cross_val_score` to select the
 model rank from held-out prediction error.
 
-Ordinary entrywise cross-validation does not work here: entries in a
-similarity matrix are not independent, because changing one item affects
-all of its pairs. PySRF therefore uses a restricted hold-out scheme for
-similarity matrices. It hides a sparse set of observed entries, treats them
-as missing during fitting, and then predicts them from the learned
-embedding. By default, `cross_val_score` calibrates the sampling fraction,
-then evaluates the candidate ranks you provide.
+Ordinary entrywise cross-validation is unreliable here: entries in a similarity matrix are not independent observations, and with enough observed entries the held-out values are already determined by the training entries through the low-rank structure itself. PySRF therefore uses a restricted hold-out scheme designed specifically for similarity data. It fixes a sparse observation pattern before cross-validation, treats held-out pairs as missing during fitting, and then predicts them from the learned embedding. By default, `cross_val_score` calibrates the sampling fraction from the similarity matrix, then evaluates the candidate ranks you provide.
 
 ```python
 from pysrf import SRF, cross_val_score

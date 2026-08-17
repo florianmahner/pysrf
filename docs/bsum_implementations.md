@@ -20,7 +20,7 @@ early-exit threshold is the module constant `INNER_TOL`.
 Per iteration, for each row i and rank index j:
 
 ```
-mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n) — dominates at 95%+ of cost
+mw_i[j] = sum_k M[i,k] * W[k,j]          # O(n), dominates at 95%+ of cost
 dot_val = W[i,:] · WtW[j,:]               # O(r)
 coefficients = f(old, diag, WtW, mw_i)    # O(1)
 new = quartic_root(coefficients)           # O(1)
@@ -116,9 +116,9 @@ The complete-data step generator in `model.py` uses `bsum_step` from `_bsum` to 
 at O(n²) (just the input matrix) instead of O(2n²).
 
 The identity used:
-```
-||X - WW^T||²_F = ||X||²_F - 2·tr(X·W·W^T) + ||WW^T||²_F
-```
+
+$$\|X - WW^\top\|_F^2 = \|X\|_F^2 - 2\,\operatorname{tr}(X W W^\top) + \|WW^\top\|_F^2$$
+
 where `tr(X·W·W^T) = sum((X@W) * W)` costs O(n²r) and `||WW^T||²_F = ||W^TW||²_F`
 costs O(nr²), both with no n×n temporaries.
 
@@ -159,10 +159,10 @@ identical inputs → identical outputs. ✓
 implementations read `old = W[i,j]` from the same array, so b is identical. ✓
 
 **4. Coefficient c = 4·((diag[i] − M[i,i]) + WtW[j,j] + W[i,j]²)**:
-- `diag[i]` = ||W[i,:]||² — maintained incrementally via
+- `diag[i]` = ||W[i,:]||² is maintained incrementally via
   `diag[i] += new² − old²`, identical in all implementations.
-- `M[i,i]` — read-only input, identical.
-- `WtW[j,j]` — maintained incrementally via `WtW[j,j] += delta²` after each
+- `M[i,i]` is read-only input, identical.
+- `WtW[j,j]` is maintained incrementally via `WtW[j,j] += delta²` after each
   update. The rank-1 update `WtW[j,:] += delta·W[i,:]` uses daxpy in the BLAS
   variants for the row (stride-1) and a scalar loop for the column (stride-r).
   Since daxpy computes `y[k] += alpha·x[k]` element-by-element with no
@@ -173,7 +173,7 @@ implementations read `old = W[i,j]` from the same array, so b is identical. ✓
 The first term, `W[i,:] · WtW[:,j]`: The scalar variant uses a scalar loop over
 WtW[:,j] (column, stride r). The BLAS variants use `ddot(r, W[i,:], 1,
 WtW[j,:], 1)` on WtW[j,:] (row, stride 1). Since WtW = W^T W is symmetric,
-WtW[j,:] = WtW[:,j] — same values, different memory layout. The ddot result
+WtW[j,:] = WtW[:,j]: same values, different memory layout. The ddot result
 differs from the scalar loop only by IEEE 754 rounding.
 
 The second term, `MW[i,j] = (M @ W_current)[i,j]`, is the critical difference:
@@ -237,13 +237,11 @@ All other operations are arithmetically identical.
 #### IEEE 754 rounding error bound
 
 By Higham (2002, Theorem 3.1), the forward error of a floating-point inner
-product fl(x^T y) of length n satisfies:
+product \(\operatorname{fl}(x^\top y)\) of length n satisfies:
 
-```
-|fl(x^T y) − x^T y| ≤ γ_n · |x|^T |y|
-```
+$$|\operatorname{fl}(x^\top y) - x^\top y| \le \gamma_n\, |x|^\top |y|$$
 
-where γ_n = nu/(1−nu) ≈ nu and u = 2^{-53} ≈ 1.11×10^{-16} is the IEEE 754
+where \(\gamma_n = nu/(1-nu) \approx nu\) and \(u = 2^{-53} \approx 1.11 \times 10^{-16}\) is the IEEE 754
 double-precision unit roundoff. Two different summation orders (e.g., scalar
 sequential vs BLAS SIMD) each satisfy this bound independently, so their
 results can differ by up to ~2·γ_n · |x|^T |y|.
@@ -255,7 +253,7 @@ max difference ≈ 2 · 100 · 1.11×10^{-16} · (sum of |M[i,k]·W[k,j]|)
 
 This non-reproducibility of BLAS results due to summation reordering is a
 well-documented phenomenon. Standard BLAS libraries (OpenBLAS, MKL, cuBLAS)
-do not guarantee a specific summation order — SIMD instructions accumulate
+do not guarantee a specific summation order; SIMD instructions accumulate
 partial sums in parallel lanes that are reduced in implementation-defined order
 (Ahrens, Demmel & Nguyen, 2020; Demmel & Nguyen, 2015). The ReproBLAS project
 provides reproducible alternatives at ~1.5× cost, but standard BLAS is used
@@ -275,14 +273,14 @@ Near the non-negativity boundary:
 
 This boundary flip propagates through subsequent WtW updates within the same
 row's j-loop and cascades to all downstream elements. Over many iterations,
-flips accumulate — but both algorithms converge to the same fixed point of the
+flips accumulate, but both algorithms converge to the same fixed point of the
 NMF objective (Shi et al. 2017, Theorem 1).
 
 #### Reconstruction quality is identical
 
 Despite element-wise divergence, the reconstruction quality
 `||M − WW^T||_F / ||M||_F` matches to **10+ decimal places** at all iteration
-counts. Both algorithms minimize the same objective function — boundary flips
+counts. Both algorithms minimize the same objective function; boundary flips
 select a slightly different path through the solution space but converge to
 equally good local minima.
 
@@ -311,7 +309,7 @@ Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):
 
 - Shi, Q., Sun, H., Lu, S., Hong, M. & Razaviyayn, M. (2017). "Inexact Block
   Coordinate Descent Methods for Symmetric Nonnegative Matrix Factorization."
-  IEEE Trans. Signal Processing, 65(22), 5995–6008.
+  IEEE Trans. Signal Processing, 65(22), 5995-6008.
   https://arxiv.org/abs/1607.03092
 - Higham, N. J. (2002). "Accuracy and Stability of Numerical Algorithms."
   2nd ed., SIAM. Theorem 3.1 (inner product error bound).
@@ -319,7 +317,7 @@ Tested at n=1854, r=50 up to 500 iterations (blocked with B=50):
   Reproducible Floating Point Summation." ACM Trans. Math. Software, 46(3).
   https://doi.org/10.1145/3389360
 - Demmel, J. & Nguyen, H. D. (2015). "Parallel Reproducible Summation."
-  IEEE Trans. Computers, 64(7), 2060–2070.
+  IEEE Trans. Computers, 64(7), 2060-2070.
 - Ye, Y. & Bhatt, N. (2024). "FPRev: Revealing Floating-Point Accumulation
   Orders in Software/Hardware Implementations." arXiv:2411.00442.
 
