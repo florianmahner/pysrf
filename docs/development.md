@@ -11,25 +11,26 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-The script installs pyenv, Python 3.12.4, Poetry, all dependencies, compiles
-the Cython extension, and runs the test suite.
+The script checks for pyenv and Poetry, pins Python 3.12.4, installs dependencies with `poetry install --no-root --all-extras`, compiles the Cython extension through an editable pip install, and runs the test suite.
 
 ### Manual setup
 
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
-poetry install
-make compile
+poetry install --no-root --all-extras
+poetry run pip install -e . --no-build-isolation
 poetry run pytest
 ```
+
+Poetry cannot build the root package itself (meson-python backend), so dependencies are installed with `--no-root` and the package is compiled through an editable pip install.
 
 ## Makefile targets
 
 The Makefile provides shortcuts for common tasks:
 
 ```bash
-make dev           # install dev dependencies and compile Cython
-make compile       # compile Cython extension
+make install       # install the package with pip
+make dev           # install dev dependencies and compile the Cython extension
 make test          # run test suite
 make test-cov      # run tests with coverage report
 make lint          # run ruff linter
@@ -84,16 +85,16 @@ def my_function(x: np.ndarray, rank: int = 10) -> tuple[np.ndarray, float]:
 
 ## Cython extension
 
-The performance-critical inner loop lives in `_bsum.pyx`. Compile it with:
+The performance-critical inner loop lives in `pysrf/_bsum.pyx`. meson-python compiles it during `make dev`:
 
 ```bash
-make compile
+make dev
 
 # or
-poetry run python setup.py build_ext --inplace
+poetry run pip install -e . --no-build-isolation
 ```
 
-Verify which implementation is active:
+`pysrf/_bsum.py` is a pure-Python fallback used when the compiled module is absent. Verify which implementation is active:
 
 ```python
 from pysrf._bsum import BACKEND
@@ -105,8 +106,7 @@ print(BACKEND)  # 'cython' if compiled, 'python' otherwise
 
 ### Build and preview
 
-pysrf uses [zensical](https://zensical.org) for documentation. Build and
-preview locally:
+PySRF uses [zensical](https://zensical.org) for documentation, configured in `mkdocs.yml`. Build and preview locally:
 
 ```bash
 make docs          # build docs
@@ -166,36 +166,41 @@ def my_function(x: np.ndarray, param: int = 10) -> float:
 
 ## Publish to PyPI
 
-Update the version in `pyproject.toml`, then build and publish:
+Version lives in the `[project]` table of `pyproject.toml`. Update it, then build a wheel and sdist with `python -m build` (meson-python backend) and upload with twine:
 
 ```bash
-poetry version patch  # or minor, major
-make build
-poetry publish
+python -m build
+twine upload dist/*
 ```
 
-For a pre-release version:
+For a test upload:
 
 ```bash
-poetry version prerelease
-poetry publish -r testpypi
+twine upload -r testpypi dist/*
 ```
 
 ## Project structure
 
 ```
 pysrf/
-├── pysrf/              # main package
-│   ├── __init__.py     # public API
-│   ├── model.py        # SRF class
-│   ├── cross_validation.py
-│   ├── bounds.py       # sampling-bound estimation
-│   ├── utils.py        # helper functions
-│   └── _bsum.pyx       # Cython extension
-├── tests/              # test suite
-├── docs/               # documentation
-├── setup.py            # Cython build (setuptools)
-├── Makefile            # development targets
-├── pyproject.toml      # project config
-└── README.md           # project overview
+├── pysrf/                    # main package
+│   ├── __init__.py           # public API
+│   ├── model.py              # SRF estimator
+│   ├── cross_validation.py   # cross_val_score, CVResult
+│   ├── consensus.py          # EnsembleFit, AlignedConsensus
+│   ├── coherence/            # calibrate_cross_validation, CVCalibration
+│   ├── _steps.py             # update steps
+│   ├── _common.py            # shared helpers
+│   ├── _bsum.py              # pure-Python fallback
+│   └── _bsum.pyx             # Cython extension
+├── benchmarks/               # bsum and fit benchmarks
+├── tests/                    # test suite
+├── docs/                     # documentation
+├── mkdocs.yml                # docs configuration
+├── meson.build               # Cython build (meson-python)
+├── Makefile                  # development targets
+├── setup.sh                  # automated setup
+├── pyproject.toml            # project config
+├── CITATION.cff              # citation metadata
+└── README.md                 # project overview
 ```

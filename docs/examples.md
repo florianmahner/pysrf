@@ -8,9 +8,7 @@ workflow. Every snippet runs against the real PySRF API and uses
 
 ## Basic factorization
 
-Start with a similarity matrix that has exact low-rank structure: build it
-from a known embedding `w_true` and ask SRF to recover the latent
-dimensions.
+Start with a similarity matrix that has exact low-rank structure: build it from a known embedding `w_true` and ask SRF to reveal latent dimensions.
 
 ```python
 import numpy as np
@@ -22,17 +20,15 @@ n, rank = 100, 10
 w_true = rng.random((n, rank))
 s = w_true @ w_true.T
 
-# Recover the dimensions
+# Reveal dimensions
 model = SRF(rank=10, random_state=42)
 w = model.fit_transform(s)
 s_hat = model.reconstruct()
 
-print(f"Reconstruction error: {model.score(s):.6f}")
+print(f"Score (negative MSE): {model.score(s):.6f}")
 ```
 
-Because the input has exact rank 10, the reconstruction error is close to
-zero. Real similarity matrices contain noise and their rank is unknown, so
-the later examples show how to estimate it.
+`score` returns negative mean squared error on observed entries, so higher is better and zero is a perfect fit. Because the input has exact rank 10, the score is close to zero. Real similarity matrices contain noise and their rank is unknown, so the later examples show how to estimate it.
 
 ## Missing data
 
@@ -50,8 +46,9 @@ n, rank = 100, 10
 w_true = rng.random((n, rank))
 s = w_true @ w_true.T
 
-# Mark ~30% of entries as missing
-mask = rng.random((n, n)) < 0.3
+# Mark ~30% of pairs as missing (symmetric mask)
+mask = np.triu(rng.random((n, n)) < 0.3, k=1)
+mask = mask | mask.T
 s[mask] = np.nan
 
 model = SRF(rank=10, missing_values=np.nan, random_state=42)
@@ -59,18 +56,14 @@ w = model.fit_transform(s)
 s_completed = model.reconstruct()  # fills in the missing pairs
 ```
 
-SRF fits using only the observed pairs and then predicts the held-out ones
-in `reconstruct()`. This beats imputing the gaps first: the paper (§2.1)
-shows that k-nearest-neighbor or median imputation distorts the pairwise
-similarity structure and biases the recovered dimensions, whereas leaving
-entries unobserved does not.
+SRF fits using only the observed pairs and then predicts the held-out ones in `reconstruct()`. This beats imputing the gaps first: the paper (§2.1) shows that k-nearest-neighbor or median imputation distorts the pairwise similarity structure and biases revealed dimensions, whereas leaving entries unobserved does not.
 
 ## Cross-validated rank selection
 
 The number of dimensions is usually unknown. `cross_val_score` selects the
 SRF model rank by first calibrating the CV protocol from eigenspace
-stability, then evaluating held-out error for candidate ranks around that
-spectral cutoff.
+stability, then evaluating held-out error for the candidate ranks you
+provide.
 
 ```python
 import numpy as np
@@ -211,10 +204,7 @@ assert s_reconstructed.max() <= 1
 
 ## Complete workflow
 
-A full analysis ties the pieces together: build a noisy, incomplete
-similarity matrix, estimate the rank, confirm it with cross-validation,
-fit the final model, reconstruct the missing entries, and report the
-reconstruction error.
+A full analysis ties the pieces together: build a noisy, incomplete similarity matrix, estimate the rank, confirm it with cross-validation, fit the final model, reconstruct the missing entries, and score the fit on observed entries.
 
 ```python
 import numpy as np
@@ -227,7 +217,8 @@ w_true = rng.random((n, true_rank))
 s = w_true @ w_true.T
 s += 0.1 * rng.standard_normal((n, n))
 s = (s + s.T) / 2          # keep it symmetric
-mask = rng.random((n, n)) < 0.2
+mask = np.triu(rng.random((n, n)) < 0.2, k=1)
+mask = mask | mask.T
 s[mask] = np.nan           # ~20% missing
 
 # 2. Select the model rank by calibrated cross-validation
@@ -240,11 +231,11 @@ cv = cross_val_score(
 )
 print(f"Spectral cutoff: {cv.spectral_cutoff}; model rank: {cv.model_rank}")
 
-# 4. Fit the final model at the chosen rank
+# 3. Fit the final model at the chosen rank
 model = SRF(rank=cv.model_rank, random_state=42)
 w = model.fit_transform(s)
 s_completed = model.reconstruct()
 
-# 5. Evaluate on the observed entries
-print(f"Reconstruction error: {model.score(s):.4f}")
+# 4. Score the fit on observed entries (negative MSE, higher is better)
+print(f"Score (negative MSE): {model.score(s):.4f}")
 ```

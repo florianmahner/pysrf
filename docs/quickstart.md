@@ -36,9 +36,9 @@ w = model.fit_transform(s)
 # Reconstruct the similarity matrix from the embedding
 s_hat = model.reconstruct()
 
-# Measure reconstruction error (lower is better)
-error = model.score(s)
-print(f"Reconstruction error: {error:.4f}")
+# Score the fit: negative MSE on observed entries (higher is better, zero is perfect)
+score = model.score(s)
+print(f"Score (negative MSE): {score:.4f}")
 ```
 
 `w` has shape `(100, 10)`: one row per item, one column per dimension.
@@ -65,8 +65,9 @@ rng = np.random.default_rng(0)
 s = rng.random((100, 100))
 s = (s + s.T) / 2
 
-# Hide 30% of the entries
-mask = rng.random((100, 100)) < 0.3
+# Hide 30% of the pairs (symmetric mask)
+mask = np.triu(rng.random((100, 100)) < 0.3, k=1)
+mask = mask | mask.T
 s[mask] = np.nan
 
 # SRF fits using only the observed pairs

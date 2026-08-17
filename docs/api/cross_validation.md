@@ -1,6 +1,6 @@
 # Cross-Validation API
 
-`cross_val_score` is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and sampling fraction from eigenspace stability, then evaluates SRF model ranks around that cutoff with restricted entry-wise cross-validation. The returned `CVResult` exposes the selected model rank as `cv.model_rank`, the fold-level validation scores as `cv.fold_scores`, and the per-rank averages as `cv.rank_scores`.
+`cross_val_score` is the high-level dimensionality-selection API. By default, it first calibrates a spectral cutoff and sampling fraction from eigenspace stability, then evaluates the candidate ranks you provide with restricted entry-wise cross-validation. The returned `CVResult` exposes the selected model rank as `cv.model_rank`, the fold-level validation scores as `cv.fold_scores`, and the per-rank averages as `cv.rank_scores`. Calibration itself is documented in [Calibration](calibration.md).
 
 Naive row- or fold-based CV leaks information on a similarity matrix, because an item kept in training also appears in many held-out pairs. PySRF therefore holds out symmetric off-diagonal entries and treats them as missing during fitting.
 

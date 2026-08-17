@@ -1,5 +1,5 @@
 site_name: PySRF
-site_description: Recover interpretable dimensions from representational similarities
+site_description: Reveal interpretable dimensions from representational similarities
 site_author: Florian Mahner
 site_url: https://florianmahner.github.io/pysrf/
 repo_url: https://github.com/florianmahner/pysrf
@@ -89,5 +89,8 @@ nav:
   - API reference:
     - Model (SRF): api/model.md
     - Cross-validation: api/cross_validation.md
+    - Calibration: api/calibration.md
     - Consensus: api/consensus.md
-  - Development: development.md
+  - Development:
+    - Development: development.md
+    - BSUM implementations: bsum_implementations.md

@@ -20,6 +20,48 @@ _MAX_SAMPLING_FRACTION = 0.95
 
 @dataclass(frozen=True, slots=True)
 class CVCalibration:
+    """Result of cross-validation calibration for a similarity matrix.
+
+    Produced by ``calibrate_cross_validation``. Arrays are indexed either
+    by tracked eigenpair (``n_eigenpairs``) or by sampling-grid
+    probability (``n_grid``).
+
+    Attributes
+    ----------
+    spectral_cutoff : int
+        Number of leading eigenpairs treated as signal, chosen as the
+        changepoint where the leakage profile jumps.
+    sampling_fraction : float
+        Recommended probability of assigning an observed entry to the
+        training set: the smallest grid value (linearly interpolated)
+        whose monotone signal loss stays within tolerance, raised to at
+        least ``detectability_floor`` and capped below 1.
+    eigvals : ndarray of shape (n_eigenpairs,)
+        Leading eigenvalues of the observed similarity matrix in
+        descending order.
+    leakage : ndarray of shape (n_eigenpairs,)
+        Per-dimension leakage: one minus the median subsample coherence,
+        weighted by p / (1 - p) and medianed over the densest grid
+        probabilities. Dimensions past the cutoff show large leakage.
+    sampling_grid : ndarray of shape (n_grid,)
+        Sorted sampling probabilities evaluated during calibration.
+    signal_loss_raw : ndarray of shape (n_grid,)
+        For each grid probability, the fraction of spectral mass of the
+        top ``spectral_cutoff`` eigenpairs not captured by the subsample
+        eigenvectors, median over bootstrap replicates.
+    signal_loss_monotone : ndarray of shape (n_grid,)
+        Non-increasing isotonic fit of ``signal_loss_raw`` used to
+        select ``sampling_fraction``.
+    detectability_floor : float
+        Lower bound on ``sampling_fraction`` in [0, 1], derived from the
+        ratio of eigenvalues across the spectral cutoff; a smaller gap
+        raises the floor, and it is 1 when the cutoff eigenvalue
+        vanishes.
+    n_features_in : int
+        Number of rows (and columns) of the calibrated similarity
+        matrix.
+    """
+
     spectral_cutoff: int
     sampling_fraction: float
     eigvals: np.ndarray
@@ -43,6 +85,58 @@ def calibrate_cross_validation(
     n_jobs: int | None = -1,
     missing_values: float | None = np.nan,
 ) -> CVCalibration:
+    """Calibrate the cross-validation protocol for a similarity matrix.
+
+    Returns a model-independent spectral cutoff and an entry-sampling
+    fraction for splitting a similarity matrix into train and test
+    entries. Observed entries are bootstrap-subsampled at each
+    probability in a sampling grid, and coherence between subsample and
+    reference eigenspaces measures how much of each eigenvector survives
+    subsampling. A changepoint in the leakage profile at the densest
+    sampling probabilities sets the spectral cutoff; the sampling
+    fraction is the smallest probability whose monotone signal loss over
+    the retained spectrum stays within ``signal_loss_tolerance``, and
+    never falls below the detectability floor implied by the eigenvalue
+    gap at the cutoff.
+
+    ``cross_val_score`` calls this automatically when no
+    ``sampling_fraction`` is given.
+
+    Parameters
+    ----------
+    similarity_matrix : ndarray of shape (n_samples, n_samples)
+        Symmetric similarity matrix. Missing values should be marked
+        according to the ``missing_values`` parameter.
+    max_eigenpairs : int or None, default=None
+        Number of leading eigenpairs to track, capped at n_samples.
+        None selects ``max(min(n_samples // 4, 100), 2)``.
+    sampling_grid : ndarray or None, default=None
+        Sampling probabilities to evaluate, each in (0, 1). None uses 20
+        evenly spaced values from 0.05 to 0.95. The grid is sorted
+        before use.
+    signal_loss_tolerance : float, default=0.10
+        Largest acceptable fraction of retained spectral mass lost to
+        subsampling, in (0, 1). Smaller values yield larger sampling
+        fractions.
+    leakage_min_fraction : float, default=0.85
+        Quantile of the sampling grid at or above which grid points
+        enter the leakage profile, in (0, 1).
+    n_bootstrap : int, default=50
+        Number of bootstrap subsamples per grid point.
+    random_state : int, Generator, RandomState, SeedSequence or None, default=0
+        Controls bootstrap subsampling.
+    n_jobs : int or None, default=-1
+        Number of parallel jobs across grid points. None means 1; -1
+        uses all cores.
+    missing_values : float or None, default=np.nan
+        Sentinel value marking missing entries in the similarity matrix.
+
+    Returns
+    -------
+    calibration : CVCalibration
+        Selected spectral cutoff and sampling fraction plus the
+        diagnostic curves behind them.
+    """
     (
         sampling_grid,
         signal_loss_tolerance,
